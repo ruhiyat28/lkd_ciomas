@@ -1,0 +1,65 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Buku Besar — {{ akun_sel.kode }} {{ akun_sel.nama }}{% endblock %}
+{% block content %}
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">{{ lembaga.nama or 'BUM DESA BERSAMA UPK CIOMAS LKD' }}</div>
+    <div class="nama-lembaga" style="font-size:10pt;">LEMBAGA KEUANGAN DESA (LKD)</div>
+    <div class="alamat">Jl. Raya Ciomas Km.1 Serang 42164</div>
+  </div>
+</div>
+<div class="doc-title">Buku Besar</div>
+<div class="doc-subtitle">
+  Akun: <strong>{{ akun_sel.kode }} — {{ akun_sel.nama }}</strong><br>
+  Periode: {{ tgl_dari.strftime('%d %B %Y') }} s/d {{ tgl_sampai.strftime('%d %B %Y') }}
+</div>
+<table class="bordered" style="font-size:9pt;">
+  <thead>
+    <tr style="background:#eee;font-weight:bold;">
+      <th style="width:28px;">No.</th>
+      <th style="width:72px;">Tanggal</th>
+      <th style="width:90px;">No. Jurnal</th>
+      <th>Keterangan</th>
+      <th style="width:90px;text-align:right;">Debit (Rp)</th>
+      <th style="width:90px;text-align:right;">Kredit (Rp)</th>
+      <th style="width:100px;text-align:right;">Saldo (Rp)</th>
+    </tr>
+    <tr>
+      <td colspan="6" style="text-align:right;font-weight:bold;">Saldo Awal</td>
+      <td style="text-align:right;font-weight:bold;">{{ '{:,.0f}'.format(saldo_awal) }}</td>
+    </tr>
+  </thead>
+  <tbody>
+    {% for m in mutasi %}
+    <tr>
+      <td style="text-align:center;">{{ loop.index }}</td>
+      <td>{{ m.jur.tanggal.strftime('%d/%m/%Y') }}</td>
+      <td>{{ m.jur.no_jurnal }}</td>
+      <td>{{ m.jur.keterangan }}</td>
+      <td style="text-align:right;">{{ '{:,.0f}'.format(m.det.debit) if m.det.debit else '—' }}</td>
+      <td style="text-align:right;">{{ '{:,.0f}'.format(m.det.kredit) if m.det.kredit else '—' }}</td>
+      <td style="text-align:right;font-weight:bold;">{{ '{:,.0f}'.format(m.saldo) }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" style="text-align:center;font-style:italic;">Tidak ada mutasi pada periode ini.</td></tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr style="background:#eee;font-weight:bold;">
+      <td colspan="4" style="text-align:right;">Saldo Akhir</td>
+      <td colspan="3" style="text-align:right;">{{ '{:,.0f}'.format(mutasi[-1].saldo if mutasi else saldo_awal) }}</td>
+    </tr>
+  </tfoot>
+</table>
+<div class="ttd-area" style="margin-top:32px;">
+  <div></div>
+  <div class="ttd-box">
+    <div class="ttd-jabatan">Ciomas, {{ tgl_sampai.strftime('%d %B %Y') }}</div>
+    <div class="ttd-jabatan">Direktur,</div>
+    {% set qr = get_role_signature_qr('direktur') %}
+    {% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}
+    <div class="ttd-nama">{{ pengaturan.get('direktur', '.........................') }}</div>
+  </div>
+</div>
+{% endblock %}

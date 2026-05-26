@@ -1,0 +1,78 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Kuitansi Pencairan {{ p.spk }}{% endblock %}
+{% block content %}
+{% set n = p.nasabah %}
+
+{% macro copy_kuitansi(label) %}
+<div style="border:1px solid #ccc;padding:12px;margin-bottom:8px;">
+  <div class="kop">
+    <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+    <div class="kop-text">
+      <div class="nama-lembaga">BUM DESA BERSAMA UPK CIOMAS LKD</div>
+      <div class="alamat">Jl. Raya Ciomas Km.1 Serang 42164 | Telp: (0254)7823984 | WA: 081324771060</div>
+    </div>
+    <div style="font-size:8pt;text-align:right;">{{ label }}</div>
+  </div>
+
+  <div class="doc-title">KUITANSI PENCAIRAN PINJAMAN</div>
+  <div class="doc-no">No. SPK: <strong>{{ p.spk }}</strong></div>
+
+  <table class="info" style="margin-bottom:8px;">
+    <tr><td>Tanggal</td><td>:</td><td><strong>{{ p.tanggal_cair.strftime('%d %B %Y') if p.tanggal_cair else '-' }}</strong></td></tr>
+    <tr><td>Diterima oleh</td><td>:</td><td><strong>{{ n.nama }}</strong></td></tr>
+    <tr><td>ID Nasabah</td><td>:</td><td>{{ n.nasabah_id }} — {{ n.nama_desa }}</td></tr>
+    <tr><td>NIK</td><td>:</td><td class="money">{{ n.nik }}</td></tr>
+    <tr><td>Alamat</td><td>:</td><td>{{ n.alamat }}</td></tr>
+  </table>
+
+  <div class="kotak-nominal">Rp {{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</div>
+  <div class="terbilang">Terbilang: <em>{{ terbilang(p.jumlah_pinjaman) }} Rupiah</em></div>
+
+  <p style="font-size:9pt;margin:8px 0;">Untuk keperluan: <strong>{{ p.tujuan or '-' }}</strong></p>
+  {% if p.jenis_pinjaman == 'spp' and p.detail_spp %}
+<p style="font-size:9pt;font-weight:bold;margin:8px 0 4px;">Rincian Pinjaman Anggota:</p>
+<table class="bordered" style="font-size:8.5pt;margin-bottom:8px;">
+  <tr style="background:#e0e0e0;font-weight:bold;">
+    <th>No</th><th>Nama Anggota</th><th>NIK</th><th style="text-align:right;">Jumlah (Rp)</th>
+  </tr>
+  {% for d in p.detail_spp %}
+  <tr>
+    <td style="text-align:center;">{{ d.urut }}</td>
+    <td>{{ d.nama_anggota }}</td>
+    <td class="money" style="font-size:7.5pt;">{{ d.nik_anggota or '-' }}</td>
+    <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(d.jumlah) }}</td>
+  </tr>
+  {% endfor %}
+  <tr style="font-weight:bold;background:#f5f5f5;">
+    <td colspan="3" style="text-align:right;">TOTAL</td>
+    <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</td>
+  </tr>
+</table>
+{% endif %}
+<p style="font-size:9pt;margin:4px 0;">Dengan angsuran per bulan sebesar: <strong class="money">Rp {{ '{:,.0f}'.format(p.angsuran_total or 0) }}</strong>, tenor <strong>{{ p.tenor }} bulan</strong>, mulai <strong>{{ p.tanggal_mulai_angsuran.strftime('%d %B %Y') if p.tanggal_mulai_angsuran else '-' }}</strong></p>
+
+  <div class="ttd-area">
+    <div class="ttd-box">
+      <div class="ttd-jabatan">Yang Menerima,</div>
+      <div class="ttd-line"></div>
+      <div class="ttd-nama">{{ n.nama }}</div>
+    </div>
+    {% set qr = get_role_signature_qr('direktur') %}
+    <div class="ttd-box">
+      <div class="ttd-jabatan">Diketahui, Direktur</div>
+      {% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}
+      <div class="ttd-nama">{{ pengaturan.get('direktur', '.........................') }}</div>
+    </div>
+    {% set qr = get_role_signature_qr('manajer_lkd') %}
+    <div class="ttd-box">
+      <div class="ttd-jabatan">Manajer LKD,</div>
+      {% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}
+      <div class="ttd-nama">{{ pengaturan.get('manajer_lkd', '.........................') }}</div>
+    </div>
+  </div>
+</div>
+{% endmacro %}
+
+<div style="page-break-after:always;">{{ copy_kuitansi('Lembar 1 — Untuk Nasabah') }}</div>
+<div>{{ copy_kuitansi('Lembar 2 — Arsip LKD') }}</div>
+{% endblock %}

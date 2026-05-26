@@ -1,0 +1,92 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Slip Jurnal {{ j.no_jurnal }}{% endblock %}
+{% block content %}
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">BUM DESA BERSAMA UPK CIOMAS</div>
+    <div class="nama-lembaga" style="font-size:11pt;">LEMBAGA KEUANGAN DESA (LKD)</div>
+    <div class="alamat">Jl. Raya Ciomas Km.1 Serang 42164 | Telp: (0254)7823984 | WA: 081324771060</div>
+  </div>
+</div>
+
+<div class="doc-title">SLIP JURNAL UMUM</div>
+<div class="doc-no">No: <strong>{{ j.no_jurnal }}</strong></div>
+
+<table class="info" style="margin-bottom:12px;">
+  <tr><td style="width:100px;">Tanggal</td><td style="width:10px;">:</td><td><strong>{{ j.tanggal.strftime('%d %B %Y') }}</strong></td></tr>
+  <tr><td>Keterangan</td><td>:</td><td>{{ j.keterangan }}</td></tr>
+  <tr><td>Referensi</td><td>:</td><td class="money">{{ j.referensi or '-' }}</td></tr>
+  <tr><td>Tipe</td><td>:</td><td><strong>{{ j.tipe|title }}</strong></td></tr>
+</table>
+
+<table class="bordered" style="width:100%;font-size:9pt;margin-bottom:12px;border-collapse:collapse;">
+  <thead>
+    <tr style="background:#e0e0e0;">
+      <th style="padding:5px 8px;border:1px solid #999;width:60px;text-align:center;">No</th>
+      <th style="padding:5px 8px;border:1px solid #999;width:80px;">Kode Akun</th>
+      <th style="padding:5px 8px;border:1px solid #999;">Nama Akun</th>
+      <th style="padding:5px 8px;border:1px solid #999;">Keterangan</th>
+      <th style="padding:5px 8px;border:1px solid #999;width:110px;text-align:right;">Debit (Rp)</th>
+      <th style="padding:5px 8px;border:1px solid #999;width:110px;text-align:right;">Kredit (Rp)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for d in j.detail %}
+    <tr>
+      <td style="padding:5px 8px;border:1px solid #999;text-align:center;">{{ loop.index }}</td>
+      <td style="padding:5px 8px;border:1px solid #999;font-family:monospace;">{{ d.akun.kode }}</td>
+      <td style="padding:5px 8px;border:1px solid #999;">{{ d.akun.nama }}</td>
+      <td style="padding:5px 8px;border:1px solid #999;font-size:8pt;">{{ d.keterangan or '' }}</td>
+      <td style="padding:5px 8px;border:1px solid #999;text-align:right;" class="money">{% if d.debit %}{{ '{:,.0f}'.format(d.debit) }}{% else %}-{% endif %}</td>
+      <td style="padding:5px 8px;border:1px solid #999;text-align:right;" class="money">{% if d.kredit %}{{ '{:,.0f}'.format(d.kredit) }}{% else %}-{% endif %}</td>
+    </tr>
+    {% endfor %}
+    <tr style="font-weight:bold;background:#f5f5f5;">
+      <td colspan="4" style="padding:5px 8px;border:1px solid #999;text-align:right;">TOTAL</td>
+      <td style="padding:5px 8px;border:1px solid #999;text-align:right;" class="money">{{ '{:,.0f}'.format(j.total_debit) }}</td>
+      <td style="padding:5px 8px;border:1px solid #999;text-align:right;" class="money">{{ '{:,.0f}'.format(j.total_kredit) }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="font-size:9pt;text-align:justify;line-height:1.5;margin-bottom:30px;">
+  Jumlah Debit dan Kredit sebesar <strong>Rp {{ '{:,.0f}'.format(j.total_debit) }}</strong> adalah <strong>BALANCE (SEIMBANG)</strong>.
+</p>
+
+<div style="margin-top:40px;">
+  <table style="width:100%;font-size:9.5pt;">
+    <tr>
+      <td style="width:50%;text-align:center;vertical-align:top;">
+        <p><strong>Disetujui Oleh</strong></p>
+        {% set qr = get_role_signature_qr('direktur') %}
+        {% if qr %}
+        <img src="{{ qr }}" style="width:80px;height:80px;margin:10px auto 0;">
+        {% else %}
+        <div style="height:90px;"></div>
+        {% endif %}
+        <div style="border-bottom:1px solid #000;width:200px;margin:0 auto;"></div>
+        <p style="margin-top:5px;">{{ direktur if direktur else '____________' }}</p>
+        <p style="font-size:8pt;color:#666;">Direktur</p>
+      </td>
+      <td style="width:50%;text-align:center;vertical-align:top;">
+        <p><strong>Dibuat Oleh</strong></p>
+        {% set qr = get_role_signature_qr('manajer_lkd') %}
+        {% if qr %}
+        <img src="{{ qr }}" style="width:80px;height:80px;margin:10px auto 0;">
+        {% else %}
+        <div style="height:90px;"></div>
+        {% endif %}
+        <div style="border-bottom:1px solid #000;width:200px;margin:0 auto;"></div>
+        <p style="margin-top:5px;">{{ manajer_lkd if manajer_lkd else '____________' }}</p>
+        <p style="font-size:8pt;color:#666;">Manajer LKD</p>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div style="margin-top:20px;text-align:center;font-size:8pt;color:#666;">
+  Dokumen ini dicetak secara elektronik pada {{ today.strftime('%d %B %Y, %H:%M WIB') }}
+</div>
+
+{% endblock %}

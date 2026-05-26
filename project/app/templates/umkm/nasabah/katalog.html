@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Katalog Produk UMKM{% endblock %}
+{% block page_title %}Katalog Produk UMKM{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1>Katalog Produk UMKM</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item active">UMKM</li>
+      </ol>
+    </nav>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('umkm.status_penjual') }}" class="btn btn-outline-warning">
+      <i class="bi bi-shop me-1"></i>Jual Produk
+    </a>
+    <a href="{{ url_for('umkm.pesanan_saya') }}" class="btn btn-outline-primary">
+      <i class="bi bi-cart3 me-1"></i>Pesanan Saya
+    </a>
+  </div>
+</div>
+
+<form method="GET" class="card shadow-sm border-0 rounded-4 mb-4">
+  <div class="card-body">
+    <div class="row g-2">
+      <div class="col-md-6">
+        <input type="text" name="cari" class="form-control" placeholder="Cari produk..." value="{{ cari }}">
+      </div>
+      <div class="col-md-4">
+        <select name="kategori" class="form-select">
+          <option value="">Semua Kategori</option>
+          {% for k, l in [('makanan', 'Makanan'), ('minuman', 'Minuman'), ('kerajinan', 'Kerajinan'), 
+                         ('pertanian', 'Pertanian'), ('peternakan', 'Peternakan'), ('fashion', 'Fashion'), ('lainnya', 'Lainnya')] %}
+          <option value="{{ k }}" {% if kategori == k %}selected{% endif %}>{{ l }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> Cari</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if produk_list %}
+<div class="row g-3">
+  {% for produk in produk_list %}
+  <div class="col-md-4 col-lg-3">
+    <div class="card shadow-sm border-0 rounded-4 h-100">
+      {% if produk.gambar %}
+      <img src="{{ url_for('static', filename=produk.gambar) }}" class="card-img-top rounded-top-4" 
+           style="height:200px;object-fit:cover;" alt="{{ produk.nama_produk }}">
+      {% else %}
+      <div class="card-img-top bg-light rounded-top-4 d-flex align-items-center justify-content-center" style="height:200px;">
+        <i class="bi bi-image text-muted fs-1"></i>
+      </div>
+      {% endif %}
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-2">
+          <span class="badge bg-info me-2">{{ produk.kategori_label() }}</span>
+          {% if produk.stok <= 0 %}
+          <span class="badge bg-danger">Habis</span>
+          {% elif produk.stok < 10 %}
+          <span class="badge bg-warning text-dark">Stok Terbatas</span>
+          {% endif %}
+        </div>
+        <h6 class="card-title fw-bold">{{ produk.nama_produk }}</h6>
+        <p class="text-muted small mb-2" style="height:40px;overflow:hidden;">{{ produk.deskripsi[:80] }}...</p>
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="fw-bold text-primary">Rp {{ produk.harga|number_format }}</div>
+          <small class="text-muted">Stok: {{ produk.stok }}</small>
+        </div>
+        <small class="text-muted d-block mt-1">{{ produk.penjual.nama }}</small>
+      </div>
+      <div class="card-footer bg-white border-0">
+        {% if produk.stok > 0 %}
+        <a href="{{ url_for('umkm.detail_produk', id=produk.id) }}" class="btn btn-primary btn-sm w-100">
+          <i class="bi bi-cart-plus"></i> Pesan
+        </a>
+        {% else %}
+        <button class="btn btn-secondary btn-sm w-100" disabled>Stok Habis</button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info text-center">
+  <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+  <p class="mb-0">Belum ada produk tersedia.</p>
+</div>
+{% endif %}
+{% endblock %}

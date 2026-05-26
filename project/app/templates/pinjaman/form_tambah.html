@@ -1,0 +1,509 @@
+{% extends 'base.html' %}
+{% block title %}Pengajuan Pinjaman{% endblock %}
+{% block page_title %}Pengajuan Pinjaman{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Pengajuan Pinjaman Baru</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('pinjaman.index') }}">Pinjaman</a></li>
+    <li class="breadcrumb-item active">Pengajuan Baru</li>
+  </ol></nav>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <form method="POST" id="formPinjaman" enctype="multipart/form-data">
+
+      <!-- Pilih Nasabah -->
+      <div class="card mb-3">
+        <div class="card-header"><i class="bi bi-person-check-fill me-2 text-primary"></i>Pilih Nasabah / Kelompok</div>
+        <div class="card-body">
+          {% if not current_user.is_nasabah() %}
+          <label class="form-label">Cari Nasabah <span class="text-danger">*</span></label>
+          <div class="position-relative">
+            <div class="input-group mb-1">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" id="searchNasabah" class="form-control"
+                placeholder="Ketik nama, ID, atau NIK..." autocomplete="off"
+                value="{{ nasabah.nama if nasabah else '' }}">
+            </div>
+            <div id="searchResults" class="position-absolute w-100 bg-white border rounded shadow-sm d-none"
+                 style="top:100%;z-index:999;max-height:280px;overflow-y:auto;"></div>
+          </div>
+          {% endif %}
+          <input type="hidden" name="nasabah_id_fk" id="nasabahIdFk"
+            value="{{ nasabah.id if nasabah else '' }}" required>
+          <input type="hidden" id="nasabahJenis" value="{{ nasabah.jenis if nasabah else 'perorangan' }}">
+
+          <!-- Info nasabah terpilih -->
+          <div id="nasabahInfo" class="mt-2 p-3 rounded {% if nasabah %}bg-light{% else %}d-none{% endif %}">
+            {% if nasabah %}
+            <div class="d-flex align-items-center gap-2">
+              <div class="rounded-circle {% if nasabah.jenis=='kelompok' %}bg-success{% else %}bg-primary{% endif %} text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:36px;height:36px;">
+                {{ nasabah.nama[0] }}
+              </div>
+              <div>
+                <div class="fw-bold">{{ nasabah.nama }}</div>
+                <span class="badge {% if nasabah.jenis=='kelompok' %}bg-success{% else %}bg-primary{% endif %}">
+                  <i class="bi bi-{% if nasabah.jenis=='kelompok' %}people{% else %}person{% endif %}-fill me-1"></i>
+                  {{ nasabah.jenis|title }}
+                </span>
+                <span class="badge ms-1">{{ nasabah.nasabah_id }}</span>
+                <span class="badge ms-1" style="background:#e0f2fe;color:#0369a1;">{{ nasabah.nama_desa }}</span>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Jenis Pinjaman — muncul setelah nasabah dipilih -->
+          <div id="jenisPinjamanPanel" class="mt-3 {% if not nasabah %}d-none{% endif %}">
+            <label class="form-label">Jenis Pinjaman <span class="text-danger">*</span></label>
+            <div class="d-flex gap-3">
+              <div class="form-check {% if nasabah and nasabah.jenis == 'kelompok' %}d-none{% endif %}" id="optReguler">
+                <input class="form-check-input" type="radio" name="jenis_pinjaman" id="rReguler"
+                  value="reguler" {% if not nasabah or nasabah.jenis != 'kelompok' %}checked{% endif %} onchange="toggleJenisPinjaman()">
+                <label class="form-check-label fw-semibold" for="rReguler">
+                  <i class="bi bi-person-fill text-primary me-1"></i>Reguler (Perorangan)
+                </label>
+              </div>
+              <div class="form-check {% if not nasabah or nasabah.jenis == 'perorangan' %}d-none{% endif %}" id="optSPP">
+                <input class="form-check-input" type="radio" name="jenis_pinjaman" id="rSPP"
+                  value="spp" {% if nasabah and nasabah.jenis == 'kelompok' %}checked{% endif %} onchange="toggleJenisPinjaman()">
+                <label class="form-check-label fw-semibold" for="rSPP">
+                  <i class="bi bi-people-fill text-success me-1"></i>SPP (Kelompok)
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Pinjaman -->
+      <div class="card mb-3">
+        <div class="card-header"><i class="bi bi-cash-stack me-2 text-success"></i>Detail Pinjaman</div>
+        <div class="card-body">
+          <div class="row g-3">
+              <div class="col-md-6" id="colJumlah">
+              <label class="form-label" id="labelJumlah">Jumlah Pinjaman <span class="text-danger">*</span> <small class="text-muted">(min Rp 3.000.000)</small></label>
+              <div class="input-group">
+                <span class="input-group-text">Rp</span>
+                <input type="text" id="jumlahDisplay" class="form-control" placeholder="0" inputmode="numeric"
+                  oninput="syncJumlahDariManual();hitungPreview()">
+                <input type="hidden" name="jumlah_pinjaman" id="jumlahHidden">
+              </div>
+              <div class="form-text" id="jumlahNote">Isi manual atau akan terisi otomatis dari rincian anggota</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Jasa/Bulan</label>
+              <div class="input-group">
+                <input type="number" name="jasa_persen" class="form-control" value="1.5" step="0.1" min="0.1" max="10" id="jasaInput" onchange="hitungPreview()">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Tenor</label>
+              <select name="tenor" class="form-select" id="tenorInput" onchange="hitungPreview()">
+                {% for t in tenor_options %}
+                <option value="{{ t }}" {% if t==12 %}selected{% endif %}>{{ t }} Bulan</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Tujuan Pinjaman <span class="text-danger">*</span></label>
+              <textarea name="tujuan" class="form-control" rows="2" placeholder="Tujuan penggunaan" required oninvalid="this.setCustomValidity('Tujuan pinjaman harus diisi')" oninput="this.setCustomValidity('')"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel SPP: rincian per anggota -->
+      <div id="panelSPP" class="card mb-3 border-success d-none">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-people-fill me-2"></i>Rincian Pinjaman per Anggota (SPP)</span>
+        </div>
+        <div id="sppEmptyWarning" class="alert alert-warning rounded-0 border-0 mb-0 d-none">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <strong>Belum ada anggota kelompok.</strong>
+          Tambahkan anggota minimal 1 orang melalui menu <strong>Edit Kelompok</strong> sebelum mengajukan pinjaman SPP.
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0" style="font-size:.83rem;" id="tabelSPP">
+              <thead>
+                <tr>
+                  <th style="width:35px;">#</th>
+                  <th>Nama Anggota <span class="text-danger">*</span></th>
+                  <th>NIK</th>
+                  <th style="width:160px;">Jumlah Pinjaman (Rp)</th>
+                  <th>Keterangan</th>
+                </tr>
+              </thead>
+              <tbody id="bodySPP">
+                <!-- Diisi otomatis dari anggota kelompok via JS -->
+              </tbody>
+              <tfoot class="table-success">
+                <tr>
+                  <td colspan="3" class="fw-bold text-end pe-3">TOTAL</td>
+                  <td class="fw-bold money" id="totalSPP">Rp 0</td>
+                  <td colspan="2"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div class="p-3 border-top" style="background:#f0fdf4;">
+            <div class="row g-3 mb-2">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:.82rem;">
+                  <i class="bi bi-file-earmark-text me-1"></i>Surat Pernyataan Tanggung Renteng
+                  <span class="text-danger">*</span>
+                </label>
+                <input type="file" name="surat_tanggung_renteng" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf">
+                <div class="form-text" style="font-size:.7rem;">Format: ada tanda tangan peminjam</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold" style="font-size:.82rem;">
+                  <i class="bi bi-file-earmark-text me-1"></i>Surat Keterangan Ijin Keluarga Dekat
+                  <span class="text-danger">*</span>
+                </label>
+                <input type="file" name="surat_ijin_keluarga" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf">
+                <div class="form-text" style="font-size:.7rem;">Format: tanda tangan peminjam bersebalahan dengan pemberi ijin</div>
+              </div>
+            </div>
+          </div>
+          <div class="p-3 border-top" style="font-size:.82rem;background:#f0fdf4;">
+            <i class="bi bi-info-circle text-success me-1"></i>
+            Total pinjaman kelompok akan dihitung otomatis dari jumlah per anggota.
+            Rincian ini akan muncul di kuitansi pencairan.
+          </div>
+        </div>
+      </div>
+
+      <!-- Hidden fields untuk detail SPP -->
+      <div id="hiddenSPP"></div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-send-fill me-1"></i>Ajukan Pinjaman</button>
+        <a href="{{ url_for('pinjaman.index') }}" class="btn btn-outline-secondary">Batal</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Simulasi -->
+  <div class="col-lg-5">
+    <div class="card sticky-top" style="top:80px;">
+      <div class="card-header"><i class="bi bi-calculator-fill me-2 text-warning"></i>Simulasi Angsuran</div>
+      <div class="card-body">
+        <div class="text-center text-muted py-4" id="previewEmpty">
+          <i class="bi bi-calculator fs-3 d-block mb-2 opacity-50"></i>
+          Isi jumlah untuk simulasi
+        </div>
+        <div id="previewResult" class="d-none">
+          <table class="table table-sm table-bordered mb-0" style="font-size:.83rem;">
+            <tr><td class="text-muted">Jumlah</td><td class="text-end money fw-bold" id="pv_jumlah">-</td></tr>
+            <tr><td class="text-muted">Tenor</td><td class="text-end" id="pv_tenor">-</td></tr>
+            <tr><td class="text-muted">Jasa flat/bulan</td><td class="text-end" id="pv_jasa_pct">-</td></tr>
+            <tr class="table-primary"><td class="fw-bold">Angsuran Pokok</td><td class="text-end money fw-bold text-primary" id="pv_pokok">-</td></tr>
+            <tr><td class="text-muted">Jasa/bulan</td><td class="text-end money" id="pv_jasa">-</td></tr>
+            <tr class="table-warning"><td class="fw-bold">Total/bulan</td><td class="text-end money fw-bold" id="pv_total">-</td></tr>
+            <tr><td class="text-muted">Angsuran terakhir</td><td class="text-end money" id="pv_terakhir">-</td></tr>
+            <tr class="table-success"><td class="fw-bold">Total kewajiban</td><td class="text-end money fw-bold" id="pv_grand">-</td></tr>
+          </table>
+          <!-- SPP breakdown per anggota -->
+          <div id="sppSimulasi" class="mt-3 d-none">
+            <div class="fw-bold mb-2" style="font-size:.82rem;color:var(--success);">
+              <i class="bi bi-people-fill me-1"></i>Rincian Angsuran per Anggota:
+            </div>
+            <div id="sppSimulasiList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CARI_URL  = "{{ url_for('pinjaman.cari_nasabah') }}";
+const ANGGOTA_URL = "/nasabah/api/anggota/";
+
+let nasabahJenis = '{{ nasabah.jenis if nasabah else "perorangan" }}';
+let anggotaData  = [];
+
+// ── Init ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  toggleJenisPinjaman();
+});
+
+// ── Autocomplete Nasabah ─────────────────────────────────────
+const searchInput   = document.getElementById('searchNasabah');
+const searchResults = document.getElementById('searchResults');
+const hiddenId      = document.getElementById('nasabahIdFk');
+let debounceTimer;
+
+if (searchInput) {
+searchInput.addEventListener('input', function() {
+  clearTimeout(debounceTimer);
+  const q = this.value.trim();
+  if (q.length < 2) { searchResults.classList.add('d-none'); return; }
+  debounceTimer = setTimeout(() => fetchNasabah(q), 300);
+});
+document.addEventListener('click', e => {
+  if (!searchInput.contains(e.target) && !searchResults.contains(e.target))
+    searchResults.classList.add('d-none');
+});
+}
+
+function fetchNasabah(q) {
+  fetch(`${CARI_URL}?q=${encodeURIComponent(q)}`)
+    .then(r => r.json()).then(data => {
+      searchResults.innerHTML = '';
+      if (!data.length) {
+        searchResults.innerHTML = '<div class="p-3 text-muted text-center" style="font-size:.83rem;">Tidak ditemukan</div>';
+        searchResults.classList.remove('d-none'); return;
+      }
+      data.forEach(n => {
+        const el = document.createElement('div');
+        el.className = 'p-2 border-bottom d-flex align-items-center gap-2';
+        el.style.cssText = 'cursor:pointer;font-size:.83rem;';
+        const isKelompok = n.jenis === 'kelompok';
+        el.innerHTML = `
+          <div class="rounded-circle ${isKelompok?'bg-success':'bg-primary'} text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:32px;height:32px;font-size:.8rem;">${n.nama[0]}</div>
+          <div>
+            <div class="fw-bold">${n.nama}</div>
+            <span class="badge ${isKelompok?'bg-success':'bg-primary'} me-1"><i class="bi bi-${isKelompok?'people':'person'}-fill me-1"></i>${isKelompok?'Kelompok':'Perorangan'}</span>
+            <span class="badge bg-secondary me-1">${n.nasabah_id}</span>
+            <span class="badge" style="background:#e0f2fe;color:#0369a1;">${n.desa}</span>
+          </div>`;
+        el.addEventListener('mouseenter', () => el.style.background='#f0f4ff');
+        el.addEventListener('mouseleave', () => el.style.background='');
+        el.addEventListener('click', () => pilihNasabah(n));
+        searchResults.appendChild(el);
+      });
+      searchResults.classList.remove('d-none');
+    }).catch(()=>{});
+}
+
+function pilihNasabah(n) {
+  searchInput.value = n.nama;
+  hiddenId.value    = n.id;
+  nasabahJenis      = n.jenis;
+  document.getElementById('nasabahJenis').value = n.jenis;
+  searchResults.classList.add('d-none');
+  const url = new URL(window.location);
+  url.searchParams.set('nasabah_id', n.id);
+  window.history.replaceState({}, '', url);
+
+  const isKelompok = n.jenis === 'kelompok';
+  const infoDiv = document.getElementById('nasabahInfo');
+  infoDiv.className = 'mt-2 p-3 rounded bg-light';
+  infoDiv.innerHTML = `
+    <div class="d-flex align-items-center gap-2">
+      <div class="rounded-circle ${isKelompok?'bg-success':'bg-primary'} text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0" style="width:36px;height:36px;">${n.nama[0]}</div>
+      <div>
+        <div class="fw-bold">${n.nama}</div>
+        <span class="badge ${isKelompok?'bg-success':'bg-primary'}"><i class="bi bi-${isKelompok?'people':'person'}-fill me-1"></i>${isKelompok?'Kelompok':'Perorangan'}</span>
+        <span class="badge ms-1">${n.nasabah_id}</span>
+        <span class="badge ms-1" style="background:#e0f2fe;color:#0369a1;">${n.desa}</span>
+      </div>
+    </div>`;
+
+  // Tampilkan panel jenis pinjaman
+  document.getElementById('jenisPinjamanPanel').classList.remove('d-none');
+
+  // Jika kelompok → otomatis pilih SPP dan load anggota
+  if (isKelompok) {
+    document.getElementById('optReguler').classList.add('d-none');
+    document.getElementById('optSPP').classList.remove('d-none');
+    document.getElementById('rSPP').checked = true;
+    loadAnggota(n.id);
+  } else {
+    document.getElementById('optSPP').classList.add('d-none');
+    document.getElementById('optReguler').classList.remove('d-none');
+    document.getElementById('rReguler').checked = true;
+    toggleJenisPinjaman();
+  }
+}
+
+function loadAnggota(nasabahId) {
+  fetch(`${ANGGOTA_URL}${nasabahId}`)
+    .then(r => r.json()).then(data => {
+      anggotaData = data;
+      populateSPP(data);
+      toggleJenisPinjaman();
+    }).catch(()=>{});
+}
+
+function populateSPP(anggota) {
+  const tbody = document.getElementById('bodySPP');
+  tbody.innerHTML = '';
+  anggota.forEach((a, i) => {
+    tbody.appendChild(buatBarisSPP(i+1, a.nama, a.nik));
+  });
+  if (!anggota.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Belum ada anggota kelompok. Tambahkan anggota dulu.</td></tr>';
+  }
+  const warnEl = document.getElementById('sppEmptyWarning');
+  if (warnEl) warnEl.classList.toggle('d-none', anggota.length > 0);
+  hitungTotalSPP();
+}
+
+function buatBarisSPP(urut, nama='', nik='') {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="text-center text-muted align-middle">${urut}</td>
+    <td><input type="text" class="form-control form-control-sm text-uppercase spp-nama" placeholder="Nama anggota" value="${nama}" required readonly></td>
+    <td><input type="text" class="form-control form-control-sm money spp-nik" placeholder="NIK" value="${nik}" readonly></td>
+    <td><input type="text" class="form-control form-control-sm spp-jumlah" placeholder="0" inputmode="numeric"
+      oninput="hitungTotalSPP()"></td>
+    <td><input type="text" class="form-control form-control-sm spp-ket" placeholder="Keterangan (opsional)"></td>`;
+  return tr;
+}
+
+function tambahBarisSPP() {
+  const tbody  = document.getElementById('bodySPP');
+  const urut   = tbody.rows.length + 1;
+  tbody.appendChild(buatBarisSPP(urut));
+}
+
+function hapusBarisSPP(btn) {
+  btn.closest('tr').remove();
+  document.querySelectorAll('#bodySPP tr').forEach((tr,i) => tr.cells[0].textContent = i+1);
+  hitungTotalSPP();
+}
+
+function hitungTotalSPP() {
+  let total = 0;
+  document.querySelectorAll('.spp-jumlah').forEach(el => {
+    total += parseInt(el.value.replace(/\D/g,'') || '0') || 0;
+  });
+  document.getElementById('totalSPP').textContent = 'Rp ' + total.toLocaleString('id-ID');
+  // Sync ke field jumlah pinjaman
+  if (document.getElementById('rSPP').checked) {
+    document.getElementById('jumlahHidden').value  = total;
+    document.getElementById('jumlahDisplay').value = total ? total.toLocaleString('id-ID') : '';
+    hitungPreview();
+  }
+}
+
+function toggleJenisPinjaman() {
+  const isSPP = document.getElementById('rSPP').checked;
+  document.getElementById('panelSPP').classList.toggle('d-none', !isSPP);
+  const jumlahInput = document.getElementById('jumlahDisplay');
+  const noteEl = document.getElementById('jumlahNote');
+  if (isSPP) {
+    noteEl.textContent = 'Total otomatis dari jumlah pinjaman per anggota di tabel bawah.';
+    jumlahInput.readOnly = true;
+    jumlahInput.classList.add('bg-light');
+    jumlahInput.value = '';
+  } else {
+    noteEl.textContent = '';
+    jumlahInput.readOnly = false;
+    jumlahInput.classList.remove('bg-light', 'disabled');
+    document.getElementById('bodySPP').innerHTML = '';
+  }
+  hitungTotalSPP();
+}
+
+// ── Simulasi ─────────────────────────────────────────────────
+function fmt(n){ return 'Rp ' + Math.round(n).toLocaleString('id-ID'); }
+
+function syncJumlahDariManual() {
+  const v = document.getElementById('jumlahDisplay').value.replace(/\D/g,'') || '0';
+  document.getElementById('jumlahHidden').value = v;
+}
+
+function hitungPreview() {
+  const jumlah = parseInt(document.getElementById('jumlahHidden').value) || 0;
+  const jasa   = parseFloat(document.getElementById('jasaInput').value) || 1.5;
+  const tenor  = parseInt(document.getElementById('tenorInput').value) || 12;
+
+  if (!jumlah) {
+    document.getElementById('previewEmpty').classList.remove('d-none');
+    document.getElementById('previewResult').classList.add('d-none'); return;
+  }
+  const pokok      = Math.ceil((jumlah/tenor)/100)*100;
+  const jasaBln    = Math.round(jumlah*jasa/100);
+  const total      = pokok + jasaBln;
+  let pokokAkhir   = jumlah - pokok*(tenor-1);
+  if(pokokAkhir<=0) pokokAkhir = jumlah - Math.floor((jumlah/tenor)/100)*100*(tenor-1);
+
+  document.getElementById('pv_jumlah').textContent  = fmt(jumlah);
+  document.getElementById('pv_tenor').textContent   = tenor+' bulan';
+  document.getElementById('pv_jasa_pct').textContent= jasa+'% flat';
+  document.getElementById('pv_pokok').textContent   = fmt(pokok);
+  document.getElementById('pv_jasa').textContent    = fmt(jasaBln);
+  document.getElementById('pv_total').textContent   = fmt(total);
+  document.getElementById('pv_terakhir').textContent= fmt(pokokAkhir+jasaBln)+' (pokok: '+fmt(pokokAkhir)+')';
+  document.getElementById('pv_grand').textContent   = fmt(jumlah + jasaBln*tenor);
+  document.getElementById('previewEmpty').classList.add('d-none');
+  document.getElementById('previewResult').classList.remove('d-none');
+
+  // SPP per-anggota simulasi
+  const isSPP = document.getElementById('rSPP')?.checked;
+  const sppSim = document.getElementById('sppSimulasi');
+  const sppList = document.getElementById('sppSimulasiList');
+  if (isSPP && sppSim) {
+    const rows = document.querySelectorAll('#bodySPP tr');
+    let html = '';
+    rows.forEach(tr => {
+      const nama   = tr.querySelector('.spp-nama')?.value || '-';
+      const jumlahA= parseInt(tr.querySelector('.spp-jumlah')?.value||'0')||0;
+      if (!jumlahA) return;
+      const pokokA = Math.ceil((jumlahA/tenor)/100)*100;
+      const jasaA  = Math.round(jumlahA*jasa/100);
+      html += `<div class="d-flex justify-content-between py-1 border-bottom" style="font-size:.79rem;">
+        <span>${nama}</span>
+        <span class="money">${fmt(pokokA+jasaA)}/bln</span>
+      </div>`;
+    });
+    sppList.innerHTML = html || '<div class="text-muted" style="font-size:.8rem;">Isi jumlah per anggota dulu</div>';
+    sppSim.classList.toggle('d-none', !html);
+  } else if (sppSim) sppSim.classList.add('d-none');
+}
+
+// ── Submit: inject hidden fields SPP ─────────────────────────
+document.getElementById('formPinjaman').addEventListener('submit', function(e) {
+  const isSPP = document.getElementById('rSPP')?.checked;
+  if (isSPP) {
+    hitungTotalSPP();
+    const total = parseInt(document.getElementById('jumlahHidden').value) || 0;
+    if (total < 3000000) {
+      e.preventDefault();
+      const hasAnggota = document.querySelectorAll('#bodySPP tr .spp-jumlah').length > 0;
+      if (!hasAnggota) {
+        notif('Belum ada anggota kelompok. Tambahkan anggota minimal 1 orang dulu melalui menu Edit Kelompok.', 'warning');
+      } else {
+        notif('Total pinjaman anggota minimal Rp 3.000.000. Isi jumlah pada kolom di tabel anggota.', 'warning');
+      }
+      return;
+    }
+  } else {
+    const v = document.getElementById('jumlahDisplay').value.replace(/\D/g,'') || '0';
+    document.getElementById('jumlahHidden').value = v;
+  }
+
+  if (document.getElementById('rSPP')?.checked) {
+    const hidden = document.getElementById('hiddenSPP');
+    hidden.innerHTML = '';
+    document.querySelectorAll('#bodySPP tr').forEach((tr, i) => {
+      const nama   = tr.querySelector('.spp-nama')?.value || '';
+      const nik    = tr.querySelector('.spp-nik')?.value || '';
+      const jumlah = tr.querySelector('.spp-jumlah')?.value || '0';
+      const ket    = tr.querySelector('.spp-ket')?.value || '';
+      if (!nama) return;
+      const addHidden = (name, val) => {
+        const inp = document.createElement('input');
+        inp.type = 'hidden'; inp.name = name; inp.value = val;
+        hidden.appendChild(inp);
+      };
+      addHidden('spp_nama[]', nama);
+      addHidden('spp_nik[]', nik);
+      addHidden('spp_jumlah[]', jumlah.replace(/\D/g,''));
+      addHidden('spp_ket[]', ket);
+    });
+  }
+});
+</script>
+{% endblock %}

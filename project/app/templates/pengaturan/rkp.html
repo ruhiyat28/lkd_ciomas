@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+{% block title %}RKP {{ tahun }}{% endblock %}
+{% block page_title %}Rencana Kerja & Pendapatan{% endblock %}
+
+{% block extra_css %}
+<style>
+.rkp-input {
+  font-family: var(--mono); font-size: 0.82rem; text-align: right;
+  padding: 5px 8px; border-radius: 6px; border: 1.2px solid var(--border);
+  width: 100%; transition: border-color .15s;
+}
+.rkp-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,86,219,.1); }
+.rkp-input:disabled {
+  background: #f8fafc; color: #64748b; cursor: not-allowed;
+  border-color: transparent;
+}
+.rkp-table thead th { font-size: 0.72rem; text-transform: uppercase; letter-spacing:.04em; color:var(--text-muted); background:#f8fafc; }
+.rkp-table tfoot td { font-weight: 700; background: #f1f5f9; font-size: 0.82rem; }
+.rkp-total-display { font-family:var(--mono); font-weight:700; color:var(--primary); text-align:right; }
+.annual-card { background: linear-gradient(135deg,#1a56db,#0ea5e9); color:#fff; border-radius:12px; padding:18px 20px; }
+
+/* Edit mode indicator */
+.edit-mode-banner {
+  display: none;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 12px;
+}
+.edit-mode-banner.show { display: flex; align-items: center; gap: 8px; }
+.edit-mode-banner i { font-size: 1.1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap">
+  <div>
+    <h1>Rencana Kerja &amp; Pendapatan</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('pengaturan.index') }}">Pengaturan</a></li>
+      <li class="breadcrumb-item active">RKP {{ tahun }}</li>
+    </ol></nav>
+  </div>
+  <div class="d-flex gap-2 align-items-center mt-3 mt-md-0">
+    <!-- Pilih Tahun -->
+    <form method="GET" class="d-flex gap-2 align-items-center">
+      <label class="form-label mb-0" style="white-space:nowrap;">Tahun RKP:</label>
+      <select name="tahun" class="form-select form-select-sm" style="width:100px;" onchange="this.form.submit()">
+        {% for y in tahun_options %}
+        <option value="{{ y }}" {% if y == tahun %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </form>
+    <!-- Tombol Edit / Simpan -->
+    <button type="button" id="btnEdit" class="btn btn-warning btn-sm" onclick="enableEdit()">
+      <i class="bi bi-pencil-fill me-1"></i>Edit
+    </button>
+  </div>
+</div>
+
+<!-- Banner mode edit -->
+<div id="editBanner" class="edit-mode-banner">
+  <i class="bi bi-pencil-square"></i>
+  <span>Mode Edit Aktif — Klik kolom untuk mengubah nilai</span>
+  <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" onclick="disableEdit()">Batal Edit</button>
+</div>
+
+<form method="POST" id="formRKP">
+  <input type="hidden" name="tahun" value="{{ tahun }}">
+
+  <div class="row g-3 mb-3">
+    <!-- Tabel Rencana Bulanan -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-calendar3 me-2 text-primary"></i>Rencana Bulanan Tahun {{ tahun }}</span>
+          <span class="badge bg-primary">12 Bulan</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table rkp-table mb-0">
+              <thead>
+                <tr>
+                  <th class="ps-3" style="width:130px;">Bulan</th>
+                  <th class="text-end pe-2">Rencana Pendapatan (Rp)</th>
+                  <th class="text-end pe-2">Rencana Pem. Pokok (Rp)</th>
+                  <th class="text-end pe-3">Rencana Penyaluran (Rp)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in data_bulanan %}
+                <tr>
+                  <td class="ps-3 fw-semibold" style="font-size:.82rem;">{{ row.nama }}</td>
+                  <td class="pe-2">
+                    <input type="number" min="0" step="1000"
+                           name="rkp_{{ tahun }}_m{{ '%02d'|format(row.bulan) }}_pendapatan"
+                           class="rkp-input" value="{{ row.pendapatan }}"
+                           disabled onchange="hitungTotal()">
+                  </td>
+                  <td class="pe-2">
+                    <input type="number" min="0" step="1000"
+                           name="rkp_{{ tahun }}_m{{ '%02d'|format(row.bulan) }}_pembayaran_pokok"
+                           class="rkp-input" value="{{ row.pembayaran_pokok }}"
+                           disabled onchange="hitungTotal()">
+                  </td>
+                  <td class="pe-3">
+                    <input type="number" min="0" step="1000"
+                           name="rkp_{{ tahun }}_m{{ '%02d'|format(row.bulan) }}_penyaluran"
+                           class="rkp-input" value="{{ row.penyaluran }}"
+                           disabled onchange="hitungTotal()">
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td class="ps-3 text-muted" style="font-size:.72rem; text-transform:uppercase;">Total</td>
+                  <td class="pe-2"><div class="rkp-total-display" id="total-pendapatan">
+                    Rp {{ '{:,.0f}'.format(data_bulanan|sum(attribute='pendapatan')) }}
+                  </div></td>
+                  <td class="pe-2"><div class="rkp-total-display" id="total-pembayaran-pokok">
+                    Rp {{ '{:,.0f}'.format(data_bulanan|sum(attribute='pembayaran_pokok')) }}
+                  </div></td>
+                  <td class="pe-3"><div class="rkp-total-display" id="total-penyaluran">
+                    Rp {{ '{:,.0f}'.format(data_bulanan|sum(attribute='penyaluran')) }}
+                  </div></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rencana Tahunan -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header">
+          <i class="bi bi-clipboard-data me-2 text-success"></i>Rencana Tahunan {{ tahun }}
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Rencana Operasional</label>
+            <div class="input-group">
+              <span class="input-group-text" style="font-size:.8rem;">Rp</span>
+              <input type="number" min="0" step="1000"
+                     name="rkp_{{ tahun }}_operasional"
+                     class="form-control text-end"
+                     value="{{ data_tahunan.operasional }}"
+                     disabled onchange="hitungTotal()"
+                     style="font-family:var(--mono);">
+            </div>
+            <div class="form-text">Total rencana biaya operasional setahun</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Rencana Investasi</label>
+            <div class="input-group">
+              <span class="input-group-text" style="font-size:.8rem;">Rp</span>
+              <input type="number" min="0" step="1000"
+                     name="rkp_{{ tahun }}_investasi"
+                     class="form-control text-end"
+                     value="{{ data_tahunan.investasi }}"
+                     disabled
+                     style="font-family:var(--mono);">
+            </div>
+            <div class="form-text">Belanja aset/investasi setahun</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Rencana Pendanaan</label>
+            <div class="input-group">
+              <span class="input-group-text" style="font-size:.8rem;">Rp</span>
+              <input type="number" min="0" step="1000"
+                     name="rkp_{{ tahun }}_pendanaan"
+                     class="form-control text-end"
+                     value="{{ data_tahunan.pendanaan }}"
+                     disabled
+                     style="font-family:var(--mono);">
+            </div>
+            <div class="form-text">Rencana sumber pendanaan setahun</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Pendapatan Lain-lain</label>
+            <div class="input-group">
+              <span class="input-group-text" style="font-size:.8rem;">Rp</span>
+              <input type="number" min="0" step="1000"
+                     name="rkp_{{ tahun }}_pendapatan_lain"
+                     class="form-control text-end"
+                     value="{{ data_tahunan.pendapatan_lain }}"
+                     disabled onchange="hitungTotal()"
+                     style="font-family:var(--mono);">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Beban Lain-lain</label>
+            <div class="input-group">
+              <span class="input-group-text" style="font-size:.8rem;">Rp</span>
+              <input type="number" min="0" step="1000"
+                     name="rkp_{{ tahun }}_beban_lain"
+                     class="form-control text-end"
+                     value="{{ data_tahunan.beban_lain }}"
+                     disabled onchange="hitungTotal()"
+                     style="font-family:var(--mono);">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ringkasan -->
+      <div class="annual-card">
+        <div class="fw-bold mb-3" style="opacity:.85; font-size:.8rem; text-transform:uppercase; letter-spacing:.05em;">
+          <i class="bi bi-pie-chart-fill me-2"></i>Ringkasan RKP {{ tahun }}
+        </div>
+        <div class="mb-2 d-flex justify-content-between" style="font-size:.82rem;">
+          <span style="opacity:.8;">Total Target Pendapatan</span>
+          <span id="summary-pendapatan" class="fw-bold" style="font-family:var(--mono);">
+            Rp {{ '{:,.0f}'.format(data_bulanan|sum(attribute='pendapatan')) }}
+          </span>
+        </div>
+        <div class="mb-2 d-flex justify-content-between" style="font-size:.82rem;">
+          <span style="opacity:.8;">Total Target Penyaluran</span>
+          <span id="summary-penyaluran" class="fw-bold" style="font-family:var(--mono);">
+            Rp {{ '{:,.0f}'.format(data_bulanan|sum(attribute='penyaluran')) }}
+          </span>
+        </div>
+        <hr style="border-color:rgba(255,255,255,.2);">
+        <div class="d-flex justify-content-between" style="font-size:.78rem; opacity:.7;">
+          <span>Operasional</span>
+          <span style="font-family:var(--mono);">Rp {{ '{:,.0f}'.format(data_tahunan.operasional) }}</span>
+        </div>
+        <div class="d-flex justify-content-between" style="font-size:.78rem; opacity:.7;">
+          <span>Investasi</span>
+          <span style="font-family:var(--mono);">Rp {{ '{:,.0f}'.format(data_tahunan.investasi) }}</span>
+        </div>
+        <div class="d-flex justify-content-between" style="font-size:.78rem; opacity:.7;">
+          <span>Pendanaan</span>
+          <span style="font-family:var(--mono);">Rp {{ '{:,.0f}'.format(data_tahunan.pendanaan) }}</span>
+        </div>
+        <hr style="border-color:rgba(255,255,255,.2); margin: 8px 0;">
+        <div class="d-flex justify-content-between text-warning" style="font-size:.85rem; font-weight:700;">
+          <span>Proyeksi Laba/Rugi</span>
+          <span id="summary-laba-rugi" style="font-family:var(--mono);">Rp 0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2" id="actionButtons" style="display:none;">
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-save-fill me-1"></i>Simpan RKP {{ tahun }}
+    </button>
+    <a href="{{ url_for('pengaturan.index') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Kembali
+    </a>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const fmt = v => 'Rp ' + new Intl.NumberFormat('id-ID').format(v);
+let editMode = false;
+
+function enableEdit() {
+  editMode = true;
+  document.querySelectorAll('.rkp-input, input[name$="_operasional"], input[name$="_investasi"], input[name$="_pendanaan"], input[name$="_pendapatan_lain"], input[name$="_beban_lain"]').forEach(el => {
+    el.disabled = false;
+  });
+  document.getElementById('editBanner').classList.add('show');
+  document.getElementById('actionButtons').style.display = 'flex';
+  document.getElementById('btnEdit').style.display = 'none';
+  // Focus ke input pertama
+  document.querySelector('.rkp-input')?.focus();
+}
+
+function disableEdit() {
+  editMode = false;
+  document.querySelectorAll('.rkp-input, input[name$="_operasional"], input[name$="_investasi"], input[name$="_pendanaan"], input[name$="_pendapatan_lain"], input[name$="_beban_lain"]').forEach(el => {
+    el.disabled = true;
+  });
+  document.getElementById('editBanner').classList.remove('show');
+  document.getElementById('actionButtons').style.display = 'none';
+  document.getElementById('btnEdit').style.display = 'inline-block';
+  // Reload page untuk reset nilai ke data tersimpan
+  location.reload();
+}
+
+function hitungTotal() {
+  const inputs = document.querySelectorAll('input[name*="_pendapatan"]');
+  const inputsS = document.querySelectorAll('input[name*="_penyaluran"]');
+  const inputsPK = document.querySelectorAll('input[name*="_pembayaran_pokok"]');
+  let totP = 0, totS = 0, totPK = 0;
+  
+  // Exclude annual target input from monthly target calculation
+  inputs.forEach(el => { 
+    if(!el.name.includes('_pendapatan_lain')) totP += parseInt(el.value || 0); 
+  });
+  inputsS.forEach(el => { totS += parseInt(el.value || 0); });
+  inputsPK.forEach(el => { totPK += parseInt(el.value || 0); });
+  
+  document.getElementById('total-pendapatan').textContent = fmt(totP);
+  document.getElementById('total-penyaluran').textContent = fmt(totS);
+  document.getElementById('total-pembayaran-pokok').textContent = fmt(totPK);
+  document.getElementById('summary-pendapatan').textContent = fmt(totP);
+  document.getElementById('summary-penyaluran').textContent = fmt(totS);
+  
+  const operasional = parseInt(document.querySelector('input[name$="_operasional"]').value || 0);
+  const pdp_lain = parseInt(document.querySelector('input[name$="_pendapatan_lain"]').value || 0);
+  const beban_lain = parseInt(document.querySelector('input[name$="_beban_lain"]').value || 0);
+  const labaRugi = totP - operasional + pdp_lain - beban_lain;
+  document.getElementById('summary-laba-rugi').textContent = fmt(labaRugi);
+}
+// Hitung saat load juga
+hitungTotal();
+</script>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% block title %}Rekap Pembayaran{% endblock %}
+{% block page_title %}Rekap Pembayaran{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div><h1>Rekap Pembayaran</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0"><li class="breadcrumb-item active">Rekap Pembayaran</li></ol></nav></div>
+  <a href="?dari={{ tgl_dari }}&sampai={{ tgl_sampai }}&desa={{ desa_filter }}&cetak=1" target="_blank" class="btn btn-outline-secondary btn-sm no-print"><i class="bi bi-printer me-1"></i>Cetak</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-3"><label class="form-label">Dari Tanggal</label><input type="date" name="dari" class="form-control" value="{{ tgl_dari }}"></div>
+      <div class="col-md-3"><label class="form-label">Sampai Tanggal</label><input type="date" name="sampai" class="form-control" value="{{ tgl_sampai }}"></div>
+      <div class="col-md-3"><label class="form-label">Desa</label>
+        <select name="desa" class="form-select">
+          <option value="">Semua Desa</option>
+          {% for kode, nama in desa_list %}<option value="{{ kode }}" {% if desa_filter==kode %}selected{% endif %}>{{ nama }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3"><button type="submit" class="btn btn-primary w-100">Filter</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="stat-card stat-green"><i class="bi bi-cash stat-icon"></i>
+      <div class="stat-label">Total Pembayaran</div>
+      <div class="stat-value money" style="font-size:1.1rem;">Rp {{ '{:,.0f}'.format(total_bayar) }}</div>
+      <div class="stat-sub">{{ pembayaran_list|length }} transaksi</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card stat-blue"><i class="bi bi-bank stat-icon"></i>
+      <div class="stat-label">Total Pokok</div>
+      <div class="stat-value money" style="font-size:1.1rem;">Rp {{ '{:,.0f}'.format(total_pokok) }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card stat-orange"><i class="bi bi-percent stat-icon"></i>
+      <div class="stat-label">Total Jasa</div>
+      <div class="stat-value money" style="font-size:1.1rem;">Rp {{ '{:,.0f}'.format(total_jasa) }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-table me-2"></i>Daftar Pembayaran</div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead>
+        <tr><th>No. Kuitansi</th><th>Tgl</th><th>Nasabah</th><th>Desa</th><th>SPK</th>
+        <th class="text-end">Bayar</th><th class="text-end">Pokok</th><th class="text-end">Jasa</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for pb in pembayaran_list %}
+        <tr>
+          <td class="money" style="font-size:.8rem;">{{ pb.no_kuitansi }}</td>
+          <td style="font-size:.82rem;">{{ pb.tanggal_bayar.strftime('%d/%m/%Y') }}</td>
+          <td><strong style="font-size:.83rem;">{{ pb.pinjaman.nasabah.nama }}</strong></td>
+          <td><span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:.7rem;">{{ pb.pinjaman.nasabah.kode_desa }}</span></td>
+          <td class="money" style="font-size:.78rem;">{{ pb.pinjaman.spk }}</td>
+          <td class="text-end money fw-bold">{{ '{:,.0f}'.format(pb.jumlah_bayar) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(pb.bayar_pokok) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(pb.bayar_jasa) }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('pembayaran.cetak_kuitansi', id=pb.id) }}" target="_blank" class="btn btn-xs btn-outline-primary" style="font-size:.72rem;padding:2px 6px;"><i class="bi bi-printer"></i></a>
+              {% if current_user.is_admin() %}
+              <form method="POST" action="{{ url_for('pembayaran.hapus', id=pb.id) }}" data-confirm="Hapus pembayaran ini?">
+                <button class="btn btn-xs btn-outline-danger" style="font-size:.72rem;padding:2px 6px;"><i class="bi bi-trash"></i></button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4">Tidak ada data</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light">
+        <tr>
+          <td colspan="5" class="fw-bold">TOTAL</td>
+          <td class="text-end money fw-bold">{{ '{:,.0f}'.format(total_bayar) }}</td>
+          <td class="text-end money fw-bold">{{ '{:,.0f}'.format(total_pokok) }}</td>
+          <td class="text-end money fw-bold">{{ '{:,.0f}'.format(total_jasa) }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}

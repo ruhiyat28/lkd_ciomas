@@ -1,0 +1,54 @@
+{% macro pagination(paginator, params={}, label='data') %}
+  {% if paginator.pages > 1 %}
+  {% set ns = namespace(qs='') %}
+  {% for k, v in params.items() %}
+    {% if v is not none and v|string != '' %}
+      {% set ns.qs = ns.qs ~ '&' ~ k ~ '=' ~ v %}
+    {% endif %}
+  {% endfor %}
+  <div class="card-body border-top d-flex justify-content-between align-items-center py-2">
+    <small class="text-muted">{{ paginator.total }} {{ label }} | Hal {{ paginator.page }}/{{ paginator.pages }}</small>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        {% if paginator.has_prev %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ paginator.prev_num }}{{ ns.qs }}">«</a>
+        </li>
+        {% endif %}
+        {% for p in paginator.iter_pages() %}
+        {% if p %}
+        <li class="page-item {% if p==paginator.page %}active{% endif %}">
+          <a class="page-link" href="?page={{ p }}{{ ns.qs }}">{{ p }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+        {% if paginator.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ paginator.next_num }}{{ ns.qs }}">»</a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+{% endmacro %}
+
+{% macro confirm_modal(id, title, body='', submit_text='Hapus', submit_class='btn-danger') %}
+<div class="modal fade" id="{{ id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="fw-bold">{{ title }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">{{ body }}</p>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="submit" class="btn {{ submit_class }}">{{ submit_text }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endmacro %}

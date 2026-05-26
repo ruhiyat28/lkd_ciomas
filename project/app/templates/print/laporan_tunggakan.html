@@ -1,0 +1,55 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Monitoring Tunggakan Pinjaman{% endblock %}
+{% block content %}
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">BUM DESA BERSAMA UPK CIOMAS LKD</div>
+    <div class="alamat">LEMBAGA KEUANGAN DESA (LKD) | Jl. Raya Ciomas Km.1 Serang 42164</div>
+  </div>
+</div>
+<div class="doc-title">MONITORING TUNGGAKAN PINJAMAN</div>
+<div class="doc-subtitle">(dalam rupiah)</div>
+<table class="bordered" style="font-size:8.5pt;">
+  <thead><tr style="background:#eee;font-weight:bold;">
+    <th style="width:22px;">No.</th><th style="width:55px;">ID</th><th>Nama Nasabah</th><th style="width:45px;">Desa</th>
+    <th style="width:60px;">SPK</th><th style="width:50px;text-align:center;">Bulan<br>Nunggak</th>
+    <th style="width:90px;text-align:right;">Tunggak Pokok</th>
+    <th style="width:90px;text-align:right;">Tunggak Jasa</th>
+    <th style="width:90px;text-align:right;">Total Tunggakan</th>
+    <th style="width:55px;text-align:center;">Status</th>
+  </tr></thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td style="text-align:center;">{{ loop.index }}</td>
+      <td>{{ r.p.nasabah.nasabah_id }}</td>
+      <td>{{ r.p.nasabah.nama }}</td>
+      <td>{{ r.p.nasabah.kode_desa }}</td>
+      <td style="font-size:7.5pt;">{{ r.p.spk }}</td>
+      <td style="text-align:center;font-weight:bold;color:red;">{{ r.bulan_nunggak }}</td>
+      <td style="text-align:right;">{{ '{:,.0f}'.format(r.tunggak_pokok) }}</td>
+      <td style="text-align:right;">{{ '{:,.0f}'.format(r.tunggak_jasa) }}</td>
+      <td style="text-align:right;font-weight:bold;">{{ '{:,.0f}'.format(r.total_tunggak) }}</td>
+      <td style="text-align:center;font-size:7pt;">{{ r.kolek_label }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="10" style="text-align:center;font-style:italic;">Tidak ada tunggakan.</td></tr>
+    {% endfor %}
+    <tr style="font-weight:bold;background:#ddd;">
+      <td colspan="8" style="text-align:right;">TOTAL TUNGGAKAN</td>
+      <td style="text-align:right;">{{ '{:,.0f}'.format(total_tunggak) }}</td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+<div class="ttd-area" style="margin-top:28px;">
+  <div></div>
+  <div class="ttd-box">
+    <div>Ciomas, {{ now.strftime('%d %B %Y') }}</div><div>Direktur</div>
+    {% set qr = get_role_signature_qr('direktur') %}
+    {% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}
+    <div class="ttd-nama">________________________</div>
+  </div>
+</div>
+{% endblock %}

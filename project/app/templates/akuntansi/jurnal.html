@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Jurnal Umum{% endblock %}
+{% block page_title %}Jurnal Umum{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div><h1>Jurnal Umum</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0"><li class="breadcrumb-item active">Jurnal</li></ol></nav></div>
+  {% if current_user.role in ['admin','keuangan'] %}
+  <a href="{{ url_for('akuntansi.jurnal_tambah') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle-fill me-1"></i>Jurnal Baru</a>
+  {% endif %}
+</div>
+
+<div class="card mb-3"><div class="card-body py-3">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-3"><label class="form-label">Dari</label><input type="date" name="dari" class="form-control" value="{{ tgl_dari }}"></div>
+    <div class="col-md-3"><label class="form-label">Sampai</label><input type="date" name="sampai" class="form-control" value="{{ tgl_sampai }}"></div>
+    <div class="col-md-3"><label class="form-label">Tipe</label>
+      <select name="tipe" class="form-select">
+        <option value="">Semua</option>
+        <option value="manual" {% if tipe_filter=='manual' %}selected{% endif %}>Manual</option>
+        <option value="pembelian_aset" {% if tipe_filter=='pembelian_aset' %}selected{% endif %}>Pembelian Aset</option>
+        <option value="penyusutan" {% if tipe_filter=='penyusutan' %}selected{% endif %}>Penyusutan</option>
+        <option value="pencairan" {% if tipe_filter=='pencairan' %}selected{% endif %}>Pencairan</option>
+        <option value="angsuran" {% if tipe_filter=='angsuran' %}selected{% endif %}>Angsuran</option>
+        <option value="tutup_buku" {% if tipe_filter=='tutup_buku' %}selected{% endif %}>Tutup Buku</option>
+      </select>
+    </div>
+    <div class="col-md-3"><button type="submit" class="btn btn-primary w-100">Filter</button></div>
+  </form>
+</div></div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="stat-card stat-blue stat-compact"><i class="bi bi-journal-text stat-icon"></i>
+    <div class="stat-label">Total Jurnal</div><div class="stat-value">{{ jurnal_list|length }}</div></div></div>
+  <div class="col-md-4"><div class="stat-card stat-green stat-compact"><i class="bi bi-arrow-up stat-icon"></i>
+    <div class="stat-label">Total Debit</div><div class="stat-value money-val" style="font-size:.85rem;">Rp {{ '{:,.0f}'.format(total_debit) }}</div></div></div>
+  <div class="col-md-4"><div class="stat-card stat-orange stat-compact"><i class="bi bi-arrow-down stat-icon"></i>
+    <div class="stat-label">Total Kredit</div><div class="stat-value money-val" style="font-size:.85rem;">Rp {{ '{:,.0f}'.format(total_kredit) }}</div></div></div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>No. Jurnal</th><th>Tanggal</th><th>Keterangan</th><th>Tipe</th><th>Referensi</th>
+        <th class="text-end">Debit</th><th class="text-end">Kredit</th><th></th></tr></thead>
+      <tbody>
+        {% for j in jurnal_list %}
+        <tr>
+          <td class="money" style="font-size:.79rem;">{{ j.no_jurnal }}</td>
+          <td>{{ j.tanggal.strftime('%d/%m/%Y') }}</td>
+          <td>{{ j.keterangan[:60] }}{% if j.keterangan|length > 60 %}...{% endif %}</td>
+          <td><span class="badge {% if j.tipe=='manual' %}bg-secondary{% elif j.tipe=='pembelian_aset' %}bg-info{% elif j.tipe=='penyusutan' %}bg-warning text-dark{% elif j.tipe=='pencairan' %}bg-danger{% elif j.tipe=='angsuran' %}bg-success{% elif j.tipe=='tutup_buku' %}bg-dark{% else %}bg-primary{% endif %}">{{ j.tipe|replace('_',' ')|title }}</span></td>
+          <td class="money" style="font-size:.78rem;">{{ j.referensi or '-' }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(j.total_debit) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(j.total_kredit) }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('akuntansi.jurnal_detail', id=j.id) }}" class="btn btn-xs btn-outline-primary" style="padding:2px 7px;font-size:.72rem;"><i class="bi bi-eye"></i></a>
+              {% if current_user.is_admin() and j.tipe == 'manual' %}
+              <form method="POST" action="{{ url_for('akuntansi.jurnal_hapus', id=j.id) }}" data-confirm="Hapus jurnal ini?">
+                <button class="btn btn-xs btn-outline-danger" style="padding:2px 7px;font-size:.72rem;"><i class="bi bi-trash"></i></button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-4">Belum ada jurnal pada periode ini</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if jurnal_list %}
+      <tfoot class="table-light fw-bold">
+        <tr><td colspan="5">TOTAL ({{ jurnal_list|length }})</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(total_debit) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(total_kredit) }}</td><td></td></tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endblock %}

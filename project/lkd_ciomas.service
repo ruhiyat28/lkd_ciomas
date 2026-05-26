@@ -1,0 +1,15 @@
+[Unit]
+Description=LKD Ciomas - Sistem Dana Bergulir
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/lkd_ciomas
+Environment="PATH=/opt/lkd_ciomas/venv/bin"
+ExecStart=/opt/lkd_ciomas/venv/bin/gunicorn -c gunicorn.conf.py run:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

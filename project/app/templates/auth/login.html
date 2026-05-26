@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — BUM DESA BERSAMA UPK CIOMAS LKD</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── Full-screen background ── */
+    .bg-layer {
+      position: fixed; inset: 0; z-index: 0;
+      background: url("{{ url_for('static', filename='img/bg-login.png') }}") center/cover no-repeat;
+    }
+    .bg-overlay {
+      position: fixed; inset: 0; z-index: 1;
+      background: linear-gradient(135deg, rgba(15,23,42,.72) 0%, rgba(26,86,219,.45) 100%);
+      backdrop-filter: blur(2px);
+    }
+
+    /* ── Glassmorphism card ── */
+    .login-wrapper {
+      position: relative; z-index: 10;
+      width: 100%; max-width: 440px;
+      margin: 20px;
+    }
+    .login-card {
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(20px) saturate(1.6);
+      border: 1px solid rgba(255,255,255,.45);
+      border-radius: 24px;
+      padding: 44px 40px 36px;
+      box-shadow: 0 25px 60px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.1) inset;
+      animation: cardIn .5s cubic-bezier(.22,1,.36,1) forwards;
+      opacity: 0; transform: translateY(24px);
+    }
+    @keyframes cardIn { to { opacity:1; transform:translateY(0); } }
+
+    .login-logo {
+      width: 72px; height: 72px; object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(26,86,219,.25));
+      animation: logoPulse 3s ease-in-out infinite;
+    }
+    @keyframes logoPulse {
+      0%,100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+    .login-title { font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 14px 0 2px; }
+    .login-sub { font-size: .8rem; color: #64748b; margin-bottom: 28px; line-height: 1.5; }
+
+    .form-label { font-size: .78rem; font-weight: 500; color: #94a3b8; letter-spacing: 0.01em; margin-bottom: 3px; }
+    .form-control::placeholder { color: #cbd5e1; opacity: 1; }
+    .form-control {
+      border-radius: 10px; padding: 11px 14px; font-size: .88rem;
+      border: 1.5px solid #e2e8f0; background: rgba(248,250,252,.85);
+      transition: all .2s;
+    }
+    .form-control:focus {
+      border-color: #1a56db;
+      box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+      background: #fff;
+    }
+
+    .btn-login {
+      background: linear-gradient(135deg, #1a56db 0%, #0ea5e9 100%);
+      color: #fff; border: none; width: 100%; padding: 12px;
+      border-radius: 12px; font-weight: 700; font-size: .93rem;
+      transition: all .2s; box-shadow: 0 4px 14px rgba(26,86,219,.3);
+    }
+    .btn-login:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(26,86,219,.4);
+      background: linear-gradient(135deg, #1044b4 0%, #0284c7 100%);
+      color: #fff;
+    }
+    .btn-login:active { transform: translateY(0); }
+
+    .alert { border-radius: 10px; font-size: .83rem; }
+    .divider { height: 1px; background: linear-gradient(90deg, transparent, #cbd5e1, transparent); margin: 22px 0; }
+    .lembaga-info { font-size: .72rem; color: #94a3b8; text-align: center; line-height: 1.6; }
+
+    .input-group-text {
+      background: rgba(248,250,252,.85); border: 1.5px solid #e2e8f0;
+      border-radius: 0 10px 10px 0; cursor: pointer; transition: background .15s;
+    }
+    .input-group-text:hover { background: #e2e8f0; }
+
+    /* ── Register link ── */
+    .register-section {
+      text-align: center; margin-top: 18px;
+    }
+    .register-section .label { font-size: .8rem; color: #64748b; }
+    .btn-register {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: transparent; border: 1.5px solid #1a56db;
+      color: #1a56db; padding: 9px 20px; border-radius: 10px;
+      font-weight: 700; font-size: .85rem; text-decoration: none;
+      transition: all .2s; margin-top: 8px;
+    }
+    .btn-register:hover {
+      background: #1a56db; color: #fff;
+      box-shadow: 0 4px 14px rgba(26,86,219,.25);
+    }
+
+    /* Floating particles (decorative) */
+    .particle {
+      position: fixed; border-radius: 50%; z-index: 2;
+      background: rgba(255,255,255,.08);
+      animation: float linear infinite;
+    }
+    @keyframes float {
+      0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* ── Mobile responsive ── */
+    @media (max-width: 576px) {
+      .login-card {
+        padding: 28px 20px 24px;
+        border-radius: 16px;
+      }
+      .login-title { font-size: 1.15rem; }
+      .login-sub { font-size: 0.72rem; }
+      .login-logo { width: 56px; height: 56px; }
+      .login-wrapper { margin: 12px; max-width: 100%; }
+      .form-control { padding: 10px 12px; font-size: 0.85rem; }
+      .btn-login { padding: 11px 12px; font-size: 0.88rem; }
+      .alert { font-size: 0.78rem; padding: 10px 12px; }
+      .lembaga-info { font-size: 0.68rem; }
+      .btn-register { padding: 8px 16px; font-size: 0.8rem; min-height: 44px; }
+      .register-section { margin-top: 14px; }
+      .divider { margin: 16px 0; }
+    }
+    #toast-container-login {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+      max-width: 420px;
+      width: 100%;
+    }
+    #toast-container-login .notif {
+      pointer-events: auto;
+      margin-bottom: 0;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    }
+    .swal-popup-top-right {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    }
+    .swal-title { font-size: 1rem; font-weight: 700; }
+    .swal-confirm-btn { font-size: 0.82rem; font-weight: 600; border-radius: 8px; padding: 8px 20px; }
+    .swal-cancel-btn { font-size: 0.82rem; font-weight: 500; border-radius: 8px; padding: 8px 20px; }
+    .swal-toast-top-right { font-family: 'Plus Jakarta Sans', sans-serif; border-radius: 12px; }
+  </style>
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg-layer"></div>
+<div class="bg-overlay"></div>
+
+<!-- Floating particles -->
+<div class="particle" style="width:6px;height:6px;left:15%;animation-duration:18s;animation-delay:0s;"></div>
+<div class="particle" style="width:4px;height:4px;left:35%;animation-duration:22s;animation-delay:3s;"></div>
+<div class="particle" style="width:8px;height:8px;left:55%;animation-duration:16s;animation-delay:1s;"></div>
+<div class="particle" style="width:5px;height:5px;left:75%;animation-duration:20s;animation-delay:5s;"></div>
+<div class="particle" style="width:3px;height:3px;left:90%;animation-duration:24s;animation-delay:2s;"></div>
+
+<!-- Login Card -->
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="text-center">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" class="login-logo" alt="Logo">
+      <div class="login-title">BUM DESA BERSAMA</div>
+      <div class="login-sub">UPK CIOMAS LKD<br>Sistem Pengelolaan Dana Bergulir</div>
+    </div>
+
+    <div id="toast-container-login">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat, msg in messages %}
+          <div class="notif notif-{{ cat }}">
+            <i class="bi bi-{% if cat=='success' %}check-circle{% elif cat=='danger' %}x-circle{% elif cat=='warning' %}exclamation-triangle{% else %}info-circle{% endif %}-fill notif-icon"></i>
+            <div class="notif-body">{{ msg }}</div>
+            <button type="button" class="notif-close" onclick="this.parentElement.remove()">&times;</button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    </div>
+
+    <form method="POST">
+      <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input type="text" name="username" class="form-control" placeholder="Masukkan username" required autofocus>
+      </div>
+      <div class="mb-4">
+        <label class="form-label">Password</label>
+        <div class="input-group">
+          <input type="password" name="password" class="form-control" id="pwInput" placeholder="Masukkan password" required style="border-radius:10px 0 0 10px; border-right:none;">
+          <span class="input-group-text" onclick="togglePw()"><i class="bi bi-eye" id="eyeIcon"></i></span>
+        </div>
+      </div>
+      <button type="submit" class="btn-login mb-2">
+        <i class="bi bi-box-arrow-in-right me-2"></i> Masuk
+      </button>
+    </form>
+
+    <div class="divider"></div>
+
+    <div class="register-section">
+      <div class="label">Belum terdaftar sebagai nasabah?</div>
+      <a href="{{ url_for('auth.register') }}" class="btn-register">
+        <i class="bi bi-person-plus-fill"></i> Daftar Sekarang
+      </a>
+    </div>
+
+    <div class="divider"></div>
+    <div class="lembaga-info">
+      Jl. Raya Ciomas Km.1 Serang 42164<br>
+      Telp: (0254)7823984 | WA: 081324771060
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function togglePw() {
+  const i = document.getElementById('pwInput');
+  const e = document.getElementById('eyeIcon');
+  i.type = i.type === 'password' ? 'text' : 'password';
+  e.className = i.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+}
+
+/* ── SweetAlert2 Konfirmasi via data-confirm ── */
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-confirm]');
+  if (!btn) return;
+  e.preventDefault();
+  var pesan = btn.getAttribute('data-confirm');
+  var form = btn.closest('form');
+  Swal.fire({
+    title: 'Konfirmasi',
+    text: pesan,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, lanjutkan',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    reverseButtons: true,
+        position: 'center',
+        customClass: { popup: 'swal-popup-top-right', title: 'swal-title', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' }
+      }).then(function(result) {
+        if (result.isConfirmed && form) form.submit();
+      });
+    });
+
+    document.addEventListener('submit', function(e) {
+      var form = e.target;
+      if (!form.hasAttribute('data-confirm')) return;
+      e.preventDefault();
+      var pesan = form.getAttribute('data-confirm');
+      Swal.fire({
+        title: 'Konfirmasi',
+        text: pesan,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, lanjutkan',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+        position: 'center',
+        customClass: { popup: 'swal-popup-top-right', title: 'swal-title', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' }
+  }).then(function(result) {
+    if (result.isConfirmed) form.submit();
+  });
+});
+
+function notif(pesan, tipe) {
+  Swal.fire({
+    text: pesan,
+    icon: tipe || 'warning',
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+    customClass: { popup: 'swal-toast-top-right' }
+  });
+}
+</script>
+</body>
+</html>

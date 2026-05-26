@@ -1,0 +1,87 @@
+{% extends 'print/base_print.html' %}
+{% block title %}Surat Tagihan - {{ p.nasabah.nama }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tagihan-container { max-width: 800px; margin: auto; padding: 20px; color: #1a202c; }
+    .header-info { margin-bottom: 30px; }
+    .info-table td { padding: 4px 8px; vertical-align: top; }
+    .due-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    .due-table th, .due-table td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
+    .due-table th { background: #f8fafc; font-weight: 700; font-size: 0.85rem; }
+    .closing-msg { 
+        margin-top: 40px; 
+        padding: 20px; 
+        background: #fdf2f2; 
+        border-radius: 12px; 
+        font-style: italic; 
+        color: #991b1b;
+        line-height: 1.6;
+    }
+    .footer-sign { margin-top: 50px; display: flex; justify-content: flex-end; }
+    .sign-box { text-align: center; width: 250px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tagihan-container">
+    <div class="text-center mb-4">
+        <h2 class="fw-800 mb-1">SURAT PEMBERITAHUAN ANGSURAN</h2>
+        <div class="text-muted small">Nomor: {{ p.spk }}/TAG/{{ today.strftime('%m/%Y') }}</div>
+    </div>
+
+    <div class="header-info">
+        <table class="info-table">
+            <tr><td width="140">Nama Nasabah</td><td>:</td><td><strong>{{ p.nasabah.nama }}</strong></td></tr>
+            <tr><td>ID Nasabah</td><td>:</td><td>{{ p.nasabah.nasabah_id }}</td></tr>
+            <tr><td>Alamat</td><td>:</td><td>{{ p.nasabah.alamat }}</td></tr>
+            <tr><td>Nomor HP</td><td>:</td><td>{{ p.nasabah.no_hp }}</td></tr>
+        </table>
+    </div>
+
+    <p>Melalui surat ini, kami sampaikan informasi mengenai rincian angsuran pinjaman Bapak/Ibu yang telah jatuh tempo per tanggal <strong>{{ today.strftime('%d %B %Y') }}</strong>:</p>
+
+    <table class="due-table">
+        <thead>
+            <tr>
+                <th width="50">Ke</th>
+                <th>Jatuh Tempo</th>
+                <th class="text-end">Pokok</th>
+                <th class="text-end">Jasa</th>
+                <th class="text-end">Total Tagihan</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in unpaid_items %}
+            <tr>
+                <td>{{ item.ke }}</td>
+                <td>{{ item.tanggal.strftime('%d/%m/%Y') }}</td>
+                <td class="text-end">Rp {{ '{:,.0f}'.format(item.pokok) }}</td>
+                <td class="text-end">Rp {{ '{:,.0f}'.format(item.jasa) }}</td>
+                <td class="text-end fw-bold">Rp {{ '{:,.0f}'.format(item.total) }}</td>
+            </tr>
+            {% endfor %}
+            <tr style="background: #f1f5f9;">
+                <td colspan="4" class="text-end fw-800">TOTAL TUNGGAKAN</td>
+                <td class="text-end fw-800 text-danger" style="font-size: 1.1rem;">Rp {{ '{:,.0f}'.format(total_due) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="closing-msg">
+        "Dana bergulir ini adalah amanah bersama yang kita kelola dengan semangat gotong royong. 
+        Kelancaran angsuran Bapak/Ibu adalah napas bagi dana ini agar tetap lestari dan terus memberi manfaat."
+    </div>
+
+    <p class="mt-4">Demikian informasi ini kami sampaikan. Atas perhatian dan kerja samanya, kami ucapkan terima kasih.</p>
+
+    <div class="footer-sign">
+        <div class="sign-box">
+            <p>Ciomas, {{ today.strftime('%d %B %Y') }}</p>
+            <p class="mb-5">Pengelola LKD Ciomas</p>
+            <br><br>
+            <p class="fw-bold text-decoration-underline">( ____________________ )</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

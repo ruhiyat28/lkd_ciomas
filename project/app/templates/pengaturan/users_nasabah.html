@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% block title %}Manajemen Akun Nasabah{% endblock %}
+{% block page_title %}Manajemen Akun Nasabah{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+    <div>
+        <h1>Manajemen Akun Nasabah</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{{ url_for('pengaturan.index') }}">Pengaturan</a></li>
+                <li class="breadcrumb-item active">User Nasabah</li>
+            </ol>
+        </nav>
+    </div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalBuatAkun">
+        <i class="bi bi-person-plus-fill me-1"></i>Buat Akun Baru
+    </button>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-people-fill me-2 text-primary"></i>Nasabah dengan Akses Login
+        </h5>
+        <span class="badge bg-primary rounded-pill">{{ users_nasabah|length }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Nasabah</th>
+                    <th>Username</th>
+                    <th>Status</th>
+                    <th class="text-end">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users_nasabah %}
+                {% set n = u.nasabah %}
+                {% if n %}
+                <tr>
+                    <td>
+                        <div class="fw-bold">{{ n.nama }}</div>
+                        <div class="small text-muted">{{ n.nasabah_id }} · {{ n.nama_desa }}</div>
+                    </td>
+                    <td><code>{{ u.username }}</code></td>
+                    <td>
+                        {% if u.aktif %}
+                            <span class="badge bg-success">Aktif</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Nonaktif</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex gap-1 justify-content-end flex-wrap">
+                            {# Reset Password #}
+                            <form action="{{ url_for('pengaturan.reset_password_nasabah', user_id=u.id) }}" method="POST"
+                                  data-confirm="Reset password {{ n.nama }}? Password baru akan dibuat secara acak.">
+                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Reset Password">
+                                    <i class="bi bi-key me-1"></i><span class="d-none d-md-inline">Reset PW</span>
+                                </button>
+                            </form>
+                            {# Toggle Aktif #}
+                            <form action="{{ url_for('pengaturan.toggle_akun_nasabah', user_id=u.id) }}" method="POST"
+                                  data-confirm="{{ 'Nonaktifkan' if u.aktif else 'Aktifkan' }} akun {{ n.nama }}?">
+                                <button type="submit" class="btn btn-sm {{ 'btn-outline-secondary' if u.aktif else 'btn-outline-success' }}"
+                                        title="{{ 'Nonaktifkan' if u.aktif else 'Aktifkan' }}">
+                                    <i class="bi bi-{{ 'pause-circle' if u.aktif else 'play-circle' }} me-1"></i>
+                                    <span class="d-none d-md-inline">{{ 'Nonaktifkan' if u.aktif else 'Aktifkan' }}</span>
+                                </button>
+                            </form>
+                            {# Hapus Akun #}
+                            <form action="{{ url_for('pengaturan.hapus_akun_nasabah', user_id=u.id) }}" method="POST"
+                                  data-confirm="Hapus akun login {{ n.nama }}? Data nasabah tidak ikut terhapus.">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus Akun">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center py-5 text-muted">
+                        <i class="bi bi-person-x fs-1 d-block mb-2"></i>
+                        Belum ada nasabah yang memiliki akun login.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# ── Modal Buat Akun ── #}
+<div class="modal fade" id="modalBuatAkun" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg">
+            <form action="{{ url_for('pengaturan.buat_akun_nasabah') }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Buat Akun Login Nasabah</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Pilih nasabah aktif yang akan diberikan akses login ke sistem LKD Ciomas.
+                    </p>
+                    <div class="mb-3 position-relative">
+                        <label class="form-label">Cari Nasabah</label>
+                        <input type="hidden" name="nasabah_id" id="nasabah_id" required>
+                        <input type="text" id="searchNasabah" class="form-control" autocomplete="off" placeholder="Ketik nama nasabah (min 2 huruf)...">
+                        <div id="nasabah-results" class="dropdown-menu w-100 shadow-sm mt-1" style="display: none; max-height: 250px; overflow-y: auto; position: absolute; top: 100%; left: 0; z-index: 1050;">
+                        </div>
+                        <div id="selectedNasabah" class="mt-2 d-none alert alert-success py-2 px-3 small mb-0">
+                            <strong>Terpilih:</strong> <span id="selectedName"></span>
+                            <button type="button" class="btn-close float-end" style="font-size:0.6rem; margin-top:4px;" onclick="resetSelection()"></button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password Akun</label>
+                        <div class="input-group">
+                            <input type="password" name="password" id="passwordInput" class="form-control" placeholder="Masukkan password bebas..." required minlength="6">
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()">
+                                <i class="bi bi-eye" id="eyeIcon"></i>
+                            </button>
+                        </div>
+                        <div class="form-text small text-primary">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Kini Anda dapat menentukan password secara bebas untuk nasabah.
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    function togglePassword() {
+                        const input = document.getElementById('passwordInput');
+                        const icon = document.getElementById('eyeIcon');
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            icon.classList.replace('bi-eye', 'bi-eye-slash');
+                        } else {
+                            input.type = 'password';
+                            icon.classList.replace('bi-eye-slash', 'bi-eye');
+                        }
+                    }
+                </script>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="btnSubmit" disabled>
+                        <i class="bi bi-person-plus me-1"></i>Buat Akun
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const searchInput = document.getElementById('searchNasabah');
+const resultsBox = document.getElementById('nasabah-results');
+const hiddenInput = document.getElementById('nasabah_id');
+const selectedBox = document.getElementById('selectedNasabah');
+const selectedName = document.getElementById('selectedName');
+const btnSubmit = document.getElementById('btnSubmit');
+
+let debounceTimer;
+
+function resetSelection() {
+    hiddenInput.value = '';
+    searchInput.value = '';
+    searchInput.disabled = false;
+    selectedBox.classList.add('d-none');
+    btnSubmit.disabled = true;
+    searchInput.focus();
+}
+
+searchInput.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    const q = this.value.trim();
+    
+    if (q.length < 2) {
+        resultsBox.style.display = 'none';
+        return;
+    }
+    
+    debounceTimer = setTimeout(() => {
+        fetch(`{{ url_for('pengaturan.search_nasabah_no_account') }}?q=${encodeURIComponent(q)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.results && data.results.length > 0) {
+                    resultsBox.innerHTML = '';
+                    data.results.forEach(item => {
+                        const a = document.createElement('a');
+                        a.href = '#';
+                        a.className = 'dropdown-item py-2 border-bottom';
+                        a.innerHTML = `
+                            <div class="fw-bold" style="font-size:0.85rem;">${item.nama}</div>
+                            <div class="text-muted" style="font-size:0.75rem;">${item.nasabah_id} &middot; ${item.desa}</div>
+                        `;
+                        a.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            hiddenInput.value = item.id;
+                            selectedName.textContent = `${item.nama} (${item.nasabah_id})`;
+                            selectedBox.classList.remove('d-none');
+                            searchInput.disabled = true;
+                            resultsBox.style.display = 'none';
+                            btnSubmit.disabled = false;
+                        });
+                        resultsBox.appendChild(a);
+                    });
+                    resultsBox.style.display = 'block';
+                } else {
+                    resultsBox.innerHTML = '<div class="px-3 py-2 text-muted small">Tidak ditemukan nasabah yang cocok atau semua sudah punya akun.</div>';
+                    resultsBox.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                resultsBox.style.display = 'none';
+            });
+    }, 300);
+});
+
+document.addEventListener('click', function(e) {
+    if (!searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
+        resultsBox.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

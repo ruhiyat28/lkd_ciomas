@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block title %}Import & Export{% endblock %}
+{% block page_title %}Import & Export Data{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Import &amp; Export Data</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0"><li class="breadcrumb-item active">Import &amp; Export</li></ol></nav>
+</div>
+
+{% macro import_form(title, icon, color, action_url, template_url, hint) %}
+<div class="mb-4">
+  <h6 class="fw-bold mb-2"><i class="bi {{ icon }} text-{{ color }} me-2"></i>{{ title }}</h6>
+  <div class="row g-2 align-items-center">
+    <div class="col-md-6">
+      <form method="POST" action="{{ action_url }}" enctype="multipart/form-data">
+        <input type="file" name="file" class="form-control form-control-sm" accept=".xlsx,.csv" required>
+        <div class="d-flex gap-2 mt-2">
+          <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-upload me-1"></i>Import</button>
+          <a href="{{ template_url }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-download me-1"></i>Template</a>
+        </div>
+      </form>
+    </div>
+    <div class="col-md-6 text-muted" style="font-size:.78rem;">{{ hint }}</div>
+  </div>
+</div>
+{% endmacro %}
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-upload me-2 text-success"></i>Import Data</div>
+      <div class="card-body">
+
+        {{ import_form(
+          '1. Nasabah Perorangan', 'bi-person-fill', 'primary',
+          url_for('import_export.import_nasabah'),
+          url_for('import_export.download_template', tipe='nasabah'),
+          'Kolom: nasabah_id*, kode_desa, nama, nik, tempat_lahir, tanggal_lahir, jenis_kelamin, alamat, no_hp, pekerjaan'
+        ) }}
+        <hr>
+
+        {# Nasabah Kelompok — route belum ada, pakai import_nasabah dengan type marker #}
+        <div class="mb-4">
+          <h6 class="fw-bold mb-2"><i class="bi bi-people-fill text-success me-2"></i>2. Nasabah Kelompok</h6>
+          <div class="row g-2 align-items-center">
+            <div class="col-md-6">
+              <form method="POST" action="{{ url_for('import_export.import_nasabah_kelompok') }}" enctype="multipart/form-data">
+                <input type="file" name="file" class="form-control form-control-sm" accept=".xlsx,.csv" required>
+                <div class="d-flex gap-2 mt-2">
+                  <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-upload me-1"></i>Import</button>
+                  <a href="{{ url_for('import_export.download_template', tipe='nasabah_kelompok') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-download me-1"></i>Template</a>
+                </div>
+              </form>
+            </div>
+            <div class="col-md-6 text-muted" style="font-size:.78rem;">Kolom: nasabah_id*, kode_desa, nama_kelompok, no_hp, alamat</div>
+          </div>
+        </div>
+        <hr>
+
+        {# Anggota Kelompok #}
+        <div class="mb-4">
+          <h6 class="fw-bold mb-2"><i class="bi bi-person-lines-fill text-info me-2"></i>3. Anggota Kelompok</h6>
+          <div class="row g-2 align-items-center">
+            <div class="col-md-6">
+              <form method="POST" action="{{ url_for('import_export.import_anggota') }}" enctype="multipart/form-data">
+                <input type="file" name="file" class="form-control form-control-sm" accept=".xlsx,.csv" required>
+                <div class="d-flex gap-2 mt-2">
+                  <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-upload me-1"></i>Import</button>
+                  <a href="{{ url_for('import_export.download_template', tipe='anggota_kelompok') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-download me-1"></i>Template</a>
+                </div>
+              </form>
+            </div>
+            <div class="col-md-6 text-muted" style="font-size:.78rem;">Kolom: nasabah_id_kelompok, urut*, nama, nik*, jabatan, no_hp*, alamat*</div>
+          </div>
+        </div>
+        <hr>
+
+        {{ import_form(
+          '4. Pinjaman Perorangan / Mandiri', 'bi-cash-stack', 'warning',
+          url_for('import_export.import_pinjaman'),
+          url_for('import_export.download_template', tipe='pinjaman'),
+          'Kolom: nasabah_id, spk*, jumlah_pinjaman, jasa_persen, tenor, tanggal_cair, status'
+        ) }}
+        <hr>
+
+        {# Pinjaman Kelompok #}
+        <div class="mb-4">
+          <h6 class="fw-bold mb-2"><i class="bi bi-people-fill text-primary me-2"></i>5. Pinjaman Kelompok (SPP)</h6>
+          <div class="row g-2 align-items-center">
+            <div class="col-md-6">
+              <form method="POST" action="{{ url_for('import_export.import_pinjaman_kelompok') }}" enctype="multipart/form-data">
+                <input type="file" name="file" class="form-control form-control-sm" accept=".xlsx" required>
+                <div class="d-flex gap-2 mt-2">
+                  <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-upload me-1"></i>Import</button>
+                  <a href="{{ url_for('import_export.download_template', tipe='pinjaman_kelompok') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-download me-1"></i>Template</a>
+                </div>
+              </form>
+            </div>
+            <div class="col-md-6 text-muted" style="font-size:.78rem;">Sheet 1: header pinjaman kelompok. Sheet 2: rincian per anggota (spk, urut, nama_anggota, jumlah)</div>
+          </div>
+        </div>
+        <hr>
+
+        {{ import_form(
+          '6. Pembayaran / Angsuran', 'bi-wallet2', 'danger',
+          url_for('import_export.import_pembayaran'),
+          url_for('import_export.download_template', tipe='pembayaran'),
+          'Kolom: spk, tanggal_bayar, jumlah_bayar, keterangan | * = opsional'
+        ) }}
+        <hr>
+
+        {{ import_form(
+          '7. Transaksi Tabungan', 'bi-piggy-bank-fill', 'info',
+          url_for('import_export.import_tabungan'),
+          url_for('import_export.download_template', tipe='tabungan'),
+          'Kolom: nasabah_id/no_rekening, tanggal, jenis(setor/tarik), kategori(pokok/wajib/sukarela), jumlah'
+        ) }}
+
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-download me-2 text-primary"></i>Export Data</div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('import_export.export_nasabah') }}" class="btn btn-outline-primary"><i class="bi bi-person-fill me-2"></i>Export Nasabah (Excel)</a>
+          <a href="{{ url_for('import_export.export_pinjaman') }}" class="btn btn-outline-primary"><i class="bi bi-cash-stack me-2"></i>Export Pinjaman (Excel)</a>
+          <a href="{{ url_for('import_export.export_pembayaran') }}" class="btn btn-outline-primary"><i class="bi bi-wallet2 me-2"></i>Export Pembayaran (Excel)</a>
+          <a href="{{ url_for('import_export.export_kolektibilitas') }}" class="btn btn-outline-warning"><i class="bi bi-bar-chart-fill me-2"></i>Export Kolektibilitas (Excel)</a>
+          <a href="{{ url_for('import_export.export_tabungan') }}" class="btn btn-outline-info"><i class="bi bi-piggy-bank-fill me-2"></i>Export Tabungan (Excel)</a>
+          <hr>
+          <a href="{{ url_for('import_export.export_semua') }}" class="btn btn-success"><i class="bi bi-file-zip-fill me-2"></i>Export Semua (ZIP)</a>
+          {% if current_user.role == 'admin' %}
+          <hr>
+          <a href="{{ url_for('import_export.bersihkan_data') }}" class="btn btn-outline-danger"><i class="bi bi-trash3-fill me-2"></i>Bersihkan Data (Admin Only)</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

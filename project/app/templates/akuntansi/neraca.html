@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Neraca / Laporan Posisi Keuangan{% endblock %}
+{% block page_title %}Neraca / Laporan Posisi Keuangan{% endblock %}
+{% block content %}
+
+<div class="page-header d-flex justify-content-between align-items-start"><h1>Neraca (Laporan Posisi Keuangan)</h1>
+  <a href="?sampai={{ d_sampai_str }}&cetak=1" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-printer me-1"></i>Cetak</a></div>
+<div class="card mb-3"><div class="card-body py-3">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-3"><label class="form-label">Per Tanggal</label><input type="date" name="sampai" class="form-control" value="{{ d_sampai_str }}"></div>
+    <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Tampilkan</button></div>
+  </form>
+</div></div>
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header fw-bold text-primary border-bottom border-primary border-2">ASET</div>
+      <div class="table-responsive">
+        <table class="table mb-0" style="font-size:.84rem;">
+          <tbody>
+            {% for r in aset_rows %}<tr><td class="money">{{ r.akun.kode }}</td><td>{{ r.akun.nama }}</td><td class="text-end money">{{ "{:,.0f}".format(r.saldo) }}</td></tr>{% endfor %}
+          </tbody>
+          <tfoot class="bg-light fw-bold text-primary"><tr><td colspan="2" class="text-end">Total Aset</td><td class="text-end money">{{ "{:,.0f}".format(tot_aset) }}</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card mb-3">
+      <div class="card-header fw-bold text-warning border-bottom border-warning border-2">LIABILITAS / KEWAJIBAN</div>
+      <div class="table-responsive">
+        <table class="table mb-0" style="font-size:.84rem;">
+          <tbody>
+            {% for r in kwjb_rows %}<tr><td class="money">{{ r.akun.kode }}</td><td>{{ r.akun.nama }}</td><td class="text-end money">{{ "{:,.0f}".format(r.saldo) }}</td></tr>{% endfor %}
+          </tbody>
+          <tfoot class="bg-light fw-bold text-warning"><tr><td colspan="2" class="text-end">Total Liabilitas</td><td class="text-end money">{{ "{:,.0f}".format(tot_kwjb) }}</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header fw-bold text-success border-bottom border-success border-2">EKUITAS</div>
+      <div class="table-responsive">
+        <table class="table mb-0" style="font-size:.84rem;">
+          <tbody>
+            {% for r in ekuitas_rows %}<tr><td class="money">{{ r.akun.kode }}</td><td>{{ r.akun.nama }}</td><td class="text-end money">{{ "{:,.0f}".format(r.saldo) }}</td></tr>{% endfor %}
+            <tr class="table-light"><td colspan="2">Laba/Rugi Berjalan</td><td class="text-end money {{ "text-success" if laba_berjalan>=0 else "text-danger" }}">{{ "{:,.0f}".format(laba_berjalan) }}</td></tr>
+          </tbody>
+          <tfoot class="bg-light fw-bold text-success"><tr><td colspan="2" class="text-end">Total Ekuitas</td><td class="text-end money">{{ "{:,.0f}".format(tot_ekuitas_net) }}</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+    <div class="card mt-2"><div class="card-body py-2 d-flex justify-content-between fw-bold" style="font-size:.85rem;">
+      <span>Total Liabilitas + Ekuitas</span>
+      <span class="money {{ "text-success" if (tot_kwjb+tot_ekuitas_net)==tot_aset else "text-danger" }}">Rp {{ "{:,.0f}".format(tot_kwjb + tot_ekuitas_net) }}</span>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

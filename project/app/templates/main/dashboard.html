@@ -1,0 +1,1245 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root {
+    --dash-primary: #2563eb;
+    --dash-primary-light: #3b82f6;
+    --dash-primary-bg: #eff6ff;
+    --dash-slate-50: #f8fafc;
+    --dash-slate-100: #f1f5f9;
+    --dash-slate-200: #e2e8f0;
+    --dash-slate-300: #cbd5e1;
+    --dash-slate-400: #94a3b8;
+    --dash-slate-500: #64748b;
+    --dash-slate-600: #475569;
+    --dash-slate-700: #334155;
+    --dash-slate-800: #1e293b;
+    --dash-slate-900: #0f172a;
+    --dash-emerald: #10b981;
+    --dash-emerald-bg: #ecfdf5;
+    --dash-amber: #f59e0b;
+    --dash-amber-bg: #fffbeb;
+    --dash-red: #ef4444;
+    --dash-red-bg: #fef2f2;
+    --dash-violet: #8b5cf6;
+    --dash-violet-bg: #f5f3ff;
+    --dash-cyan: #06b6d4;
+    --dash-cyan-bg: #ecfeff;
+    --dash-card-shadow: 0 8px 32px rgba(15,23,42,0.07), 0 2px 8px rgba(15,23,42,0.04);
+    --dash-card-hover-shadow: 0 12px 40px rgba(15,23,42,0.1), 0 4px 12px rgba(15,23,42,0.06);
+  }
+
+  /* ── Page header ── */
+  .dash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .dash-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--dash-slate-900);
+    margin: 0;
+    letter-spacing: -0.025em;
+  }
+  .dash-header .subtitle {
+    font-size: 0.875rem;
+    color: var(--dash-slate-500);
+    margin-top: 2px;
+  }
+  .dash-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dash-filter select {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border: 1px solid var(--dash-slate-200);
+    border-radius: 12px;
+    padding: 8px 14px;
+    background: #fff;
+    color: var(--dash-slate-700);
+    min-width: 110px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .dash-filter select:focus {
+    outline: none;
+    border-color: var(--dash-primary-light);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+  }
+  .dash-filter-btn {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    padding: 8px 18px;
+    background: var(--dash-primary);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .dash-filter-btn:hover {
+    background: var(--dash-primary-light);
+  }
+
+  /* ── Quick actions (bubble pills) ── */
+  .dash-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+    padding: 16px 20px;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: var(--dash-card-shadow);
+    border: none;
+  }
+  .dash-actions-label {
+    flex: 0 0 100%;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--dash-slate-400);
+    margin-bottom: 2px;
+  }
+  .dash-action-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    border-radius: 99px;
+    text-decoration: none;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .dash-action-link i {
+    font-size: 0.875rem;
+  }
+  .dash-action-link.primary { background: var(--dash-primary-bg); color: var(--dash-primary); }
+  .dash-action-link.primary:hover { background: #dbeafe; }
+  .dash-action-link.success { background: var(--dash-emerald-bg); color: var(--dash-emerald); }
+  .dash-action-link.success:hover { background: #d1fae5; }
+  .dash-action-link.warning { background: var(--dash-amber-bg); color: #b45309; }
+  .dash-action-link.warning:hover { background: #fef3c7; }
+  .dash-action-link.danger { background: var(--dash-red-bg); color: var(--dash-red); }
+  .dash-action-link.danger:hover { background: #fee2e2; }
+  .dash-action-link.info { background: var(--dash-cyan-bg); color: #0891b2; }
+  .dash-action-link.info:hover { background: #cffafe; }
+  .dash-action-link.violet { background: var(--dash-violet-bg); color: var(--dash-violet); }
+  .dash-action-link.violet:hover { background: #ede9fe; }
+  .dash-action-link.neutral { background: var(--dash-slate-100); color: var(--dash-slate-600); }
+  .dash-action-link.neutral:hover { background: var(--dash-slate-200); }
+
+  /* ── Metric cards (bubble) ── */
+  .metric-card {
+    background: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 22px;
+    box-shadow: var(--dash-card-shadow);
+    transition: box-shadow 0.25s, transform 0.25s;
+    height: 100%;
+  }
+  .metric-card:hover {
+    box-shadow: var(--dash-card-hover-shadow);
+    transform: translateY(-2px);
+  }
+  .metric-card .mc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .metric-card .mc-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+  .metric-card .mc-icon.blue { background: var(--dash-primary-bg); color: var(--dash-primary); }
+  .metric-card .mc-icon.green { background: var(--dash-emerald-bg); color: var(--dash-emerald); }
+  .metric-card .mc-icon.violet { background: var(--dash-violet-bg); color: var(--dash-violet); }
+  .metric-card .mc-icon.amber { background: var(--dash-amber-bg); color: var(--dash-amber); }
+  .metric-card .mc-icon.cyan { background: var(--dash-cyan-bg); color: var(--dash-cyan); }
+  .metric-card .mc-trend {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 99px;
+  }
+  .metric-card .mc-trend.up { background: var(--dash-emerald-bg); color: var(--dash-emerald); }
+  .metric-card .mc-trend.down { background: var(--dash-red-bg); color: var(--dash-red); }
+  .metric-card .mc-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--dash-slate-500);
+    margin-bottom: 4px;
+  }
+  .metric-card .mc-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--dash-slate-900);
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+  .metric-card .mc-value.mono {
+    font-family: var(--mono, 'DM Mono', monospace);
+    font-size: 1.5rem;
+  }
+  .metric-card .mc-footer {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--dash-slate-100);
+    display: flex;
+    gap: 20px;
+    font-size: 0.75rem;
+    color: var(--dash-slate-500);
+  }
+  .metric-card .mc-footer span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .metric-card .mc-footer strong {
+    color: var(--dash-slate-700);
+    font-weight: 600;
+  }
+
+  /* ── Gradient metric cards (bubble) ── */
+  .metric-gradient {
+    border-radius: 20px;
+    padding: 22px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    box-shadow: var(--dash-card-shadow);
+    transition: box-shadow 0.25s, transform 0.25s;
+    display: flex;
+    flex-direction: column;
+  }
+  .metric-gradient:hover {
+    box-shadow: var(--dash-card-hover-shadow);
+    transform: translateY(-2px);
+  }
+  .metric-gradient.bg-emerald { background: linear-gradient(135deg, #047857 0%, #10b981 100%); }
+  .metric-gradient.bg-cyan { background: linear-gradient(135deg, #0e7490 0%, #06b6d4 100%); }
+  .metric-gradient::before {
+    content: '';
+    position: absolute;
+    right: -30px;
+    top: -30px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    pointer-events: none;
+  }
+  .metric-gradient::after {
+    content: '';
+    position: absolute;
+    right: -10px;
+    bottom: -40px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    pointer-events: none;
+  }
+  .metric-gradient .mg-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    opacity: 0.85;
+    margin-bottom: 6px;
+    align-self: flex-start;
+    text-align: left;
+    position: relative;
+    z-index: 1;
+  }
+  .metric-gradient .mg-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    position: relative;
+    z-index: 1;
+  }
+  .metric-gradient .mg-value.mono {
+    font-family: var(--mono, 'DM Mono', monospace);
+  }
+  .metric-gradient .mg-sub {
+    margin-top: auto;
+    display: flex;
+    gap: 20px;
+    font-size: 0.75rem;
+    opacity: 0.85;
+    justify-content: flex-start;
+    text-align: left;
+    position: relative;
+    z-index: 1;
+  }
+  .metric-gradient .mg-sub div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+  }
+  .metric-gradient .mg-sub .label {
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .metric-gradient .mg-sub .val {
+    font-weight: 700;
+    font-family: var(--mono, 'DM Mono', monospace);
+    font-size: 0.8125rem;
+    text-align: left;
+  }
+
+  /* ── Kolektibilitas card (bubble) ── */
+  .kolek-card {
+    background: #fff;
+    border: none;
+    border-radius: 20px;
+    box-shadow: var(--dash-card-shadow);
+    height: 100%;
+    overflow: hidden;
+  }
+  .kolek-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--dash-slate-100);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .kolek-header h3 {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--dash-slate-800);
+    margin: 0;
+  }
+  .kolek-badge {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 99px;
+    background: var(--dash-red-bg);
+    color: var(--dash-red);
+  }
+  .kolek-body {
+    padding: 16px 22px 18px;
+  }
+  .kolek-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .kolek-row:last-child { margin-bottom: 0; }
+  .kolek-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .kolek-dot.k1 { background: var(--dash-emerald); }
+  .kolek-dot.k2 { background: var(--dash-cyan); }
+  .kolek-dot.k3 { background: var(--dash-amber); }
+  .kolek-dot.k4 { background: #f97316; }
+  .kolek-dot.k5 { background: var(--dash-red); }
+  .kolek-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--dash-slate-600);
+    width: 52px;
+    flex-shrink: 0;
+  }
+  .kolek-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: var(--dash-slate-100);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .kolek-bar {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.6s ease;
+  }
+  .kolek-bar.k1 { background: var(--dash-emerald); }
+  .kolek-bar.k2 { background: var(--dash-cyan); }
+  .kolek-bar.k3 { background: var(--dash-amber); }
+  .kolek-bar.k4 { background: #f97316; }
+  .kolek-bar.k5 { background: var(--dash-red); }
+  .kolek-count {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--dash-slate-800);
+    width: 28px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ── Chart cards (bubble) ── */
+  .chart-card {
+    background: #fff;
+    border: none;
+    border-radius: 20px;
+    box-shadow: var(--dash-card-shadow);
+    overflow: hidden;
+    transition: box-shadow 0.25s;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .chart-card:hover {
+    box-shadow: var(--dash-card-hover-shadow);
+  }
+  .chart-header {
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .chart-header h3 {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--dash-slate-800);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chart-header h3 i {
+    font-size: 1rem;
+  }
+  .chart-body {
+    padding: 0 22px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .chart-body .chart-canvas-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* ── Rekap desa (bubble cards) ── */
+  .rekap-card {
+    background: #fff;
+    border: none;
+    border-radius: 20px;
+    box-shadow: var(--dash-card-shadow);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .rekap-header {
+    padding: 16px 22px 14px;
+    border-bottom: 1px solid var(--dash-slate-100);
+  }
+  .rekap-header h3 {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--dash-slate-800);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rekap-body {
+    flex: 1;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .desa-bubble {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--dash-slate-50);
+    border-radius: 14px;
+    transition: background 0.15s;
+    cursor: default;
+  }
+  .desa-bubble:hover {
+    background: var(--dash-slate-100);
+  }
+  .desa-bubble .desa-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    background: var(--dash-primary);
+  }
+  .desa-bubble .desa-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .desa-bubble .desa-name {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--dash-slate-800);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .desa-bubble .desa-meta {
+    font-size: 0.6875rem;
+    color: var(--dash-slate-400);
+    display: flex;
+    gap: 8px;
+    margin-top: 1px;
+  }
+  .desa-bubble .desa-meta span {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .desa-bubble .desa-meta i {
+    font-size: 0.6rem;
+  }
+  .desa-bubble .desa-saldo {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--dash-slate-900);
+    font-family: var(--mono, 'DM Mono', monospace);
+    white-space: nowrap;
+    text-align: right;
+  }
+  .rekap-empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--dash-slate-400);
+    font-size: 0.8125rem;
+  }
+
+  /* ── Nasabah dashboard (bubble glassmorphism) ── */
+  .nasabah-metric {
+    border-radius: 20px;
+    padding: 26px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    box-shadow: var(--dash-card-shadow);
+    transition: box-shadow 0.25s, transform 0.25s;
+  }
+  .nasabah-metric:hover {
+    box-shadow: var(--dash-card-hover-shadow);
+    transform: translateY(-2px);
+  }
+  .nasabah-metric.bg-violet { background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%); }
+  .nasabah-metric.bg-blue { background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%); }
+  .nasabah-metric::before {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: -20px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    pointer-events: none;
+  }
+  .nasabah-metric .nm-icon {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 5rem;
+    opacity: 0.08;
+    z-index: 1;
+  }
+  .nasabah-metric .nm-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    opacity: 0.85;
+    margin-bottom: 6px;
+    position: relative;
+    z-index: 2;
+  }
+  .nasabah-metric .nm-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+    font-family: var(--mono, 'DM Mono', monospace);
+    position: relative;
+    z-index: 2;
+  }
+  .nasabah-metric .nm-desc {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-top: 4px;
+    position: relative;
+    z-index: 2;
+  }
+  .nasabah-metric .nm-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 2;
+  }
+  .nasabah-metric .nm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    border-radius: 99px;
+    text-decoration: none;
+    transition: all 0.15s;
+    border: none;
+    cursor: pointer;
+  }
+  .nasabah-metric .nm-btn.light {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    backdrop-filter: blur(4px);
+  }
+  .nasabah-metric .nm-btn.light:hover {
+    background: rgba(255,255,255,0.3);
+  }
+  .nasabah-metric .nm-btn.outline {
+    background: transparent;
+    color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.4);
+  }
+  .nasabah-metric .nm-btn.outline:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.6);
+  }
+
+  /* ── Announcements (bubble) ── */
+  .announcement-card {
+    border: none;
+    border-radius: 16px;
+    background: #fff;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 16px rgba(15,23,42,0.05);
+    transition: box-shadow 0.2s;
+    overflow: hidden;
+  }
+  .announcement-card:hover { box-shadow: var(--dash-card-hover-shadow); }
+  .announcement-card.penting { background: linear-gradient(135deg, #fef2f2 0%, #fff 60%); }
+  .announcement-card.pengumuman { background: linear-gradient(135deg, #fffbeb 0%, #fff 60%); }
+  .announcement-card.info { background: linear-gradient(135deg, #ecfeff 0%, #fff 60%); }
+  .announcement-body {
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+  }
+  .announcement-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+  }
+  .announcement-card.penting .announcement-icon { background: var(--dash-red-bg); color: var(--dash-red); }
+  .announcement-card.pengumuman .announcement-icon { background: var(--dash-amber-bg); color: var(--dash-amber); }
+  .announcement-card.info .announcement-icon { background: var(--dash-cyan-bg); color: var(--dash-cyan); }
+
+  /* ── Prevent text overflow ── */
+  .metric-card, .metric-gradient, .kolek-card, .chart-card, .rekap-card, .nasabah-metric {
+    overflow: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  .mc-value, .mg-value, .nm-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .mc-footer span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 767.98px) {
+    .dash-header { margin-bottom: 14px; gap: 12px; }
+    .dash-header h1 { font-size: 1.125rem; }
+    .dash-header .subtitle { font-size: 0.75rem; }
+    .dash-filter { width: 100%; }
+    .dash-filter select { flex: 1; min-width: 0; font-size: 0.8125rem; padding: 8px 10px; }
+    .dash-filter-btn { font-size: 0.8125rem; padding: 8px 14px; white-space: nowrap; }
+    .dash-actions { padding: 14px; gap: 8px; margin-bottom: 16px; }
+    .dash-actions-label { font-size: 0.625rem; }
+    .dash-action-link { padding: 8px 14px; font-size: 0.8125rem; }
+
+    .metric-card { padding: 18px; }
+    .metric-card .mc-header { margin-bottom: 10px; }
+    .metric-card .mc-icon { width: 40px; height: 40px; font-size: 1.125rem; }
+    .metric-card .mc-label { font-size: 0.75rem; margin-bottom: 4px; }
+    .metric-card .mc-value { font-size: 1.5rem; }
+    .metric-card .mc-value.mono { font-size: 1.125rem; }
+    .metric-card .mc-footer { margin-top: 10px; padding-top: 10px; gap: 12px; font-size: 0.6875rem; flex-wrap: wrap; }
+
+    .metric-gradient { padding: 18px; }
+    .metric-gradient::before { width: 140px; height: 140px; right: -20px; top: -20px; }
+    .metric-gradient::after { width: 90px; height: 90px; }
+    .metric-gradient .mg-label { font-size: 0.75rem; margin-bottom: 4px; }
+    .metric-gradient .mg-value { font-size: 1.25rem; }
+    .metric-gradient .mg-value.mono { font-size: 1rem; }
+    .metric-gradient .mg-sub { margin-top: 10px; gap: 16px; font-size: 0.6875rem; }
+    .metric-gradient .mg-sub .val { font-size: 0.75rem; }
+
+    .kolek-header { padding: 14px 18px; }
+    .kolek-header h3 { font-size: 0.8125rem; }
+    .kolek-badge { font-size: 0.625rem; padding: 3px 8px; }
+    .kolek-body { padding: 12px 18px 14px; }
+    .kolek-row { margin-bottom: 8px; gap: 8px; }
+    .kolek-dot { width: 7px; height: 7px; }
+    .kolek-label { font-size: 0.6875rem; width: 48px; }
+    .kolek-bar-wrap { height: 5px; }
+    .kolek-count { font-size: 0.6875rem; width: 24px; }
+
+    .chart-body .chart-canvas-wrap { min-height: 120px; }
+    .chart-header { padding: 12px 18px; }
+    .chart-header h3 { font-size: 0.8125rem; }
+    .chart-body { padding: 0 18px 12px; }
+
+    .rekap-header { padding: 12px 18px; }
+    .rekap-body { padding: 12px; gap: 8px; }
+
+    .nasabah-metric { padding: 22px; }
+    .nasabah-metric .nm-value { font-size: 1.375rem; }
+    .nasabah-metric .nm-icon { font-size: 4rem; right: 14px; }
+    .nasabah-metric .nm-actions { flex-direction: column; }
+    .nasabah-metric .nm-btn { width: 100%; justify-content: center; }
+  }
+
+  @media (max-width: 400px) {
+    .metric-card .mc-footer { flex-direction: column; gap: 6px; }
+    .metric-gradient .mg-sub { flex-direction: column; gap: 6px; }
+    .dash-filter { flex-wrap: wrap; gap: 6px; }
+    .dash-filter select { min-width: 0; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Page Header ────────────────────────────────────────────── #}
+<div class="dash-header">
+  <div>
+    <h1>Selamat Datang, {{ current_user.nama_lengkap }}</h1>
+    <div class="subtitle">Ringkasan data LKD Ciomas per {{ today.strftime('%d %B %Y') }}</div>
+  </div>
+  {% if not current_user.is_nasabah() %}
+  <form method="GET" action="{{ url_for('main.dashboard') }}" class="dash-filter">
+    <select name="bulan" aria-label="Bulan">
+      <option value="">Semua Bulan</option>
+      {% for m in range(1, 13) %}
+      <option value="{{ m }}" {% if bulan_pilih==m|string %}selected{% endif %}>
+        {{ ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'][m-1] }}
+      </option>
+      {% endfor %}
+    </select>
+    <select name="tahun" aria-label="Tahun">
+      <option value="">Tahun</option>
+      {% for y in available_tahun %}
+      <option value="{{ y }}" {% if tahun_pilih==y|string %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="dash-filter-btn"><i class="bi bi-funnel me-1"></i>Filter</button>
+  </form>
+  {% endif %}
+</div>
+
+{# ── Alerts (Nasabah) ───────────────────────────────────────── #}
+{% if current_user.is_nasabah() and ajuan_disetujui %}
+<div class="alert alert-success alert-dismissible fade show mb-4" role="alert" style="border-radius:12px; font-size:0.875rem;">
+  <i class="bi bi-check-circle-fill me-2"></i>
+  <strong>Pengajuan dokumen disetujui!</strong>
+  <span class="d-block mt-1">Upload dokumen:
+    {% set doc_labels = {'foto':'Foto','ktp':'KTP','kk':'Kartu Keluarga','surat_usaha':'Surat Usaha','bukti_penghasilan':'Bukti Penghasilan','jaminan':'Jaminan'} %}
+    {% for a in ajuan_disetujui %}
+    <span class="badge bg-light text-dark" style="font-size:0.75rem;">{{ doc_labels.get(a.dokumen, a.dokumen) }}</span>
+    {% endfor %}
+  </span>
+  <a href="{{ url_for('main.profil_nasabah') }}" class="btn btn-sm btn-success mt-2" style="border-radius:8px;">
+    <i class="bi bi-upload me-1"></i>Upload
+  </a>
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+{% if current_user.is_nasabah() and pengumuman_aktif %}
+<div class="mb-4">
+  <h5 style="font-size:0.9375rem; font-weight:700; color:var(--dash-slate-800); margin-bottom:14px;">
+    <i class="bi bi-megaphone-fill text-primary me-2"></i>Informasi Terkini
+  </h5>
+  {% for pg in pengumuman_aktif %}
+  <div class="announcement-card {{ pg.tipe }}">
+    <div class="announcement-body">
+      <div class="announcement-icon">
+        {% if pg.tipe == 'penting' %}<i class="bi bi-exclamation-triangle-fill"></i>
+        {% elif pg.tipe == 'pengumuman' %}<i class="bi bi-broadcast"></i>
+        {% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}
+      </div>
+      <div class="flex-grow-1">
+        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+          <strong style="font-size:0.875rem;">{{ pg.judul }}</strong>
+          <span class="badge rounded-pill" style="font-size:0.625rem; font-weight:600;
+            {% if pg.tipe == 'penting' %}background:var(--dash-red-bg);color:var(--dash-red);
+            {% elif pg.tipe == 'pengumuman' %}background:var(--dash-amber-bg);color:#b45309;
+            {% else %}background:var(--dash-cyan-bg);color:#0891b2;{% endif %}">{{ pg.tipe|title }}</span>
+        </div>
+        <p class="mb-2" style="font-size:0.8125rem; color:var(--dash-slate-500); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">{{ pg.isi }}</p>
+        {% if pg.isi|length > 120 %}
+        <a href="{{ url_for('pengaturan.pengumuman_detail', id=pg.id) }}" class="text-decoration-none" style="font-size:0.8125rem; font-weight:600; color:var(--dash-primary);">Baca Selengkapnya &rarr;</a>
+        {% endif %}
+        <small style="color:var(--dash-slate-400); font-size:0.6875rem;">{{ pg.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# ── Quick Actions (Admin/Staf) ─────────────────────────────── #}
+{% if not current_user.is_nasabah() %}
+<div class="dash-actions">
+  <div class="dash-actions-label"><i class="bi bi-lightning-fill me-1"></i>Aksi Cepat</div>
+  {% if current_user.role in ['admin','kredit','tata_usaha','staf'] %}
+  <a href="{{ url_for('nasabah.tambah') }}" class="dash-action-link primary"><i class="bi bi-person-plus-fill"></i>Nasabah Baru</a>
+  <a href="{{ url_for('pinjaman.tambah') }}" class="dash-action-link success"><i class="bi bi-plus-circle-fill"></i>Pinjaman Baru</a>
+  {% endif %}
+  {% if current_user.role in ['admin','kasir','keuangan'] %}
+  <a href="{{ url_for('pembayaran.index') }}" class="dash-action-link warning"><i class="bi bi-wallet2"></i>Bayar</a>
+  {% endif %}
+  <a href="{{ url_for('laporan.tunggakan') }}" class="dash-action-link danger"><i class="bi bi-exclamation-triangle"></i>Tunggakan</a>
+  <a href="{{ url_for('laporan.perkembangan') }}" class="dash-action-link info"><i class="bi bi-graph-up"></i>Perkembangan</a>
+  {% if not current_user.is_kader() %}
+  <a href="{{ url_for('akuntansi.jurnal_tambah') }}" class="dash-action-link violet"><i class="bi bi-journal-text"></i>Input Jurnal</a>
+  <a href="{{ url_for('akuntansi.aset_tambah') }}" class="dash-action-link neutral"><i class="bi bi-building-add"></i>Tambah Aset</a>
+  <a href="{{ url_for('akuntansi.neraca') }}" class="dash-action-link info"><i class="bi bi-file-earmark-bar-graph"></i>Laporan</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ═══════════════════════════════════════════════════════════ #}
+{# NASABAH DASHBOARD                                        #}
+{# ═══════════════════════════════════════════════════════════ #}
+{% if current_user.is_nasabah() %}
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="nasabah-metric bg-violet">
+      <i class="bi bi-bank nm-icon"></i>
+      <div class="nm-label">Pinjaman Saya</div>
+      <div class="nm-value">Rp {{ '{:,.0f}'.format(total_outstanding) }}</div>
+      <div class="nm-desc">Sisa saldo pinjaman Anda</div>
+      <div class="nm-actions">
+        <a href="{{ url_for('pinjaman.index') }}" class="nm-btn light">Detail</a>
+        {% if has_active_loan %}
+        <span class="nm-btn outline"><i class="bi bi-lock-fill"></i>PINJAMAN AKTIF</span>
+        {% else %}
+        <a href="{{ url_for('pinjaman.tambah', nasabah_id=current_user.nasabah_id_fk) }}" class="nm-btn outline">Ajukan Pinjaman</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="nasabah-metric bg-blue">
+      <i class="bi bi-piggy-bank-fill nm-icon"></i>
+      <div class="nm-label">Tabungan Saya</div>
+      <div class="nm-value">Rp {{ '{:,.0f}'.format(rekening.total_saldo() if rekening else 0) }}</div>
+      <div class="nm-desc">Total saldo tabungan</div>
+      <div class="nm-actions">
+        <a href="{{ url_for('tabungan.index') }}" class="nm-btn light">Riwayat</a>
+        <a href="{{ url_for('tabungan.ajukan_penarikan') }}" class="nm-btn outline">Tarik Dana</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ═══════════════════════════════════════════════════════════ #}
+{# ADMIN / STAF DASHBOARD                                   #}
+{# ═══════════════════════════════════════════════════════════ #}
+{% else %}
+
+{# ── Row 1: Primary Metrics (stack mobile, 3 cols md+) ────── #}
+<div class="row g-3 mb-3">
+  <!-- Total Nasabah -->
+  <div class="col-12 col-md-4">
+    <div class="metric-card bg-blue">
+      <div class="mc-header">
+        <div class="mc-icon blue"><i class="bi bi-people-fill"></i></div>
+      </div>
+      <div class="mc-label">Total Nasabah</div>
+      <div class="mc-value">{{ total_nasabah }}</div>
+      <div class="mc-footer">
+        <span><i class="bi bi-person-fill"></i><strong>{{ nasabah_perorangan }}</strong>&nbsp;Perorangan</span>
+        <span><i class="bi bi-people-fill"></i><strong>{{ nasabah_kelompok }}</strong>&nbsp;Kelompok</span>
+      </div>
+    </div>
+  </div>
+  <!-- Pinjaman Aktif -->
+  <div class="col-12 col-md-4">
+    <div class="metric-card bg-green">
+      <div class="mc-header">
+        <div class="mc-icon green"><i class="bi bi-cash-stack"></i></div>
+      </div>
+      <div class="mc-label">Pinjaman Aktif</div>
+      <div class="mc-value">{{ total_pinjaman_aktif }}</div>
+      <div class="mc-footer">
+        <span><i class="bi bi-person-fill"></i><strong>{{ pinjaman_perorangan_active }}</strong>&nbsp;Perorangan</span>
+        <span><i class="bi bi-people-fill"></i><strong>{{ pinjaman_kelompok_active }}</strong>&nbsp;Kelompok</span>
+      </div>
+    </div>
+  </div>
+  <!-- Outstanding -->
+  <div class="col-12 col-md-4">
+    <div class="metric-card bg-violet">
+      <div class="mc-header">
+        <div class="mc-icon violet"><i class="bi bi-bank"></i></div>
+      </div>
+      <div class="mc-label">Outstanding</div>
+      <div class="mc-value mono">Rp {{ '{:,.0f}'.format(total_outstanding) }}</div>
+      <div class="mc-footer">
+        <span><i class="bi bi-clock-history"></i>Sisa saldo pinjaman beredar</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Row 2: Pemasukan, Penyaluran, Kolektibilitas (stack mobile, 3 cols md+) ── #}
+<div class="row g-3 mb-3">
+  <!-- Total Pembayaran -->
+   <div class="col-12 col-md-4">
+     <div class="metric-gradient bg-emerald">
+       <i class="bi bi-arrow-down-circle-fill mg-icon"></i>
+       <div class="mg-label">Total Pembayaran</div>
+       <div class="mg-value mono">Rp {{ '{:,.0f}'.format(total_bayar) }}</div>
+      <div class="mg-sub">
+        <div>
+          <span class="label">Pokok</span>
+          <span class="val">Rp {{ '{:,.0f}'.format(total_bayar_pokok) }}</span>
+        </div>
+        <div>
+          <span class="label">Jasa</span>
+          <span class="val">Rp {{ '{:,.0f}'.format(total_bayar_jasa) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Total Penyaluran -->
+  <div class="col-12 col-md-4">
+    <div class="metric-gradient bg-cyan">
+      <i class="bi bi-send-fill mg-icon"></i>
+      <div class="mg-label">Total Penyaluran</div>
+      <div class="mg-value mono">Rp {{ '{:,.0f}'.format(total_penyaluran) }}</div>
+      <div class="mg-sub">
+        <div>
+          <span class="label">Periode</span>
+          <span class="val">
+            {% if bulan_pilih and tahun_pilih %}{{ ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'][bulan_pilih|int - 1] }} {{ tahun_pilih }}
+            {% elif tahun_pilih %}Tahun {{ tahun_pilih }}
+            {% else %}Semua Periode{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Kolektibilitas -->
+  <div class="col-12 col-md-4">
+    <div class="kolek-card bg-amber">
+      <div class="kolek-header">
+        <h3>Kolektibilitas</h3>
+        <span class="kolek-badge">{{ kolek_dist[1]+kolek_dist[2]+kolek_dist[3]+kolek_dist[4]+kolek_dist[5] }} Total</span>
+      </div>
+      <div class="kolek-body">
+        {% set total = total_pinjaman_aktif or 1 %}
+        <div class="kolek-row">
+          <span class="kolek-dot k1"></span>
+          <span class="kolek-label">Kolek 1</span>
+          <div class="kolek-bar-wrap"><div class="kolek-bar k1" style="width:{{ (kolek_dist[1]/total)*100 }}%"></div></div>
+          <span class="kolek-count">{{ kolek_dist[1] }}</span>
+        </div>
+        <div class="kolek-row">
+          <span class="kolek-dot k2"></span>
+          <span class="kolek-label">Kolek 2</span>
+          <div class="kolek-bar-wrap"><div class="kolek-bar k2" style="width:{{ (kolek_dist[2]/total)*100 }}%"></div></div>
+          <span class="kolek-count">{{ kolek_dist[2] }}</span>
+        </div>
+        <div class="kolek-row">
+          <span class="kolek-dot k3"></span>
+          <span class="kolek-label">Kolek 3</span>
+          <div class="kolek-bar-wrap"><div class="kolek-bar k3" style="width:{{ (kolek_dist[3]/total)*100 }}%"></div></div>
+          <span class="kolek-count">{{ kolek_dist[3] }}</span>
+        </div>
+        <div class="kolek-row">
+          <span class="kolek-dot k4"></span>
+          <span class="kolek-label">Kolek 4</span>
+          <div class="kolek-bar-wrap"><div class="kolek-bar k4" style="width:{{ (kolek_dist[4]/total)*100 }}%"></div></div>
+          <span class="kolek-count">{{ kolek_dist[4] }}</span>
+        </div>
+        <div class="kolek-row">
+          <span class="kolek-dot k5"></span>
+          <span class="kolek-label">Kolek 5</span>
+          <div class="kolek-bar-wrap"><div class="kolek-bar k5" style="width:{{ (kolek_dist[5]/total)*100 }}%"></div></div>
+          <span class="kolek-count">{{ kolek_dist[5] }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Row 3: Charts + Rekap Desa ───────────────────────────── #}
+<div class="row g-3">
+  <!-- Charts (left, 3/5) -->
+   <div class="{% if current_user.is_kader() %}col-12{% else %}col-12 col-lg-7{% endif %} d-flex flex-column gap-3">
+    <!-- Komposisi Pemasukan (Bar) -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-pie-chart-fill" style="color:var(--dash-primary);"></i>Komposisi Pemasukan {{ tahun_pilih or '' }}</h3>
+      </div>
+      <div class="chart-body">
+        <div class="chart-canvas-wrap">
+          <canvas id="incomeChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <!-- Tren Penyaluran (Pill-bar) -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3><i class="bi bi-graph-up-arrow" style="color:var(--dash-violet);"></i>Tren Penyaluran {{ tahun_pilih or '' }}</h3>
+      </div>
+      <div class="chart-body">
+        <div class="chart-canvas-wrap">
+          <canvas id="disbursementChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Rekap Desa (right, 2/5) -->
+  {% if not current_user.is_kader() %}
+   <div class="col-12 col-lg-5">
+    <div class="rekap-card bg-emerald">
+      <div class="rekap-header">
+        <h3><i class="bi bi-map-fill" style="color:var(--dash-emerald);"></i>Rekap per Desa</h3>
+      </div>
+      <div class="rekap-body">
+        {% for d in rekap_desa %}
+        <div class="desa-bubble">
+          <div class="desa-icon">{{ d.desa[0].upper() }}</div>
+          <div class="desa-info">
+            <div class="desa-name">{{ d.desa }}</div>
+            <div class="desa-meta">
+              <span><i class="bi bi-person-fill text-primary"></i>{{ d.jumlah_nasabah }} nasabah</span>
+              <span><i class="bi bi-people-fill text-success"></i>{{ d.kelompok }} kelompok</span>
+            </div>
+          </div>
+          <div class="desa-saldo">Rp {{ '{:,.0f}'.format(d.saldo_pinjaman) }}</div>
+        </div>
+        {% else %}
+        <div class="rekap-empty">Belum ada data</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if not current_user.is_nasabah() %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+  const fmtRp = (v) => 'Rp ' + new Intl.NumberFormat('id-ID', { notation: 'compact', maximumFractionDigits: 1 }).format(v);
+  const fmtRpFull = (v) => 'Rp ' + new Intl.NumberFormat('id-ID').format(v);
+
+  Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = '#64748b';
+
+  const isKader = {{ 'true' if current_user.is_kader() else 'false' }};
+
+  // ── Bar Chart: Komposisi Pemasukan (per bulan) ────────────
+  const incomeData = JSON.parse('{{ chart_pemasukan|tojson|safe }}');
+
+  if (incomeData && incomeData.length > 0) {
+    const labels = incomeData.map(d => months[d.bulan - 1]);
+    const dataPokok = incomeData.map(d => d.pokok);
+    const dataJasa  = incomeData.map(d => d.jasa);
+
+    new Chart(document.getElementById('incomeChart').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Pokok',
+            data: dataPokok,
+            backgroundColor: '#3b82f6',
+            borderRadius: 6,
+            borderSkipped: false,
+            barPercentage: 0.5,
+            categoryPercentage: 0.7,
+          },
+          {
+            label: 'Jasa',
+            data: dataJasa,
+            backgroundColor: '#10b981',
+            borderRadius: 6,
+            borderSkipped: false,
+            barPercentage: 0.5,
+            categoryPercentage: 0.7,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'top',
+            align: 'end',
+            labels: {
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 16,
+              font: { size: 11, weight: '500' }
+            }
+          },
+          tooltip: {
+            backgroundColor: '#1e293b',
+            titleFont: { size: 12, weight: '600' },
+            bodyFont: { size: 12 },
+            padding: 12,
+            cornerRadius: 10,
+            displayColors: true,
+            callbacks: {
+              label: (ctx) => ' ' + ctx.dataset.label + ': ' + fmtRpFull(ctx.parsed.y)
+            }
+          }
+        },
+        scales: {
+          x: {
+            stacked: true,
+            grid: { display: false },
+            border: { display: false },
+            ticks: { font: { size: 11, weight: '500' } }
+          },
+          y: {
+            stacked: true,
+            border: { display: false },
+            grid: { color: '#f1f5f9', drawBorder: false },
+            ticks: {
+              font: { size: 11 },
+              callback: (v) => fmtRp(v),
+              padding: 8
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ── Pill-Bar Chart: Tren Penyaluran ─────────────────────────
+  const penyaluranData = JSON.parse('{{ chart_penyaluran|tojson|safe }}');
+  const rkpPenyaluran  = JSON.parse('{{ rkp_target_penyaluran|tojson|safe }}');
+
+  if (penyaluranData && penyaluranData.length > 0) {
+    const labels2    = penyaluranData.map(d => months[d.bulan - 1]);
+    const dataSalur  = penyaluranData.map(d => d.penyaluran);
+    const hasTarget2 = rkpPenyaluran.some(v => v > 0);
+
+    const datasets2 = [
+      {
+        type: 'bar', label: 'Penyaluran', data: dataSalur,
+        backgroundColor: '#8b5cf6',
+        borderRadius: 20,
+        barPercentage: 0.4,
+        categoryPercentage: 0.6,
+        order: 2
+      }
+    ];
+    if (!isKader && hasTarget2) {
+      datasets2.push({
+        type: 'line', label: 'Target', data: rkpPenyaluran,
+        borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.08)',
+        borderWidth: 2, borderDash: [6, 4], pointRadius: 5,
+        pointBackgroundColor: '#f97316', pointBorderColor: '#fff', pointBorderWidth: 2,
+        tension: 0.35, fill: true, order: 1
+      });
+    }
+
+    new Chart(document.getElementById('disbursementChart').getContext('2d'), {
+      data: { labels: labels2, datasets: datasets2 },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'top', align: 'end',
+            labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, font: { size: 11, weight: '500' } }
+          },
+          tooltip: {
+            backgroundColor: '#1e293b', titleFont: { size: 12, weight: '600' }, bodyFont: { size: 12 },
+            padding: 12, cornerRadius: 10, displayColors: true,
+            callbacks: { label: (ctx) => ' ' + ctx.dataset.label + ': ' + fmtRpFull(ctx.parsed.y) }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11, weight: '500' } } },
+          y: {
+            border: { display: false },
+            grid: { color: '#f1f5f9', drawBorder: false },
+            ticks: { font: { size: 11 }, callback: (v) => fmtRp(v), padding: 8 }
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

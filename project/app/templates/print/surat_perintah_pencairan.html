@@ -1,0 +1,81 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Surat Perintah Pencairan {{ p.spk }}{% endblock %}
+{% block content %}
+{% set n = p.nasabah %}
+
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">BUM DESA BERSAMA UPK CIOMAS</div>
+    <div class="nama-lembaga" style="font-size:11pt;">LEMBAGA KEUANGAN DESA (LKD)</div>
+    <div class="alamat">Jl. Raya Ciomas Km.1 Serang 42164 | Telp: (0254)7823984 | WA: 081324771060</div>
+  </div>
+</div>
+
+<div class="doc-title">SURAT PERINTAH PENCAIRAN</div>
+<div class="doc-no">No: SPP/{{ p.spk }}/{{ p.tanggal_acc.strftime('%Y%m') if p.tanggal_acc else '' }}</div>
+
+<p style="text-align:justify;font-size:9.5pt;line-height:1.6;">
+Berdasarkan hasil verifikasi dan persetujuan pinjaman, dengan ini disampaikan:
+</p>
+
+<table class="info" style="margin-bottom:15px;">
+  <tr><td colspan="3" style="background:#f0f0f0;font-weight:bold;padding:5px;">DATA NASABAH</td></tr>
+  <tr><td style="width:140px;">Nama</td><td style="width:10px;">:</td><td><strong>{{ n.nama }}</strong></td></tr>
+  <tr><td>NIK</td><td>:</td><td>{{ n.nik }}</td></tr>
+  <tr><td>Alamat</td><td>:</td><td>{{ n.alamat }}, Desa {{ n.nama_desa }}</td></tr>
+  <tr><td>No. SPK</td><td>:</td><td>{{ p.spk }}</td></tr>
+  <tr><td colspan="3" style="background:#f0f0f0;font-weight:bold;padding:5px;">RINCIAN PENCAIRAN</td></tr>
+  <tr><td>Jumlah Pinjaman</td><td>:</td><td class="money"><strong>Rp {{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</strong></td></tr>
+  <tr><td>Jasa per Bulan</td><td>:</td><td>{{ p.jasa_persen }}%</td></tr>
+  <tr><td>Tenor</td><td>:</td><td>{{ p.tenor }} bulan</td></tr>
+  <tr><td>Jatuh Tempo Angsuran</td><td>:</td><td>Tanggal {{ p.tanggal_mulai_angsuran.strftime('%d') if p.tanggal_mulai_angsuran else '___' }} setiap bulan</td></tr>
+  <tr><td>Angsuran per Bulan</td><td>:</td><td class="money"><strong>Rp {{ '{:,.0f}'.format(p.angsuran_total or 0) }}</strong></td></tr>
+  {% if p.tanggal_cair %}
+  <tr><td>Tanggal Pencairan</td><td>:</td><td>{{ p.tanggal_cair.strftime('%d %B %Y') }}</td></tr>
+  {% endif %}
+</table>
+
+<p style="font-size:9.5pt;text-align:justify;line-height:1.5;">
+Pinjaman tersebut telah disetujui pada tanggal <strong>{{ p.tanggal_acc.strftime('%d %B %Y') if p.tanggal_acc else '____________' }}</strong> oleh <strong>{{ acc_by.nama_lengkap if acc_by else 'Direktur' }}</strong>.
+</p>
+
+{% if p.catatan_direktur %}
+<p style="font-size:9pt;padding:8px;background:#fff3cd;border-left:3px solid #ffc107;">
+<strong>Catatan:</strong> {{ p.catatan_direktur }}
+</p>
+{% endif %}
+
+<div style="margin-top:30px;">
+  <table style="width:100%;font-size:9.5pt;">
+    <tr>
+      <td style="width:50%;"></td>
+      <td style="width:50%;text-align:center;vertical-align:top;padding-top:10px;">
+        <p><strong>Disetujui Oleh</strong></p>
+        {% if acc_by and acc_by.tanda_tangan %}
+        {% set qr = signature_qr(acc_by.tanda_tangan) %}
+        <img src="{{ qr }}" style="width:80px;height:80px;margin:10px auto 0;">
+        <div style="border-bottom:1px solid #000;width:220px;margin:0 auto;"></div>
+        <p style="margin-top:2px;">{{ acc_by.nama_lengkap }}</p>
+        <p style="font-size:8pt;color:#666;">Direktur</p>
+        {% else %}
+        {% set qr = get_role_signature_qr('direktur') %}
+        {% if qr %}
+        <img src="{{ qr }}" style="width:80px;height:80px;margin:10px auto 0;">
+        {% else %}
+        <div style="height:100px;"></div>
+        {% endif %}
+        <div style="border-bottom:1px solid #000;width:220px;margin:0 auto;"></div>
+        <p style="margin-top:5px;">{{ pengaturan.get('direktur', '____________') }}</p>
+        <p style="font-size:8pt;color:#666;">Direktur</p>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div style="margin-top:20px;text-align:center;font-size:8pt;color:#666;">
+  Dokumen ini dicetak secara elektronik pada {{ today.strftime('%d %B %Y') }}
+</div>
+
+{% endblock %}

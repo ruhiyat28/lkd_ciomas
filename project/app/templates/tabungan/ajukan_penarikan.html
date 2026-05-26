@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Pengajuan Penarikan{% endblock %}
+{% block page_title %}Pengajuan Penarikan{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-header bg-white border-0 pt-4 px-4">
+        <h5 class="fw-bold mb-0">Form Pengajuan Penarikan</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="alert alert-info border-0 rounded-3 small">
+          <i class="bi bi-info-circle-fill me-2"></i>
+          Anda hanya dapat mengajukan penarikan dari <strong>Saldo Sukarela</strong>. 
+          Saldo Pokok dan Wajib hanya dapat ditarik setelah pinjaman lunas.
+        </div>
+
+        <div class="p-3 bg-light rounded-3 mb-4 text-center">
+          <div class="text-muted small mb-1">Saldo Sukarela Saat Ini</div>
+          <div class="fw-bold fs-4 text-primary">Rp {{ '{:,.0f}'.format(rek.saldo_sukarela) }}</div>
+        </div>
+
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">Jumlah Penarikan (Rp)</label>
+            <input type="number" name="jumlah" class="form-control form-control-lg" 
+                   placeholder="Masukkan jumlah..." required max="{{ rek.saldo_sukarela }}">
+          </div>
+          <div class="mb-4">
+            <label class="form-label">Keperluan / Keterangan</label>
+            <textarea name="keterangan" class="form-control" rows="3" 
+                      placeholder="Contoh: Kebutuhan mendesak, biaya sekolah, dll..."></textarea>
+          </div>
+          
+          <div class="d-grid">
+            <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold">
+              Kirim Pengajuan
+            </button>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-link text-muted mt-2">Batal</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

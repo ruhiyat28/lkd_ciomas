@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Mutasi Aset{% endblock %}
+{% block page_title %}Mutasi Aset{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0" style="font-size:0.76rem">
+      <li class="breadcrumb-item"><a href="{{ url_for('akuntansi.aset_index') }}">Manajemen Aset</a></li>
+      <li class="breadcrumb-item active">Mutasi</li>
+    </ol>
+  </nav>
+  <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalMutasi">
+    <i class="bi bi-plus-lg me-1"></i>Catat Mutasi
+  </button>
+</div>
+
+<div class="card">
+  <div class="card-header">Riwayat Mutasi</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Kode Aset</th>
+            <th>Nama Aset</th>
+            <th>Tipe</th>
+            <th>Dari Lokasi</th>
+            <th>Ke Lokasi</th>
+            <th>Keterangan</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in list_mutasi %}
+          <tr>
+            <td>{{ m.tanggal.strftime('%d/%m/%Y') }}</td>
+            <td><code>{{ m.aset.kode_aset or '-' }}</code></td>
+            <td>{{ m.aset.nama }}</td>
+            <td>
+              {% if m.tipe == 'pindah' %}<span class="badge bg-info">Pindah</span>
+              {% elif m.tipe == 'hibah' %}<span class="badge bg-warning text-dark">Hibah</span>
+              {% elif m.tipe == 'hapus' %}<span class="badge bg-danger">Dihapus</span>
+              {% else %}<span class="badge bg-secondary">{{ m.tipe|title }}</span>
+              {% endif %}
+            </td>
+            <td>{{ m.dari_lokasi or '-' }}</td>
+            <td>{{ m.ke_lokasi or '-' }}</td>
+            <td class="small text-muted">{{ m.keterangan or '-' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-center text-muted py-4">Belum ada riwayat mutasi.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Catat Mutasi -->
+<div class="modal fade" id="modalMutasi" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('akuntansi.aset_mutasi_tambah') }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Catat Mutasi Aset</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Aset <span class="text-danger">*</span></label>
+            <select name="aset_id" class="form-select" required>
+              <option value="">— Pilih Aset —</option>
+              {% for a in aset_list %}
+              <option value="{{ a.id }}">{{ a.kode_aset }} — {{ a.nama }} ({{ a.lokasi or '-' }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Tanggal</label>
+            <input type="date" class="form-control" name="tanggal" value="{{ today_str }}">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Tipe Mutasi</label>
+            <select name="tipe" class="form-select">
+              <option value="pindah">Pindah Lokasi</option>
+              <option value="hibah">Hibah</option>
+              <option value="hapus">Dihapus / Disusutkan Penuh</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Ke Lokasi</label>
+            <input type="text" class="form-control" name="ke_lokasi" placeholder="Lokasi baru...">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Keterangan</label>
+            <textarea class="form-control" name="keterangan" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var today = new Date().toISOString().split('T')[0];
+  var input = document.querySelector('input[name="tanggal"]');
+  if (input && !input.value) input.value = today;
+});
+</script>
+{% endblock %}

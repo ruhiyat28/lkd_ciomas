@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Rekap Setoran{% endblock %}
+{% block page_title %}Rekap Setoran Tabungan{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0" style="font-size:0.76rem">
+      <li class="breadcrumb-item"><a href="{{ url_for('tabungan.index') }}">Tabungan</a></li>
+      <li class="breadcrumb-item active">Rekap Setoran</li>
+    </ol>
+  </nav>
+  <button class="btn btn-sm btn-outline-primary no-print" onclick="window.print()">
+    <i class="bi bi-printer me-1"></i>Cetak
+  </button>
+</div>
+
+<div class="card mb-3 no-print">
+  <div class="card-body">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-sm-4">
+        <label class="form-label small">Dari Tanggal</label>
+        <input type="date" class="form-control form-control-sm" name="dari" value="{{ dari }}">
+      </div>
+      <div class="col-sm-4">
+        <label class="form-label small">Sampai Tanggal</label>
+        <input type="date" class="form-control form-control-sm" name="sampai" value="{{ sampai }}">
+      </div>
+      <div class="col-sm-4">
+        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1"></i>Tampilkan</button>
+        {% if dari or sampai %}
+        <a href="{{ url_for('tabungan.rekap_setoran') }}" class="btn btn-sm btn-outline-secondary ms-1">Reset</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="stat-card stat-blue">
+      <div class="stat-label">Total Setoran</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(total_setoran) }}</div>
+      <i class="bi bi-cash-stack stat-icon"></i>
+    </div>
+  </div>
+  {% for kat, total in total_per_kategori.items() %}
+  <div class="col-md-4">
+    <div class="stat-card {% if kat == 'pokok' %}stat-green{% elif kat == 'wajib' %}stat-orange{% else %}stat-purple{% endif %}">
+      <div class="stat-label">{{ kat|title }}</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(total) }}</div>
+      <i class="bi bi-coin stat-icon"></i>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header">Rekap Harian</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th class="text-end">Pokok</th>
+                <th class="text-end">Wajib</th>
+                <th class="text-end">Sukarela</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rekap_per_tgl %}
+              <tr>
+                <td>{{ r.tanggal.strftime('%d/%m/%Y') }}</td>
+                <td class="text-end money">Rp {{ '{:,.0f}'.format(r.pokok) }}</td>
+                <td class="text-end money">Rp {{ '{:,.0f}'.format(r.wajib) }}</td>
+                <td class="text-end money">Rp {{ '{:,.0f}'.format(r.sukarela) }}</td>
+                <td class="text-end money fw-600">Rp {{ '{:,.0f}'.format(r.total) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot class="table-group-divider">
+              <tr class="fw-bold">
+                <td>Total</td>
+                <td class="text-end money">Rp {{ '{:,.0f}'.format(total_per_kategori.get('pokok', 0)) }}</td>
+                <td class="text-end money">Rp {{ '{:,.0f}'.format(total_per_kategori.get('wajib', 0)) }}</td>
+                <td class="text-end money">Rp {{ '{:,.0f}'.format(total_per_kategori.get('sukarela', 0)) }}</td>
+                <td class="text-end money">Rp {{ '{:,.0f}'.format(total_setoran) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        {% if not rekap_per_tgl %}
+        <div class="p-4 text-center text-muted small">Tidak ada data setoran pada periode ini.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">Detail Setoran</div>
+      <div class="card-body p-0">
+        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+          <table class="table table-sm table-hover mb-0">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Tanggal</th>
+                <th>No Bukti</th>
+                <th>Nasabah</th>
+                <th>Kategori</th>
+                <th class="text-end">Jumlah</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in transaksi_list %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ t.tanggal.strftime('%d/%m/%Y') }}</td>
+                <td><code>{{ t.no_bukti }}</code></td>
+                <td>{{ t.rekening.nasabah.nama }}</td>
+                <td><span class="badge bg-light text-dark">{{ t.kategori }}</span></td>
+                <td class="text-end money text-success">Rp {{ '{:,.0f}'.format(t.jumlah) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if not transaksi_list %}
+        <div class="p-4 text-center text-muted small">Tidak ada data setoran pada periode ini.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

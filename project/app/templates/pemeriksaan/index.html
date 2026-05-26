@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}Pemeriksaan Dokumen{% endblock %}
+{% block page_title %}Pemeriksaan Dokumen Pengajuan{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+  <div><h1>Daftar Pengajuan</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0"><li class="breadcrumb-item active">Pemeriksaan Dokumen</li></ol></nav></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-orange">
+      <i class="bi bi-clock-fill stat-icon"></i>
+      <div class="stat-label">Menunggu Periksa</div>
+      <div class="stat-value">{{ total_pengajuan }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-blue">
+      <i class="bi bi-clipboard-check stat-icon"></i>
+      <div class="stat-label">Sudah Diperiksa</div>
+      <div class="stat-value">{{ total_sudah_periksa }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-green">
+      <i class="bi bi-check-circle-fill stat-icon"></i>
+      <div class="stat-label">Layak</div>
+      <div class="stat-value">{{ total_layak }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-red">
+      <i class="bi bi-x-circle-fill stat-icon"></i>
+      <div class="stat-label">Tidak Layak</div>
+      <div class="stat-value">{{ total_tidak_layak }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">Desa</label>
+        <select name="desa" class="form-select">
+          <option value="">Semua Desa</option>
+          {% for kode, nama in desa_list %}
+          <option value="{{ kode }}" {% if desa_filter == kode %}selected{% endif %}>{{ nama }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+      </div>
+      <div class="col-md-2">
+        <a href="{{ url_for('pemeriksaan.index') }}" class="btn btn-outline-secondary w-100">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>No</th>
+          <th>No. Pengajuan</th>
+          <th>Nasabah</th>
+          <th>Desa</th>
+          <th>Jenis</th>
+          <th>Jumlah</th>
+          <th>Tenor</th>
+          <th>Status Periksa</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pinjaman_list %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ p.id }}</td>
+          <td>{{ p.nasabah.nama }}</td>
+          <td>{{ p.nasabah.nama_desa }}</td>
+          <td>{{ 'Kelompok' if p.nasabah.jenis == 'kelompok' else 'Perorangan' }}</td>
+          <td class="money">Rp {{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</td>
+          <td>{{ p.tenor }} bln</td>
+          <td>
+            {% if p.pemeriksaan %}
+              {% if p.pemeriksaan.hasil == 'layak' %}
+              <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Layak</span>
+              {% else %}
+              <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Tidak Layak</span>
+              {% endif %}
+            {% else %}
+            <span class="badge bg-warning text-dark">Belum Diperiksa</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('pemeriksaan.form', pinjaman_id=p.id) }}" class="btn btn-sm btn-{{ 'outline-' if p.pemeriksaan else '' }}primary">
+              <i class="bi bi-clipboard-check me-1"></i>{{ 'Lihat' if p.pemeriksaan else 'Periksa' }}
+            </a>
+            {% if p.pemeriksaan %}
+            <a href="{{ url_for('pemeriksaan.cetak', pinjaman_id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-printer"></i>
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4">Tidak ada data pengajuan.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

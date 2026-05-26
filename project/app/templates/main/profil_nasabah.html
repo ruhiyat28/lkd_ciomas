@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}Profil Saya{% endblock %}
+{% block page_title %}Profil Saya{% endblock %}
+
+{% block content %}
+{% if not (nasabah.foto and nasabah.ktp and nasabah.kk and nasabah.surat_usaha and nasabah.bukti_penghasilan and nasabah.jaminan) %}
+<div class="alert alert-warning alert-dismissible fade show" role="alert">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i>
+  <strong>Dokumen belum lengkap!</strong> Silakan upload atau perbarui dokumen Anda.
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+<div class="row">
+  <div class="col-md-4 mb-4">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-body text-center p-4">
+        {% if nasabah.foto %}
+        <img src="{{ url_for('static', filename=nasabah.foto) }}" alt="Foto" class="rounded-circle mb-3" style="width:120px;height:120px;object-fit:cover;border:3px solid #e2e8f0;">
+        {% else %}
+        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width:120px;height:120px;border:3px solid #e2e8f0;">
+          <i class="bi bi-person text-secondary" style="font-size:4rem;"></i>
+        </div>
+        {% endif %}
+        <h5 class="fw-bold mb-1">{{ nasabah.nama }}</h5>
+        <div class="text-muted small mb-3">ID: {{ nasabah.nasabah_id }}</div>
+        
+        <span class="badge rounded-pill {% if nasabah.status=='aktif' %}bg-success{% elif nasabah.status=='calon' %}bg-warning text-dark{% else %}bg-secondary{% endif %} px-3 py-2 mb-3 shadow-sm">
+          Status: {{ nasabah.status|capitalize }}
+        </span>
+
+        {% if nasabah.status == 'calon' %}
+        <div class="alert alert-warning text-start" style="font-size:0.8rem;">
+          <i class="bi bi-info-circle-fill me-1"></i> Akun Anda masih dalam proses verifikasi. Beberapa fitur mungkin dibatasi.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+      <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+        <h5 class="fw-bold"><i class="bi bi-person-vcard text-primary me-2"></i>Data Pribadi</h5>
+      </div>
+      <div class="card-body">
+        <table class="table table-borderless table-sm">
+          <tbody>
+            <tr><td class="text-muted w-25">NIK</td><td class="fw-semibold">{{ nasabah.nik }}</td></tr>
+            <tr><td class="text-muted">Desa</td><td class="fw-semibold">{{ nasabah.nama_desa }}</td></tr>
+            <tr><td class="text-muted">TTL</td><td class="fw-semibold">{{ nasabah.tempat_lahir }}, {{ nasabah.tanggal_lahir.strftime('%d-%m-%Y') if nasabah.tanggal_lahir else '-' }}</td></tr>
+            <tr><td class="text-muted">Jenis Kelamin</td><td class="fw-semibold">{{ nasabah.jenis_kelamin or '-' }}</td></tr>
+            <tr><td class="text-muted">Pekerjaan</td><td class="fw-semibold">{{ nasabah.pekerjaan or '-' }}</td></tr>
+            <tr><td class="text-muted">No. HP</td><td class="fw-semibold">{{ nasabah.no_hp or '-' }}</td></tr>
+            <tr><td class="text-muted">Alamat</td><td class="fw-semibold">{{ nasabah.alamat or '-' }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+        <h5 class="fw-bold"><i class="bi bi-file-earmark-check text-success me-2"></i>Status Dokumen</h5>
+      </div>
+      <div class="card-body">
+        {% set incomplete_docs = [] %}
+        {% for field in ['foto', 'ktp', 'kk', 'surat_usaha', 'bukti_penghasilan', 'jaminan'] %}
+          {% if not nasabah[field] %}
+            {% set _ = incomplete_docs.append(field) %}
+          {% endif %}
+        {% endfor %}
+        
+        {% if incomplete_docs %}
+        <div class="alert alert-warning py-2 mb-3">
+          <i class="bi bi-exclamation-circle me-1"></i>
+          <strong>{{ incomplete_docs|length }} dokumen belum lengkap.</strong>
+          <a href="{{ url_for('main.ajuan_dokumen') }}" class="btn btn-warning btn-sm ms-2">
+            <i class="bi bi-send me-1"></i>Ajukan Perubahan
+          </a>
+        </div>
+        {% endif %}
+        
+        <form method="POST" enctype="multipart/form-data" class="mb-3" style="display: block !important;">
+  <style>
+    @media (max-width: 768px) {
+      .doc-upload { display: block !important; }
+      .doc-upload input { display: block !important; width: 100% !important; }
+    }
+  </style>
+          <div class="row g-3">
+            {% for label, field, icon in [('Foto', 'foto', 'bi-camera'), ('KTP', 'ktp', 'bi-credit-card-2-front'), ('Kartu Keluarga', 'kk', 'bi-card-list'), ('Surat Usaha', 'surat_usaha', 'bi-file-earmark-text'), ('Bukti Penghasilan', 'bukti_penghasilan', 'bi-cash-coin'), ('Jaminan', 'jaminan', 'bi-shield-check')] %}
+            {% set has_doc = nasabah[field] %}
+            {% set is_approved = field in approved_docs %}
+            <div class="col-sm-6 col-md-4">
+              <div class="d-flex align-items-center p-2 border rounded {% if has_doc %}border-success bg-light-success{% else %}border-secondary bg-light{% endif %}">
+                <i class="bi {{ icon }} fs-4 me-3 {% if has_doc %}text-success{% else %}text-secondary{% endif %}"></i>
+                <div class="small flex-grow-1">
+                  <div class="fw-bold {% if has_doc %}text-success{% else %}text-muted{% endif %}">{{ label }}</div>
+                  {% if has_doc %}
+                  <a href="{{ url_for('static', filename=has_doc) }}" target="_blank" class="text-success text-decoration-none" style="font-size:0.7rem;">Lihat</a>
+                  {% else %}
+                  <div class="text-danger" style="font-size:0.7rem;">Belum ada</div>
+                  {% endif %}
+                  {% if is_approved %}
+                  <input type="file" name="{{ field }}" class="form-control form-control-sm mt-1" accept="image/*,.pdf" style="display:block !important;">
+                  <div class="text-success mt-1" style="font-size:0.65rem;"><i class="bi bi-check-circle"></i> Disetujui untuk upload</div>
+                  {% else %}
+                  <input type="file" name="{{ field }}" class="form-control form-control-sm mt-1" accept="image/*,.pdf" disabled style="display:block !important; background-color: #e9ecef;">
+                  <div class="text-muted mt-1" style="font-size:0.65rem;"><i class="bi bi-lock"></i> Ajukan perubahan untuk upload</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="mt-3 text-end">
+            <button type="submit" class="btn btn-primary btn-sm" {% if not approved_docs %}disabled{% endif %}>
+              <i class="bi bi-upload me-1"></i> Upload/Perbarui Dokumen
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

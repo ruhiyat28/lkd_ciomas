@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Daftar Pengajuan Penarikan{% endblock %}
+{% block page_title %}Pengajuan Penarikan Tabungan{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+    <h5 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-warning"></i>Menunggu Persetujuan</h5>
+  </div>
+  <div class="table-responsive p-0">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th class="ps-4">Tanggal</th>
+          <th>Nasabah</th>
+          <th class="text-end">Jumlah</th>
+          <th>Keterangan</th>
+          <th>Status</th>
+          <th class="pe-4 text-center">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in list_pengajuan %}
+        <tr>
+          <td class="ps-4 text-muted small">{{ p.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td>
+            <div class="fw-bold">{{ p.rekening.nasabah.nama }}</div>
+            <div class="small text-muted">{{ p.rekening.no_rekening }}</div>
+          </td>
+          <td class="text-end fw-bold text-dark">Rp {{ '{:,.0f}'.format(p.jumlah) }}</td>
+          <td class="small">{{ p.keterangan or '-' }}</td>
+          <td>
+            {% if p.status == 'menunggu' %}
+            <span class="badge bg-warning text-dark rounded-pill">Menunggu</span>
+            {% elif p.status == 'disetujui' %}
+            <span class="badge bg-success rounded-pill">Disetujui</span>
+            {% else %}
+            <span class="badge bg-danger rounded-pill">Ditolak</span>
+            {% endif %}
+          </td>
+          <td class="pe-4 text-center">
+            {% if p.status == 'menunggu' %}
+            <div class="d-flex gap-1 justify-content-center">
+              <button class="btn btn-sm btn-success px-3 rounded-pill" 
+                      data-bs-toggle="modal" data-bs-target="#modalSetuju{{ p.id }}">Setujui</button>
+              <button class="btn btn-sm btn-outline-danger px-3 rounded-pill" 
+                      data-bs-toggle="modal" data-bs-target="#modalTolak{{ p.id }}">Tolak</button>
+            </div>
+
+            <!-- Modal Setuju -->
+            <div class="modal fade" id="modalSetuju{{ p.id }}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header border-0"><h5 class="fw-bold">Konfirmasi Persetujuan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                  <div class="modal-body text-center py-4">
+                    <i class="bi bi-check-circle text-success fs-1 mb-3"></i>
+                    <p>Setujui penarikan dana sebesar <strong>Rp {{ '{:,.0f}'.format(p.jumlah) }}</strong> untuk <strong>{{ p.rekening.nasabah.nama }}</strong>?</p>
+                    <p class="small text-muted">Saldo nasabah akan otomatis berkurang dan tercatat di mutasi tabungan.</p>
+                  </div>
+                  <div class="modal-footer border-0">
+                    <form method="POST" action="{{ url_for('tabungan.proses_pengajuan', id=p.id) }}">
+                      <input type="hidden" name="aksi" value="setujui">
+                      <button type="submit" class="btn btn-success px-4 rounded-pill fw-bold">Ya, Setujui</button>
+                      <button type="button" class="btn btn-light px-4 rounded-pill" data-bs-dismiss="modal">Batal</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modal Tolak -->
+            <div class="modal fade" id="modalTolak{{ p.id }}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header border-0"><h5 class="fw-bold">Tolak Pengajuan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                  <form method="POST" action="{{ url_for('tabungan.proses_pengajuan', id=p.id) }}">
+                    <input type="hidden" name="aksi" value="tolak">
+                    <div class="modal-body py-4">
+                      <p>Berikan alasan penolakan untuk <strong>{{ p.rekening.nasabah.nama }}</strong>:</p>
+                      <textarea name="alasan" class="form-control" rows="3" required placeholder="Contoh: Saldo tidak mencukupi, data tidak valid, dll..."></textarea>
+                    </div>
+                    <div class="modal-footer border-0">
+                      <button type="submit" class="btn btn-danger px-4 rounded-pill fw-bold">Tolak Pengajuan</button>
+                      <button type="button" class="btn btn-light px-4 rounded-pill" data-bs-dismiss="modal">Batal</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <span class="text-muted small">-</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center py-5 text-muted">Belum ada pengajuan penarikan.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

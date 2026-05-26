@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Bonus Penagihan{% endblock %}
+{% block page_title %}Bonus Penagihan{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+  <div>
+    <h1>Bonus Penagihan</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item active">Bonus Penagihan</li>
+    </ol></nav>
+  </div>
+  <a href="{{ url_for('pengaturan.bonus') }}" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-gear me-1"></i> Pengaturan Persentase
+  </a>
+</div>
+
+{# Stat cards #}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-blue">
+      <div class="stat-label">Total Bonus</div>
+      <div class="stat-value">Rp {{ "{:,.0f}".format(total_bonus) }}</div>
+      <i class="bi bi-gift stat-icon"></i>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-green">
+      <div class="stat-label">Total Pembayaran</div>
+      <div class="stat-value">Rp {{ "{:,.0f}".format(total_bayar) }}</div>
+      <i class="bi bi-wallet2 stat-icon"></i>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-orange">
+      <div class="stat-label">Menunggu Klaim</div>
+      <div class="stat-value">{{ bonus_list|selectattr('status', 'equalto', 'menunggu_klaim')|list|length }}</div>
+      <i class="bi bi-clock stat-icon"></i>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-teal">
+      <div class="stat-label">Sudah Diklaim</div>
+      <div class="stat-value">{{ bonus_list|selectattr('status', 'equalto', 'diklaim')|list|length }}</div>
+      <i class="bi bi-check-circle stat-icon"></i>
+    </div>
+  </div>
+</div>
+
+{# Filter #}
+<form method="get" class="row g-2 mb-3 align-items-end">
+  <div class="col-auto">
+    <label class="form-label small">Dari</label>
+    <input type="date" name="dari" class="form-control form-control-sm" value="{{ tgl_dari.strftime('%Y-%m-%d') }}">
+  </div>
+  <div class="col-auto">
+    <label class="form-label small">Sampai</label>
+    <input type="date" name="sampai" class="form-control form-control-sm" value="{{ tgl_sampai.strftime('%Y-%m-%d') }}">
+  </div>
+  <div class="col-sm-3 col-md-2">
+    <label class="form-label small">Status</label>
+    <select name="status" class="form-select form-select-sm">
+      <option value="">Semua Status</option>
+      <option value="belum_diklaim" {% if status_filter == 'belum_diklaim' %}selected{% endif %}>Belum Diklaim</option>
+      <option value="menunggu_klaim" {% if status_filter == 'menunggu_klaim' %}selected{% endif %}>Menunggu Klaim</option>
+      <option value="diklaim" {% if status_filter == 'diklaim' %}selected{% endif %}>Diklaim</option>
+    </select>
+  </div>
+  <div class="col-sm-4 col-md-3">
+    <label class="form-label small">Petugas</label>
+    <select name="petugas_id" class="form-select form-select-sm">
+      <option value="">Semua Petugas</option>
+      {% for p in petugas_list %}
+      <option value="{{ p.id }}" {% if petugas_id|int == p.id %}selected{% endif %}>{{ p.nama_lengkap }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Filter</button>
+  </div>
+</form>
+
+
+{# Klaim yang menunggu persetujuan #}
+{% set klaim_list = bonus_list|selectattr('status', 'equalto', 'menunggu_klaim')|list %}
+{% if klaim_list %}
+<form method="post" action="{{ url_for('bonus.setuju_klaim') }}">
+<div class="card border-warning mb-3">
+  <div class="card-header py-2 bg-warning bg-opacity-25">
+    <span class="text-warning fw-bold">
+      <i class="bi bi-exclamation-circle me-2"></i>Pengajuan Klaim Bonus — Perlu Persetujuan ({{ klaim_list|length }})
+    </span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th><input type="checkbox" class="form-check-input" onclick="document.querySelectorAll('.klaim-check').forEach(c=>c.checked=this.checked)"></th>
+          <th>Petugas</th>
+          <th>Tanggal</th>
+          <th>Kuitansi</th>
+          <th>Nasabah</th>
+          <th>Tahun</th>
+          <th class="text-end">Bonus</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in klaim_list %}
+        <tr>
+          <td><input type="checkbox" name="bonus_ids" value="{{ b.id }}" class="form-check-input klaim-check"></td>
+          <td>{{ b.petugas.nama_lengkap }}</td>
+          <td>{{ b.tanggal_hitung.strftime('%d-%m-%Y') }}</td>
+          <td><small>{{ b.pembayaran.no_kuitansi }}</small></td>
+          <td>{{ b.pembayaran.pinjaman.nasabah.nama }}</td>
+          <td>{{ b.tahun_tunggakan }}</td>
+          <td class="text-end fw-bold text-success">Rp {{ "{:,.0f}".format(b.jumlah_bonus) }}</td>
+          <td>
+            <form method="post" action="{{ url_for('bonus.tolak_klaim', bonus_id=b.id) }}" class="d-inline">
+              <button type="submit" class="btn btn-sm btn-outline-danger" data-confirm="Tolak klaim ini?">
+                <i class="bi bi-x-circle"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer">
+    <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check-circle me-1"></i>Setujui Klaim Terpilih</button>
+  </div>
+</div>
+</form>
+{% endif %}
+
+{# Rekap per Petugas #}
+<div class="card">
+  <div class="card-header py-2">
+    <span><i class="bi bi-people me-2"></i>Rekap Bonus per Petugas</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Petugas</th>
+          <th class="text-center">Jml Transaksi</th>
+          <th class="text-end">Total Pembayaran</th>
+          <th class="text-end">Total Bonus</th>
+          <th class="text-center">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pid, data in rekap_by_petugas.items() %}
+        <tr>
+          <td class="fw-semibold">{{ data.nama }}</td>
+          <td class="text-center">{{ data.jumlah }}</td>
+          <td class="text-end">Rp {{ "{:,.0f}".format(data.total_bayar) }}</td>
+          <td class="text-end fw-bold text-success">Rp {{ "{:,.0f}".format(data.total_bonus) }}</td>
+          <td class="text-center">
+            <a href="{{ url_for('bonus.detail', petugas_id=pid, dari=tgl_dari.strftime('%Y-%m-%d'), sampai=tgl_sampai.strftime('%Y-%m-%d')) }}"
+               class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye"></i> Detail
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-3">Tidak ada data bonus dalam periode ini</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

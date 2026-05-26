@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}Laporan Aset{% endblock %}
+{% block page_title %}Laporan Aset Tetap{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0" style="font-size:0.76rem">
+      <li class="breadcrumb-item"><a href="{{ url_for('akuntansi.aset_index') }}">Manajemen Aset</a></li>
+      <li class="breadcrumb-item active">Laporan</li>
+    </ol>
+  </nav>
+  <button class="btn btn-sm btn-outline-primary no-print" onclick="window.print()">
+    <i class="bi bi-printer me-1"></i>Cetak
+  </button>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="stat-card stat-blue">
+      <div class="stat-label">Total Perolehan</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(grand_total_perolehan) }}</div>
+      <i class="bi bi-building stat-icon"></i>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card stat-red">
+      <div class="stat-label">Total Akumulasi Penyusutan</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(grand_total_akumulasi) }}</div>
+      <i class="bi bi-graph-down-arrow stat-icon"></i>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card stat-green">
+      <div class="stat-label">Nilai Buku Bersih</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(grand_total_buku) }}</div>
+      <i class="bi bi-safe stat-icon"></i>
+    </div>
+  </div>
+</div>
+
+{% for kat, data in dari_kat.items() %}
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-folder2 me-1"></i>{{ kat }}</span>
+    <span class="text-muted small">
+      {{ data.aset|length }} aset &middot;
+      Buku: Rp {{ '{:,.0f}'.format(data.total_buku) }}
+    </span>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Kode</th>
+            <th>Nama</th>
+            <th>Tgl Perolehan</th>
+            <th class="text-end">Perolehan</th>
+            <th class="text-end">Akumulasi</th>
+            <th class="text-end">Nilai Buku</th>
+            <th>Umur</th>
+            <th>Lokasi</th>
+            <th>Kondisi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in data.aset %}
+          <tr>
+            <td><code>{{ a.kode_aset or '-' }}</code></td>
+            <td>{{ a.nama }}</td>
+            <td>{{ a.tanggal_perolehan.strftime('%d/%m/%Y') if a.tanggal_perolehan else '-' }}</td>
+            <td class="text-end money">Rp {{ '{:,.0f}'.format(a.nilai_perolehan) }}</td>
+            <td class="text-end money text-danger">Rp {{ '{:,.0f}'.format(a.akumulasi_penyusutan) }}</td>
+            <td class="text-end money fw-600">Rp {{ '{:,.0f}'.format(a.nilai_buku) }}</td>
+            <td>{{ a.umur_ekonomis or '-' }} thn</td>
+            <td>{{ a.lokasi or '-' }}</td>
+            <td>
+              {% if a.kondisi == 'baik' %}<span class="badge bg-success">Baik</span>
+              {% elif a.kondisi == 'rusak_ringan' %}<span class="badge bg-warning text-dark">Rusak Ringan</span>
+              {% else %}<span class="badge bg-danger">Rusak Berat</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-group-divider fw-bold">
+          <tr>
+            <td colspan="3">Total {{ kat }}</td>
+            <td class="text-end money">Rp {{ '{:,.0f}'.format(data.total_perolehan) }}</td>
+            <td class="text-end money text-danger">Rp {{ '{:,.0f}'.format(data.total_akumulasi) }}</td>
+            <td class="text-end money">Rp {{ '{:,.0f}'.format(data.total_buku) }}</td>
+            <td colspan="3"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<div class="card">
+  <div class="card-header fw-bold">Grand Total</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <tfoot>
+          <tr class="fw-bold">
+            <td style="width:200px;">Semua Kategori</td>
+            <td class="text-end money">{{ aset_list|length }} aset</td>
+            <td class="text-end money">Rp {{ '{:,.0f}'.format(grand_total_perolehan) }}</td>
+            <td class="text-end money text-danger">Rp {{ '{:,.0f}'.format(grand_total_akumulasi) }}</td>
+            <td class="text-end money fs-6 text-primary">Rp {{ '{:,.0f}'.format(grand_total_buku) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

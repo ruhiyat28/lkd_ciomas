@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Form Aset{% endblock %}
+{% block page_title %}Form Aset{% endblock %}
+{% block content %}
+
+<div class="page-header"><h1>{{ "Edit" if aset else "Tambah" }} Aset</h1></div>
+<div class="row justify-content-center"><div class="col-md-8">
+  <div class="card">
+    <div class="card-header"><i class="bi bi-building me-2 text-primary"></i>Data Aset</div>
+    <div class="card-body">
+      <form method="POST">
+        <div class="row g-3">
+          <div class="col-md-4"><label class="form-label">Kode Aset</label>
+            <input type="text" name="kode_aset" class="form-control money" value="{{ aset.kode_aset if aset else "" }}"></div>
+          <div class="col-md-8"><label class="form-label">Nama Aset <span class="text-danger">*</span></label>
+            <input type="text" name="nama" class="form-control" value="{{ aset.nama if aset else "" }}" required></div>
+          <div class="col-md-4"><label class="form-label">Kategori</label>
+            <select name="kategori" class="form-select" id="kategoriSelect">
+              {% for k in kategori_list %}
+              <option value="{{ k }}" {% if aset and aset.kategori==k %}selected{% endif %}>{{ k }}</option>
+              {% endfor %}
+            </select></div>
+          <div class="col-md-4"><label class="form-label">Tanggal Perolehan</label>
+            <input type="date" name="tanggal_perolehan" class="form-control" value="{{ aset.tanggal_perolehan.strftime("%Y-%m-%d") if aset and aset.tanggal_perolehan else "" }}"></div>
+          <div class="col-md-4"><label class="form-label">Umur Ekonomis (tahun)</label>
+            <input type="number" name="umur_ekonomis" class="form-control" value="{{ aset.umur_ekonomis if aset else 0 }}"></div>
+          <div class="col-md-6"><label class="form-label">Nilai Perolehan (Rp)</label>
+            <input type="text" name="nilai_perolehan" class="form-control money" oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+              value="{{ aset.nilai_perolehan if aset else 0 }}"></div>
+          <div class="col-md-6"><label class="form-label">Akumulasi Penyusutan (Rp)</label>
+            <input type="text" name="akumulasi_penyusutan" class="form-control money" oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+              value="{{ aset.akumulasi_penyusutan if aset else 0 }}"></div>
+          <div class="col-md-6"><label class="form-label">Akun COA (Debit)</label>
+            <select name="akun_id" class="form-select" id="akunIdSelect">
+              <option value="">— Pilih Akun Aset —</option>
+              {% for a in akun_list %}<option value="{{ a.id }}" data-kode="{{ a.kode }}" {% if aset and aset.akun_id==a.id %}selected{% endif %}>{{ a.kode }} — {{ a.nama }}</option>{% endfor %}
+            </select></div>
+          {% if not aset %}
+          <div class="col-md-6"><label class="form-label">Sumber Dana (Kredit)</label>
+            <select name="sumber_dana_id" class="form-select">
+              <option value="">— Tanpa Jurnal —</option>
+              {% for a in akun_sumber %}<option value="{{ a.id }}" {% if default_sumber_id==a.id %}selected{% endif %}>{{ a.kode }} — {{ a.nama }}</option>{% endfor %}
+            </select>
+            <small class="text-muted">Otomatis membuat jurnal pembelian aset</small></div>
+          {% endif %}
+          <div class="col-md-3"><label class="form-label">Kondisi</label>
+            <select name="kondisi" class="form-select">
+              <option value="baik" {% if not aset or aset.kondisi=="baik" %}selected{% endif %}>Baik</option>
+              <option value="rusak_ringan" {% if aset and aset.kondisi=="rusak_ringan" %}selected{% endif %}>Rusak Ringan</option>
+              <option value="rusak_berat" {% if aset and aset.kondisi=="rusak_berat" %}selected{% endif %}>Rusak Berat</option>
+            </select></div>
+          {% if aset %}
+          <div class="col-md-3 d-flex align-items-end">
+            <div class="form-check"><input class="form-check-input" type="checkbox" name="aktif" id="cbAktif" {% if aset.aktif %}checked{% endif %}>
+            <label class="form-check-label" for="cbAktif">Aktif</label></div>
+          </div>
+          {% endif %}
+          <div class="col-12"><label class="form-label">Lokasi</label>
+            <input type="text" name="lokasi" class="form-control" value="{{ aset.lokasi if aset else "" }}"></div>
+          <div class="col-12"><label class="form-label">Keterangan</label>
+            <textarea name="keterangan" class="form-control" rows="2">{{ aset.keterangan if aset else "" }}</textarea></div>
+        </div>
+        <div class="d-flex gap-2 mt-3">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save-fill me-1"></i>Simpan</button>
+          <a href="{{ url_for("akuntansi.aset_index") }}" class="btn btn-outline-secondary">Batal</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block extra_js %}
+{% if not aset %}
+<script>
+const KATEGORI_KE_KODE = {
+  {% for k, v in kategori_akun_map.items() %}
+  '{{ k }}': '{{ v }}',
+  {% endfor %}
+};
+function pilihAkunByKategori(kategori) {
+  const kode = KATEGORI_KE_KODE[kategori];
+  const select = document.getElementById('akunIdSelect');
+  if (!kode || !select) return;
+  for (let opt of select.options) {
+    if (opt.dataset.kode === kode) {
+      opt.selected = true;
+      break;
+    }
+  }
+}
+document.getElementById('kategoriSelect').addEventListener('change', function() {
+  pilihAkunByKategori(this.value);
+});
+pilihAkunByKategori(document.getElementById('kategoriSelect').value);
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% block title %}Pembayaran Pesanan{% endblock %}
+{% block page_title %}Pembayaran Pesanan{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Pembayaran Pesanan</h1>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('umkm.pesanan_saya') }}">Pesanan Saya</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('umkm.detail_pesanan_nasabah', id=pesanan.nomor_pesanan) }}">{{ pesanan.nomor_pesanan }}</a></li>
+      <li class="breadcrumb-item active">Pembayaran</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-8">
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+      <div class="card-header bg-white">
+        <h5 class="mb-0">Ringkasan Pesanan</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>No. Pesanan:</strong> {{ pesanan.nomor_pesanan }}</p>
+            <p><strong>Tanggal:</strong> {{ pesanan.tanggal_pesanan.strftime('%d/%m/%Y %H:%M') }}</p>
+          </div>
+          <div class="col-md-6">
+            <p><strong>Penjual:</strong> {{ pesanan.penjual.nama }}</p>
+            <p class="fw-bold fs-5"><strong>Total:</strong> Rp {{ pesanan.total_harga|number_format }}</p>
+          </div>
+        </div>
+        
+        <h6 class="mt-3">Produk:</h6>
+        <ul class="list-group">
+          {% for detail in pesanan.detail_list %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{ detail.produk.nama_produk }} ({{ detail.jumlah }} {{ detail.produk.satuan }})
+            <span class="badge bg-secondary">Rp {{ detail.subtotal|number_format }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-header bg-white">
+        <h5 class="mb-0">Metode Pembayaran</h5>
+      </div>
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data" id="form-pembayaran">
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Pilih metode pembayaran:</label>
+            <div class="row g-3">
+              {% for rek in rekening_list %}
+              <div class="col-md-6">
+                <div class="form-check border rounded p-3 {% if rek.nama_bank.lower() in ['dana','ovo','gopay','shopeepay','shopee_pay','linkaja','link_aja'] %}border-primary{% else %}border-success{% endif %}">
+                  <input class="form-check-input" type="radio" name="metode_pembayaran" id="rek_{{ rek.id }}" value="{{ rek.nama_bank|lower }}" data-rek-id="{{ rek.id }}" required>
+                  <label class="form-check-label fw-semibold" for="rek_{{ rek.id }}">
+                    {% if rek.nama_bank.lower() in ['dana','ovo','gopay','shopeepay','shopee_pay','linkaja','link_aja'] %}
+                    <i class="bi bi-phone"></i>
+                    {% else %}
+                    <i class="bi bi-bank"></i>
+                    {% endif %}
+                    {{ rek.nama_bank }}
+                  </label>
+                  <small class="d-block text-muted">{{ rek.nama_rekening }} - {{ rek.nomor_rekening }}</small>
+                </div>
+              </div>
+              {% endfor %}
+              
+              <div class="col-12">
+                <div class="form-check border rounded p-3 border-warning">
+                  <input class="form-check-input" type="radio" name="metode_pembayaran" id="cod" value="cod">
+                  <label class="form-check-label fw-semibold text-warning" for="cod">
+                    <i class="bi bi-truck"></i> COD (Bayar di Tempat)
+                  </label>
+                  <small class="d-block text-muted">Bayar langsung saat paket diterima</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="transfer-info" class="alert alert-success d-none">
+            <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Informasi Transfer</h6>
+            <hr>
+            <div id="rek-detail"></div>
+            <hr>
+            <p class="mb-0">Total Transfer: <strong>Rp {{ pesanan.total_harga|number_format }}</strong></p>
+          </div>
+
+          <div id="upload-bukti" class="mb-4 d-none">
+            <label class="form-label">Upload Bukti Pembayaran <span class="text-danger">*</span></label>
+            <input type="file" class="form-control" name="bukti_pembayaran" id="bukti_pembayaran" accept="image/*" required>
+            <small class="text-muted">Format: JPG, PNG, GIF. Maksimal 5MB</small>
+            <div id="preview-container" class="mt-2 d-none">
+              <img id="preview-bukti" src="" class="img-fluid img-thumbnail" style="max-height: 200px;" alt="Preview Bukti">
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-lg" id="btn-submit" disabled>
+              <i class="bi bi-check-circle"></i> Konfirmasi Pembayaran
+            </button>
+            <a href="{{ url_for('umkm.detail_pesanan_nasabah', id=pesanan.nomor_pesanan) }}" class="btn btn-outline-secondary btn-lg">
+              Batal
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-header bg-white">
+        <h5 class="mb-0">Cara Pembayaran</h5>
+      </div>
+      <div class="card-body">
+        <ol class="ps-3">
+          <li class="mb-2">Pilih metode pembayaran (transfer/COD)</li>
+          <li class="mb-2">Untuk transfer: Transfer sesuai total ke rekening yang muncul</li>
+          <li class="mb-2">Upload bukti pembayaran</li>
+          <li class="mb-2">Klik "Konfirmasi Pembayaran"</li>
+          <li class="mb-0">Tunggu konfirmasi dari admin</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('input[name="metode_pembayaran"]').forEach(function(radio) {
+  radio.addEventListener('change', function() {
+    var transferInfo = document.getElementById('transfer-info');
+    var uploadBukti = document.getElementById('upload-bukti');
+    var btnSubmit = document.getElementById('btn-submit');
+    var rekDetail = document.getElementById('rek-detail');
+    var buktiInput = document.getElementById('bukti_pembayaran');
+    
+    if (this.value === 'cod') {
+      transferInfo.classList.add('d-none');
+      uploadBukti.classList.add('d-none');
+      buktiInput.removeAttribute('required');
+      btnSubmit.disabled = false;
+    } else {
+      transferInfo.classList.remove('d-none');
+      uploadBukti.classList.remove('d-none');
+      buktiInput.setAttribute('required', 'required');
+      btnSubmit.disabled = true;
+      
+      // Tampilkan detail rekening yang dipilih
+      var rekId = this.getAttribute('data-rek-id');
+      var rekData = {{ rekening_data | tojson }};
+      var selectedRek = rekData.find(r => r.id == rekId);
+      
+      if (selectedRek) {
+        var icon = ['dana','ovo','gopay','shopeepay','shopee_pay','linkaja','link_aja'].includes(selectedRek.nama_bank.toLowerCase()) 
+          ? '<i class="bi bi-phone me-2"></i>' 
+          : '<i class="bi bi-bank me-2"></i>';
+        rekDetail.innerHTML = '<div class="mb-2">' + icon + '<strong>' + selectedRek.nama_bank + '</strong></div>' +
+                              '<div class="mb-1">A/n: <strong>' + selectedRek.nama_rekening + '</strong></div>' +
+                              '<div>No. Rek: <strong>' + selectedRek.nomor_rekening + '</strong></div>';
+      }
+    }
+  });
+});
+
+// Preview bukti pembayaran
+document.getElementById('bukti_pembayaran').addEventListener('change', function(e) {
+  var file = e.target.files[0];
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) {
+      notif('Ukuran file maksimal 5MB', 'warning');
+      this.value = '';
+      return;
+    }
+    
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('preview-bukti').src = e.target.result;
+      document.getElementById('preview-container').classList.remove('d-none');
+      document.getElementById('btn-submit').disabled = false;
+    };
+    reader.readAsDataURL(file);
+  }
+});
+</script>
+{% endblock %}

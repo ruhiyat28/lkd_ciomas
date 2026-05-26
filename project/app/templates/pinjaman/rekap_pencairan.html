@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Rekap Pencairan{% endblock %}
+{% block page_title %}Rekap Pencairan{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div><h1>Rekap Pencairan</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('pinjaman.index') }}">Pinjaman</a></li>
+    <li class="breadcrumb-item active">Rekap Pencairan</li>
+  </ol></nav></div>
+  <a href="?dari={{ tgl_dari }}&sampai={{ tgl_sampai }}&desa={{ desa_filter }}&cetak=1" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-printer me-1"></i>Cetak</a>
+</div>
+
+<div class="card mb-3"><div class="card-body py-3">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-3"><label class="form-label">Dari Tanggal</label><input type="date" name="dari" class="form-control" value="{{ tgl_dari }}"></div>
+    <div class="col-md-3"><label class="form-label">Sampai Tanggal</label><input type="date" name="sampai" class="form-control" value="{{ tgl_sampai }}"></div>
+    <div class="col-md-3"><label class="form-label">Desa</label>
+      <select name="desa" class="form-select"><option value="">Semua Desa</option>
+        {% for k,n in desa_list %}<option value="{{ k }}" {% if desa_filter==k %}selected{% endif %}>{{ n }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3"><button type="submit" class="btn btn-primary w-100">Filter</button></div>
+  </form>
+</div></div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="stat-card stat-blue"><i class="bi bi-cash-stack stat-icon"></i>
+      <div class="stat-label">Total Pencairan</div>
+      <div class="stat-value money" style="font-size:1rem;">Rp {{ '{:,.0f}'.format(total_cair) }}</div>
+      <div class="stat-sub">{{ pinjaman_list|length }} pinjaman dicairkan</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-receipt-cutoff me-2"></i>Daftar Pencairan</div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>No</th><th>No. SPK</th><th>Nasabah</th><th>Desa</th><th>Tgl Cair</th><th class="text-end">Jumlah</th><th>Tenor</th><th class="text-end">Angsuran/Bln</th><th></th></tr></thead>
+      <tbody>
+        {% for p in pinjaman_list %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td class="money" style="font-size:.8rem;">{{ p.spk }}</td>
+          <td><strong>{{ p.nasabah.nama }}</strong><br><small class="text-muted">{{ p.nasabah.nasabah_id }}</small></td>
+          <td><span class="badge" style="background:#e0f2fe;color:#0369a1;">{{ p.nasabah.kode_desa }}</span></td>
+          <td>{{ p.tanggal_cair.strftime('%d/%m/%Y') }}</td>
+          <td class="text-end money fw-bold">{{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</td>
+          <td>{{ p.tenor }} bln</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(p.angsuran_total or 0) }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('pinjaman.detail', id=p.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+              <a href="{{ url_for('pinjaman.cetak_kuitansi_cair', id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4">Tidak ada data pencairan pada periode ini</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if pinjaman_list %}
+      <tfoot class="table-light">
+        <tr><td colspan="5" class="fw-bold">TOTAL ({{ pinjaman_list|length }})</td>
+          <td class="text-end money fw-bold">{{ '{:,.0f}'.format(total_cair) }}</td>
+          <td colspan="3"></td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endblock %}

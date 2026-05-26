@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Kolektibilitas — {{ nama_desa }}{% endblock %}
+{% block page_title %}Kolektibilitas: {{ nama_desa }}{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div><h1>{{ nama_desa }}</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('laporan.kolektibilitas') }}">Kolektibilitas</a></li>
+    <li class="breadcrumb-item active">{{ nama_desa }}</li>
+  </ol></nav></div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('laporan.kolektibilitas') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Kembali</a>
+    <a href="?desa={{ desa_filter }}&cetak=1" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>Cetak</a>
+  </div>
+</div>
+
+<!-- Compact summary -->
+<div class="row g-3 mb-3">
+  {% set cls={1:'stat-green',2:'stat-orange',3:'stat-orange',4:'stat-red',5:'stat-purple'} %}
+  {% for k in range(1,6) %}
+  <div class="col"><div class="stat-card {{ cls[k] }}">
+    <div class="stat-label">Kol {{ k }}: {{ KOLEK_LABELS[k] }}</div>
+    <div class="stat-value">Rp {{ '{:,.0f}'.format(summary[k].saldo) }}</div>
+    <div class="stat-sub">{{ summary[k].count }} <small>nasabah</small></div>
+  </div></div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-bar-chart-fill me-2"></i>Detail Nasabah — {{ rows|length }} pinjaman aktif</div>
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.82rem;">
+      <thead><tr><th>ID</th><th>Nama</th><th>SPK</th><th class="text-end">Saldo</th>
+        <th class="text-center">Tunggak</th><th class="text-center">Kolektibilitas</th>
+        <th class="text-end">Cad. Risiko</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td class="money" style="font-size:.79rem;">{{ r.p.nasabah.nasabah_id }}</td>
+          <td><a href="{{ url_for('pinjaman.detail', id=r.p.id) }}">{{ r.p.nasabah.nama }}</a></td>
+          <td class="money" style="font-size:.78rem;">{{ r.p.spk }}</td>
+          <td class="text-end money fw-bold">{{ '{:,.0f}'.format(r.saldo) }}</td>
+          <td class="text-center">{% if r.bulan_nunggak > 0 %}<span class="badge bg-danger">{{ r.bulan_nunggak }} bln</span>{% else %}<span class="text-muted">-</span>{% endif %}</td>
+          <td class="text-center"><span class="badge kolek-{{ r.kolek }} rounded-pill">Kol {{ r.kolek }}: {{ r.kolek_label }}</span></td>
+          <td class="text-end money text-warning fw-bold">{{ '{:,.0f}'.format(r.cadangan) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light fw-bold">
+        <tr><td colspan="3">TOTAL</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(total_saldo) }}</td>
+          <td colspan="2"></td>
+          <td class="text-end money text-warning">{{ '{:,.0f}'.format(total_cadangan) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}

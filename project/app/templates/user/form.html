@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if user else 'Tambah' }} User{% endblock %}
+{% block page_title %}{{ 'Edit' if user else 'Tambah' }} User{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ 'Edit' if user else 'Tambah' }} User</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('user_mgmt.index') }}">Users</a></li>
+    <li class="breadcrumb-item active">{{ 'Edit' if user else 'Tambah' }}</li>
+  </ol></nav>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-person-gear me-2 text-primary"></i>Data User</div>
+      <div class="card-body">
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">Username <span class="text-danger">*</span></label>
+            <input type="text" name="username" class="form-control money" value="{{ user.username if user else '' }}" {% if user %}readonly{% endif %} required placeholder="contoh: kredit1">
+            {% if user %}<div class="form-text">Username tidak dapat diubah.</div>{% endif %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
+            <input type="text" name="nama_lengkap" class="form-control" value="{{ user.nama_lengkap if user else '' }}" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Role <span class="text-danger">*</span></label>
+            <select name="role" class="form-select" required>
+                <option value="">-- Pilih Role --</option>
+                <option value="admin"       {% if user and user.role=='admin'       %}selected{% endif %}>Admin / Direktur</option>
+                <option value="manajer_lkd" {% if user and user.role=='manajer_lkd' %}selected{% endif %}>Manajer LKD</option>
+                <option value="kredit"      {% if user and user.role=='kredit'      %}selected{% endif %}>Bagian Kredit</option>
+                <option value="keuangan"    {% if user and user.role=='keuangan'    %}selected{% endif %}>Bagian Keuangan</option>
+                <option value="tata_usaha"  {% if user and user.role=='tata_usaha'  %}selected{% endif %}>Tata Usaha</option>
+                <option value="verifikator" {% if user and user.role=='verifikator' %}selected{% endif %}>Verifikator</option>
+                <option value="penagih"     {% if user and user.role=='penagih'     %}selected{% endif %}>Penagih</option>
+                <option value="kasir"       {% if user and user.role=='kasir'       %}selected{% endif %}>Kasir</option>
+                <option value="staf"        {% if user and user.role=='staf'        %}selected{% endif %}>Staf</option>
+                <option value="kader_desa"  {% if user and user.role=='kader_desa' %}selected{% endif %}>Kader Desa</option>
+              </select>
+          </div>
+          <div class="mb-3 {% if not (user and user.role=='kader_desa') %}d-none{% endif %}" id="desa-group">
+            <label class="form-label">Desa Pengampu <span class="text-danger">*</span></label>
+            <select name="kode_desa" class="form-select">
+                <option value="">-- Pilih Desa --</option>
+                {% for kode, nama in desa_list %}
+                <option value="{{ kode }}" {% if user and user.kode_desa == kode %}selected{% endif %}>{{ nama }}</option>
+                {% endfor %}
+            </select>
+            <div class="form-text">Wajib diisi jika memilih role Kader Desa.</div>
+          </div>
+          <div class="mb-3 {% if not (user and user.role=='kader_desa') %}d-none{% endif %}" id="pembina-group">
+            <label class="form-label">Pembina / Pengurus <span class="text-danger">*</span></label>
+            <select name="pembina_id" class="form-select">
+                <option value="">-- Pilih Pembina --</option>
+                {% for p in pembina_list %}
+                <option value="{{ p.id }}" {% if user and user.pembina_id == p.id %}selected{% endif %}>{{ p.nama_lengkap }} ({{ p.role_label() }})</option>
+                {% endfor %}
+            </select>
+            <div class="form-text">Pilih pengurus yang membina kader ini.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password {% if not user %}<span class="text-danger">*</span>{% else %}<small class="text-muted">(kosongkan jika tidak ingin mengubah)</small>{% endif %}</label>
+            <input type="password" name="password" class="form-control" {% if not user %}required{% endif %} placeholder="{{ 'Password baru (opsional)' if user else 'Minimal 6 karakter' }}" minlength="6">
+          </div>
+          {% if user %}
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="aktif" id="chkAktif" {% if user.aktif %}checked{% endif %}>
+              <label class="form-check-label" for="chkAktif">User Aktif</label>
+            </div>
+          </div>
+          {% endif %}
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-save-fill me-1"></i>Simpan</button>
+            <a href="{{ url_for('user_mgmt.index') }}" class="btn btn-outline-secondary">Batal</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.querySelector('select[name="role"]');
+    const desaGroup  = document.getElementById('desa-group');
+    const desaSelect = document.querySelector('select[name="kode_desa"]');
+    const pembinaGroup = document.getElementById('pembina-group');
+    const pembinaSelect = document.querySelector('select[name="pembina_id"]');
+    const usernameInput = document.querySelector('input[name="username"]');
+    const isEdit = {{ 'true' if user else 'false' }};
+
+    function toggleDesa() {
+        if (roleSelect.value === 'kader_desa') {
+            if (desaGroup) desaGroup.classList.remove('d-none');
+            if (desaSelect) desaSelect.setAttribute('required', 'required');
+            if (pembinaGroup) pembinaGroup.classList.remove('d-none');
+            if (pembinaSelect) pembinaSelect.setAttribute('required', 'required');
+            if (!isEdit && desaSelect.value) {
+                fetchUsername();
+            }
+        } else {
+            if (desaGroup) desaGroup.classList.add('d-none');
+            if (desaSelect) desaSelect.removeAttribute('required');
+            if (pembinaGroup) pembinaGroup.classList.add('d-none');
+            if (pembinaSelect) pembinaSelect.removeAttribute('required');
+        }
+    }
+
+    function fetchUsername() {
+        const kodeDesa = desaSelect ? desaSelect.value : '';
+        if (kodeDesa && roleSelect.value === 'kader_desa' && !isEdit) {
+            fetch('/users/api/next-kader-username/' + kodeDesa)
+                .then(r => r.json())
+                .then(data => {
+                    if (usernameInput && !usernameInput.value) {
+                        usernameInput.value = data.username;
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+    }
+
+    if (roleSelect) {
+        roleSelect.addEventListener('change', toggleDesa);
+        toggleDesa();
+    }
+    
+    if (desaSelect && roleSelect && roleSelect.value === 'kader_desa') {
+        desaSelect.addEventListener('change', fetchUsername);
+    }
+});
+</script>
+{% endblock %}

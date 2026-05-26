@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% block title %}Pengajuan Penjual UMKM{% endblock %}
+{% block page_title %}Pengajuan Penjual UMKM{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1>Pengajuan Penjual UMKM</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('umkm.admin_dashboard') }}">UMKM</a></li>
+        <li class="breadcrumb-item active">Pengajuan Penjual</li>
+      </ol>
+    </nav>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="card-body">
+    <div class="btn-group mb-3">
+      <a href="{{ url_for('umkm.admin_penjual', status='menunggu') }}" 
+         class="btn btn-sm {% if status == 'menunggu' %}btn-warning{% else %}btn-outline-secondary{% endif %}">
+        <i class="bi bi-clock me-1"></i>Menunggu
+      </a>
+      <a href="{{ url_for('umkm.admin_penjual', status='disetujui') }}" 
+         class="btn btn-sm {% if status == 'disetujui' %}btn-success{% else %}btn-outline-secondary{% endif %}">
+        <i class="bi bi-check-circle me-1"></i>Disetujui
+      </a>
+      <a href="{{ url_for('umkm.admin_penjual', status='ditolak') }}" 
+         class="btn btn-sm {% if status == 'ditolak' %}btn-danger{% else %}btn-outline-secondary{% endif %}">
+        <i class="bi bi-x-circle me-1"></i>Ditolak
+      </a>
+      <a href="{{ url_for('umkm.admin_penjual', status='semua') }}" 
+         class="btn btn-sm {% if status == 'semua' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        <i class="bi bi-list-ul me-1"></i>Semua
+      </a>
+    </div>
+
+    {% if pengajuan_list %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Nasabah</th>
+            <th>Nama Usaha</th>
+            <th>Jenis Usaha</th>
+            <th>No. HP</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pengajuan in pengajuan_list %}
+          <tr>
+            <td>{{ pengajuan.tanggal_ajuan.strftime('%d/%m/%Y') }}</td>
+            <td>
+              <div class="fw-bold">{{ pengajuan.nasabah.nama }}</div>
+              <small class="text-muted">{{ pengajuan.nasabah.nasabah_id }}</small>
+            </td>
+            <td>{{ pengajuan.nama_usaha }}</td>
+            <td>{{ pengajuan.jenis_usaha or '-' }}</td>
+            <td>{{ pengajuan.no_hp_usaha or '-' }}</td>
+            <td>
+              {% if pengajuan.status == 'menunggu' %}
+              <span class="badge bg-warning text-dark">Menunggu</span>
+              {% elif pengajuan.status == 'disetujui' %}
+              <span class="badge bg-success">Disetujui</span>
+              {% else %}
+              <span class="badge bg-danger">Ditolak</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if pengajuan.status == 'menunggu' %}
+              <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalSetujui{{ pengajuan.id }}">
+                  <i class="bi bi-check-circle"></i>
+                </button>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalTolak{{ pengajuan.id }}">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              </div>
+              
+              <div class="modal fade" id="modalSetujui{{ pengajuan.id }}">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <form method="POST" action="{{ url_for('umkm.admin_proses_penjual', id=pengajuan.id) }}">
+                      <input type="hidden" name="action" value="setujui">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Setujui Pengajuan</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                      </div>
+                      <div class="modal-body">
+                        <p>Setujui pengajuan penjual <strong>{{ pengajuan.nasabah.nama }}</strong>?</p>
+                        <div class="mb-3">
+                          <label class="form-label">Catatan (opsional)</label>
+                          <textarea name="catatan" class="form-control" rows="3"></textarea>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-success">Setujui</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="modal fade" id="modalTolak{{ pengajuan.id }}">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <form method="POST" action="{{ url_for('umkm.admin_proses_penjual', id=pengajuan.id) }}">
+                      <input type="hidden" name="action" value="tolak">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Tolak Pengajuan</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                      </div>
+                      <div class="modal-body">
+                        <p>Tolak pengajuan penjual <strong>{{ pengajuan.nasabah.nama }}</strong>?</p>
+                        <div class="mb-3">
+                          <label class="form-label">Alasan Penolakan</label>
+                          <textarea name="catatan" class="form-control" rows="3" required></textarea>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-danger">Tolak</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              {% else %}
+              <small class="text-muted">
+                {% if pengajuan.catatan_admin %}
+                <i class="bi bi-chat-text"></i> {{ pengajuan.catatan_admin }}
+                {% endif %}
+              </small>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle me-2"></i>Tidak ada pengajuan penjual{% if status != 'semua' %} dengan status ini{% endif %}.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

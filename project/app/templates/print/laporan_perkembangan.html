@@ -1,0 +1,57 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Laporan Perkembangan Pinjaman{% endblock %}
+{% block content %}
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">BUM DESA BERSAMA UPK CIOMAS LKD</div>
+    <div class="alamat">Jl. Raya Ciomas Km.1 Serang 42164 | Telp: (0254)7823984 | WA: 081324771060</div>
+  </div>
+</div>
+<div class="doc-title">LAPORAN PERKEMBANGAN PINJAMAN</div>
+<div class="doc-subtitle">Per Tanggal: {{ tanggal_cetak.strftime('%d %B %Y') }}
+{% if desa_filter %} | Desa: {{ dict(desa_list).get(desa_filter, desa_filter) }}{% endif %}</div>
+
+<table class="bordered" style="font-size:7.5pt;margin-top:8px;">
+  <thead>
+    <tr style="background:#e0e0e0;font-weight:bold;text-align:center;">
+      <th>No</th><th>ID</th><th>Nama</th><th>Desa</th><th>SPK</th>
+      <th>Pinjaman</th><th>Target Bayar</th><th>Terbayar</th>
+      <th>Saldo</th><th>%Target</th><th>%Lunas</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td style="text-align:center;">{{ loop.index }}</td>
+      <td class="money">{{ r.p.nasabah.nasabah_id }}</td>
+      <td>{{ r.p.nasabah.nama }}</td>
+      <td style="text-align:center;">{{ r.p.nasabah.kode_desa }}</td>
+      <td class="money" style="font-size:7pt;">{{ r.p.spk }}</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(r.p.jumlah_pinjaman) }}</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(r.target_pokok) }}</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(r.total_pokok) }}</td>
+      <td class="money" style="text-align:right;font-weight:bold;">{{ '{:,.0f}'.format(r.saldo) }}</td>
+      <td style="text-align:center;">{{ '{:.0f}'.format(r.persen_target) }}%</td>
+      <td style="text-align:center;">{{ '{:.0f}'.format(r.persen) }}%</td>
+    </tr>
+    {% endfor %}
+    <tr style="font-weight:bold;background:#f5f5f5;">
+      <td colspan="5" style="text-align:right;">TOTAL ({{ rows|length }})</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(total_pinjaman) }}</td>
+      <td></td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(total_terbayar) }}</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(total_saldo) }}</td>
+      <td colspan="2"></td>
+    </tr>
+  </tbody>
+</table>
+<div class="ttd-area" style="margin-top:20px;">
+  {% set qr = get_role_signature_qr('kabag_kredit') %}
+  <div class="ttd-box"><div class="ttd-jabatan">Dibuat oleh,</div><div class="ttd-jabatan">Bag. Kredit</div>{% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}<div class="ttd-nama">{{ pengaturan.get('kabag_kredit', '.........................') }}</div></div>
+  {% set qr = get_role_signature_qr('manajer_lkd') %}
+  <div class="ttd-box"><div class="ttd-jabatan">Mengetahui,</div><div class="ttd-jabatan">Manajer LKD</div>{% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}<div class="ttd-nama">{{ pengaturan.get('manajer_lkd', '.........................') }}</div></div>
+  {% set qr = get_role_signature_qr('direktur') %}
+  <div class="ttd-box"><div class="ttd-jabatan">Disetujui,</div><div class="ttd-jabatan">Direktur</div>{% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}<div class="ttd-nama">{{ pengaturan.get('direktur', '.........................') }}</div></div>
+</div>
+{% endblock %}

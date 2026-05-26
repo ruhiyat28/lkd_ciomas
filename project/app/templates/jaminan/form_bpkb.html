@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if jaminan else 'Tambah' }} Jaminan BPKB{% endblock %}
+{% block page_title %}Jaminan BPKB{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{{ 'Edit' if jaminan else 'Tambah' }} Jaminan BPKB Kendaraan</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('jaminan.index') }}">Jaminan</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('jaminan.detail', nasabah_id=nasabah.id, tab='bpkb') }}">{{ nasabah.nasabah_id }}</a></li>
+    <li class="breadcrumb-item active">BPKB</li>
+  </ol></nav>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <!-- Nasabah info -->
+    <div class="alert alert-info py-2 mb-3" style="font-size:.83rem;">
+      <i class="bi bi-person-fill me-2"></i>
+      <strong>{{ nasabah.nama }}</strong> — {{ nasabah.nasabah_id }} | {{ nasabah.nama_desa }}
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+      <div class="card mb-3">
+        <div class="card-header"><i class="bi bi-person-badge me-2 text-warning"></i>Kepemilikan</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Status Kepemilikan <span class="text-danger">*</span></label>
+            <div class="d-flex gap-4">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="kepemilikan" id="r_sendiri" value="milik_sendiri"
+                  {% if not jaminan or jaminan.kepemilikan=='milik_sendiri' %}checked{% endif %}
+                  onchange="toggleKepemilikan()">
+                <label class="form-check-label fw-semibold" for="r_sendiri">
+                  <i class="bi bi-person-check-fill text-success me-1"></i>Milik Sendiri
+                  <small class="text-muted">(nama &amp; alamat diisi otomatis)</small>
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="kepemilikan" id="r_lain" value="milik_orang_lain"
+                  {% if jaminan and jaminan.kepemilikan=='milik_orang_lain' %}checked{% endif %}
+                  onchange="toggleKepemilikan()">
+                <label class="form-check-label fw-semibold" for="r_lain">
+                  <i class="bi bi-people-fill text-warning me-1"></i>Milik Orang Lain
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel milik sendiri (info) -->
+          <div id="panel_sendiri" class="p-3 bg-light rounded" style="font-size:.83rem;">
+            <i class="bi bi-info-circle text-primary me-1"></i>
+            Nama pemilik: <strong>{{ nasabah.nama }}</strong><br>
+            Alamat: {{ nasabah.alamat or '-' }}
+          </div>
+
+          <!-- Panel milik orang lain -->
+          <div id="panel_lain" class="d-none">
+            <div class="row g-3 mt-1">
+              <div class="col-md-6">
+                <label class="form-label">Nama Pemilik <span class="text-danger">*</span></label>
+                <input type="text" name="nama_pemilik" class="form-control text-uppercase"
+                  value="{{ jaminan.nama_pemilik if jaminan and jaminan.kepemilikan=='milik_orang_lain' else '' }}"
+                  placeholder="Nama sesuai KTP">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Alamat Pemilik</label>
+                <input type="text" name="alamat_pemilik" class="form-control"
+                  value="{{ jaminan.alamat_pemilik if jaminan and jaminan.kepemilikan=='milik_orang_lain' else '' }}">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Upload Surat Kuasa</label>
+                <input type="file" name="surat_kuasa" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
+                {% if jaminan and jaminan.surat_kuasa %}
+                <div class="mt-1">
+                  <a href="{{ url_for('static', filename=jaminan.surat_kuasa) }}" target="_blank"
+                     class="btn btn-xs btn-outline-success" style="font-size:.75rem;padding:3px 10px;">
+                    <i class="bi bi-eye me-1"></i>Lihat Surat Kuasa
+                  </a>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-header"><i class="bi bi-car-front-fill me-2 text-primary"></i>Data Kendaraan</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Jenis Kendaraan <span class="text-danger">*</span></label>
+              <select name="jenis_kendaraan" class="form-select" required>
+                <option value="">-- Pilih --</option>
+                <option value="Motor" {% if jaminan and jaminan.jenis_kendaraan=='Motor' %}selected{% endif %}>Motor</option>
+                <option value="Mobil" {% if jaminan and jaminan.jenis_kendaraan=='Mobil' %}selected{% endif %}>Mobil</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Merk</label>
+              <input type="text" name="merk" class="form-control text-uppercase" placeholder="Honda, Yamaha, Toyota..."
+                value="{{ jaminan.merk if jaminan else '' }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Type / Model</label>
+              <input type="text" name="tipe" class="form-control text-uppercase" placeholder="Beat, Vario, Avanza..."
+                value="{{ jaminan.tipe if jaminan else '' }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Nomor Polisi <span class="text-danger">*</span></label>
+              <input type="text" name="nomor_polisi" class="form-control money text-uppercase"
+                placeholder="B 1234 XYZ" value="{{ jaminan.nomor_polisi if jaminan else '' }}" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tahun Pembuatan</label>
+              <input type="number" name="tahun_pembuatan" class="form-control"
+                placeholder="2020" min="1970" max="2030"
+                value="{{ jaminan.tahun_pembuatan if jaminan else '' }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Pinjaman Terkait</label>
+              <select name="pinjaman_id" class="form-select">
+                <option value="">-- Tidak Ditautkan --</option>
+                {% for p in pinjaman %}
+                <option value="{{ p.id }}" {% if jaminan and jaminan.pinjaman_id==p.id %}selected{% endif %}>
+                  {{ p.spk }} — Rp {{ '{:,.0f}'.format(p.jumlah_pinjaman) }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Nomor Rangka</label>
+              <input type="text" name="nomor_rangka" class="form-control money text-uppercase"
+                value="{{ jaminan.nomor_rangka if jaminan else '' }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Nomor Mesin</label>
+              <input type="text" name="nomor_mesin" class="form-control money text-uppercase"
+                value="{{ jaminan.nomor_mesin if jaminan else '' }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Keterangan</label>
+              <textarea name="keterangan" class="form-control" rows="2"
+                placeholder="Catatan tambahan">{{ jaminan.keterangan if jaminan else '' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-success"><i class="bi bi-save-fill me-1"></i>Simpan Jaminan BPKB</button>
+        <a href="{{ url_for('jaminan.detail', nasabah_id=nasabah.id, tab='bpkb') }}" class="btn btn-outline-secondary">Batal</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleKepemilikan() {
+  const lain = document.getElementById('r_lain').checked;
+  document.getElementById('panel_sendiri').classList.toggle('d-none', lain);
+  document.getElementById('panel_lain').classList.toggle('d-none', !lain);
+}
+// Init
+toggleKepemilikan();
+</script>
+{% endblock %}

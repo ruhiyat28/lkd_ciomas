@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import pagination %}
+{% block title %}Nasabah{% endblock %}
+{% block page_title %}Nasabah{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1>Data Nasabah</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item active">Nasabah</li>
+      </ol>
+    </nav>
+  </div>
+  {% if current_user.can_write_nasabah() %}
+  <a href="{{ url_for('nasabah.tambah') }}" class="btn btn-primary">
+    <i class="bi bi-person-plus-fill me-1"></i>Tambah Nasabah
+  </a>
+  {% endif %}
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-blue">
+      <i class="bi bi-people-fill stat-icon"></i>
+      <div class="stat-label">Total Nasabah</div>
+      <div class="stat-value">{{ total_nasabah }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-green">
+      <i class="bi bi-check-circle-fill stat-icon"></i>
+      <div class="stat-label">Aktif</div>
+      <div class="stat-value">{{ total_aktif }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-orange">
+      <i class="bi bi-clock-fill stat-icon"></i>
+      <div class="stat-label">Calon</div>
+      <div class="stat-value">{{ total_calon }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-teal">
+      <i class="bi bi-person-fill stat-icon"></i>
+      <div class="stat-label">Perorangan Aktif</div>
+      <div class="stat-value">{{ total_perorangan }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tabs Perorangan | Kelompok | Pendaftaran Baru -->
+<ul class="nav nav-tabs mb-0" id="nasabahTabs">
+  <li class="nav-item">
+    <a class="nav-link {% if status_filter == 'aktif' and jenis_filter != 'kelompok' %}active{% endif %}"
+      href="{{ url_for('nasabah.index', jenis='perorangan', status='aktif', desa=desa_filter, q=search) }}">
+      <i class="bi bi-person-fill me-1"></i>Perorangan
+      <span class="badge bg-secondary ms-1" id="countPer">...</span>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if status_filter == 'aktif' and jenis_filter == 'kelompok' %}active{% endif %}"
+      href="{{ url_for('nasabah.index', jenis='kelompok', status='aktif', desa=desa_filter, q=search) }}">
+      <i class="bi bi-people-fill me-1"></i>Kelompok / SPP
+      <span class="badge bg-success ms-1" id="countKel">...</span>
+    </a>
+  </li>
+  {% if not current_user.is_kader() %}
+  <li class="nav-item">
+    <a class="nav-link {% if status_filter == 'calon' %}active{% endif %}"
+      href="{{ url_for('nasabah.index', status='calon', jenis='', desa=desa_filter, q=search) }}">
+      <i class="bi bi-person-plus-fill me-1"></i>Pendaftaran Baru
+      <span class="badge bg-danger ms-1" id="countCal">...</span>
+    </a>
+  </li>
+  {% endif %}
+</ul>
+
+<div class="card" style="border-top-left-radius:0;">
+  <!-- Filter bar -->
+  <div class="card-body border-bottom py-3">
+    <form method="GET" class="row g-2 align-items-end">
+      <input type="hidden" name="jenis" value="{{ jenis_filter }}">
+      <input type="hidden" name="status" value="{{ status_filter }}">
+      <div class="col-md-5">
+        <input type="text" name="q" class="form-control" placeholder="Cari nama, ID, NIK..." value="{{ search }}">
+      </div>
+      {% if not current_user.is_kader() %}
+      <div class="col-md-3">
+        <select name="desa" class="form-select">
+          <option value="">Semua Desa</option>
+          {% for k,n in desa_list %}<option value="{{ k }}" {% if desa_filter==k %}selected{% endif %}>{{ n }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Filter</button></div>
+      {% if search or desa_filter %}
+      <div class="col-md-2"><a href="{{ url_for('nasabah.index', jenis=jenis_filter, status=status_filter) }}"
+          class="btn btn-outline-secondary w-100">Reset</a></div>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div class="table-responsive">
+    {% if status_filter == 'calon' %}
+    <!-- CALON TABLE (PENDAFTARAN BARU) -->
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>ID (Draft)</th>
+          <th>Nama Calon Nasabah</th>
+          <th>NIK</th>
+          <th>Desa</th>
+          <th>Alamat / HP</th>
+          <th class="text-center">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for n in nasabah_list.items %}
+        <tr>
+          <td><span class="badge bg-danger font-monospace">{{ n.nasabah_id }}</span></td>
+          <td>
+            <strong>{{ n.nama }}</strong><br>
+            <small class="text-muted">Mendaftar: {{ n.created_at.strftime('%d/%m/%Y %H:%M') if n.created_at else '-' }}</small>
+            {% if n.keterangan_status %}
+            <div class="mt-1 p-1 bg-light rounded border" style="font-size: 0.7rem; color: #6b7280;">
+              <i class="bi bi-chat-dots-fill me-1"></i>Pesan: {{ n.keterangan_status }}
+            </div>
+            {% endif %}
+          </td>
+          <td>{{ n.nik }}</td>
+          <td><span class="badge" style="background:#fef2f2;color:#991b1b;">{{ n.nama_desa }}</span></td>
+          <td style="font-size:.8rem;">{{ n.alamat }}<br><strong>{{ n.no_hp }}</strong></td>
+          <td>
+            <div class="d-flex flex-column gap-1">
+              <div class="d-flex gap-1 justify-content-center">
+                <form action="{{ url_for('nasabah.calon_approve', id=n.id) }}" method="POST">
+                  <input type="hidden" name="action" value="approve">
+                  <input type="hidden" name="next" value="{{ request.full_path }}">
+                  <button type="submit" class="btn btn-sm btn-success fw-bold px-3">SETUJUI</button>
+                </form>
+                <form action="{{ url_for('nasabah.calon_approve', id=n.id) }}" method="POST"
+                  data-confirm="Tolak pendaftaran ini?">
+                  <input type="hidden" name="action" value="reject">
+                  <input type="hidden" name="next" value="{{ request.full_path }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger px-2" title="Tolak"><i
+                      class="bi bi-trash"></i></button>
+                </form>
+              </div>
+              <button class="btn btn-sm btn-outline-info" style="font-size: 0.7rem;"
+                onclick="document.getElementById('msgForm{{ n.id }}').classList.toggle('d-none')">
+                <i class="bi bi-reply me-1"></i>Minta Persyaratan
+              </button>
+              <form id="msgForm{{ n.id }}" action="{{ url_for('nasabah.calon_approve', id=n.id) }}" method="POST"
+                class="d-none mt-2">
+                <input type="hidden" name="action" value="message">
+                <input type="hidden" name="next" value="{{ request.full_path }}">
+                <textarea name="pesan" id="txt_{{ n.id }}" class="form-control form-control-sm mb-1" rows="2"
+                  placeholder="Contoh: Mohon upload foto KTP yang lebih jelas...">{{ n.keterangan_status or '' }}</textarea>
+                <div class="d-flex gap-1">
+                  <button type="submit" class="btn btn-xs btn-info text-white flex-grow-1 py-1"
+                    style="font-size: 0.7rem;">Simpan di Sistem</button>
+                  <button type="button" class="btn btn-xs btn-success py-1 px-2"
+                    onclick="sendWA('{{ n.no_hp }}', 'txt_{{ n.id }}')" title="Kirim via WhatsApp">
+                    <i class="bi bi-whatsapp"></i>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-5">
+            <i class="bi bi-person-check fs-1 opacity-25"></i><br>Tidak ada pendaftaran baru yang perlu diverifikasi.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% elif jenis_filter == 'kelompok' %}
+    <!-- KELOMPOK TABLE -->
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nama Kelompok</th>
+          <th>Desa</th>
+          <th class="text-center">Anggota</th>
+          <th class="text-center">Pinjaman</th>
+          <th>HP</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for n in nasabah_list.items %}
+        <tr>
+          <td><span class="badge bg-success font-monospace">{{ n.nasabah_id }}</span></td>
+          <td><strong>{{ n.nama }}</strong>
+            {% if n.keterangan_jaminan %}<br><small class="text-muted">{{ n.keterangan_jaminan }}</small>{% endif %}
+          </td>
+          <td><span class="badge" style="background:#e0f2fe;color:#0369a1;">{{ n.nama_desa }}</span></td>
+          <td class="text-center">
+            {% if n.anggota %}<span class="badge bg-info">{{ n.anggota|length }}</span>
+            {% else %}<span class="text-muted">-</span>{% endif %}
+          </td>
+          <td class="text-center">
+            {% set aktif = n.pinjaman|selectattr('status','equalto','cair')|list %}
+            {% if aktif %}<span class="badge bg-primary">{{ aktif|length }} aktif</span>
+            {% else %}<span class="text-muted">-</span>{% endif %}
+          </td>
+          <td style="font-size:.82rem;">{{ n.no_hp or '-' }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('nasabah.detail', id=n.id) }}" class="btn btn-sm btn-outline-primary"><i
+                  class="bi bi-eye"></i></a>
+              {% if current_user.can_write_nasabah() %}
+              <a href="{{ url_for('pinjaman.tambah', nasabah_id=n.id) }}" class="btn btn-sm btn-success"
+                title="Ajukan Pinjaman"><i class="bi bi-cash-stack"></i></a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-4">Tidak ada data kelompok</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <!-- PERORANGAN TABLE -->
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nama</th>
+          <th>Desa</th>
+          <th>Pekerjaan</th>
+          <th class="text-center">Pinjaman</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for n in nasabah_list.items %}
+        <tr>
+          <td><span class="badge bg-primary font-monospace">{{ n.nasabah_id }}</span></td>
+          <td><strong>{{ n.nama }}</strong><br>
+            <small class="text-muted money" style="font-size:.76rem;">{{ n.nik if not n.nik.startswith('NOID-') else '-'
+              }}</small>
+          </td>
+          <td><span class="badge" style="background:#e0f2fe;color:#0369a1;">{{ n.nama_desa }}</span></td>
+          <td style="font-size:.82rem;">{{ n.pekerjaan or '-' }}</td>
+          <td class="text-center">
+            {% set aktif = n.pinjaman|selectattr('status','equalto','cair')|list %}
+            {% if aktif %}<span class="badge bg-primary">{{ aktif|length }} aktif</span>
+            {% else %}<span class="text-muted" style="font-size:.8rem;">-</span>{% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('nasabah.detail', id=n.id) }}" class="btn btn-sm btn-outline-primary"><i
+                  class="bi bi-eye"></i></a>
+              {% if current_user.can_write_nasabah() %}
+              <a href="{{ url_for('pinjaman.tambah', nasabah_id=n.id) }}" class="btn btn-sm btn-success"
+                title="Ajukan Pinjaman"><i class="bi bi-cash-stack"></i></a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-4">
+            {% if search %}Nasabah "{{ search }}" tidak ditemukan{% else %}Belum ada data nasabah{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+
+  {{ pagination(nasabah_list, {'jenis': jenis_filter, 'status': status_filter, 'q': search, 'desa': desa_filter}, 'nasabah') }}
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+  function sendWA(phone, textId) {
+    let msg = document.getElementById(textId).value;
+    if (!msg) {
+      notif('Silakan ketik pesan terlebih dahulu.', 'warning');
+      return;
+    }
+    // Clean phone number (replace starting 0 with 62)
+    let cleanedPhone = phone.replace(/[^0-9]/g, '');
+    if (cleanedPhone.startsWith('0')) {
+      cleanedPhone = '62' + cleanedPhone.substring(1);
+    }
+
+    let url = "https://wa.me/" + cleanedPhone + "?text=" + encodeURIComponent(msg);
+    window.open(url, '_blank');
+  }
+
+  // Load counts for tabs
+  fetch('{{ url_for("nasabah.count_json") }}')
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('countPer').textContent = d.perorangan;
+      document.getElementById('countKel').textContent = d.kelompok;
+      document.getElementById('countCal').textContent = d.calon;
+    }).catch(() => { });
+</script>
+{% endblock %}

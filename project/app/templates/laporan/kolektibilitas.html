@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Kolektibilitas Pinjaman{% endblock %}
+{% block page_title %}Laporan Kolektibilitas{% endblock %}
+{% block content %}
+
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div><h1>Kolektibilitas Pinjaman</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0"><li class="breadcrumb-item active">Rekap Per Desa</li></ol></nav></div>
+  <a href="?cetak=1" target="_blank" class="btn btn-sm btn-outline-secondary no-print"><i class="bi bi-printer me-1"></i>Cetak</a>
+</div>
+
+<!-- Kolektibilitas summary cards -->
+<div class="row g-3 mb-3">
+  {% set kolek_colors = {1:'stat-green',2:'stat-orange',3:'stat-orange',4:'stat-red',5:'stat-purple'} %}
+  {% for k in range(1,6) %}
+  <div class="col">
+    <div class="stat-card {{ kolek_colors[k] }}">
+      <div class="stat-label">Kol {{ k }}: {{ KOLEK_LABELS[k] }}</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(summary[k].saldo) }}</div>
+      <div class="stat-sub">{{ summary[k].count }} <small>nasabah</small></div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Main data card -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-bar-chart-fill me-2 text-primary"></i>Rekap Per Desa — klik nama desa untuk detail</span>
+    <span class="text-muted" style="font-size:.78rem;">{{ tanggal_cetak.strftime('%d %B %Y') }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Desa</th><th class="text-center">Jml</th>
+          <th class="text-end">Saldo Pinjaman</th>
+          <th class="text-end" style="background:#dcfce7;color:#166534;">Kol 1<br><small style="font-size:.65rem;">Lancar</small></th>
+          <th class="text-end" style="background:#fef9c3;color:#854d0e;">Kol 2<br><small style="font-size:.65rem;">1-2 bln</small></th>
+          <th class="text-end" style="background:#fed7aa;color:#9a3412;">Kol 3<br><small style="font-size:.65rem;">3-4 bln</small></th>
+          <th class="text-end" style="background:#fecaca;color:#991b1b;">Kol 4<br><small style="font-size:.65rem;">5-6 bln</small></th>
+          <th class="text-end" style="background:#e9d5ff;color:#6b21a8;">Kol 5<br><small style="font-size:.65rem;">&gt;6 bln</small></th>
+          <th class="text-end">Cad. Risiko</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rekap %}
+        <tr>
+          <td><a href="{{ url_for('laporan.kolektibilitas', desa=r.kode) }}" class="fw-bold text-decoration-none">
+            <i class="bi bi-chevron-right me-1 text-primary" style="font-size:.75rem;"></i>{{ r.nama }}
+          </a></td>
+          <td class="text-center"><span class="badge bg-secondary">{{ r.jml }}</span></td>
+          <td class="text-end money fw-bold">{{ '{:,.0f}'.format(r.saldo) }}</td>
+          <td class="text-end money" style="background:#f0fdf4;">{{ '{:,.0f}'.format(r.k1) if r.k1 else '-' }}</td>
+          <td class="text-end money" style="background:#fefce8;">{{ '{:,.0f}'.format(r.k2) if r.k2 else '-' }}</td>
+          <td class="text-end money" style="background:#fff7ed;">{{ '{:,.0f}'.format(r.k3) if r.k3 else '-' }}</td>
+          <td class="text-end money" style="background:#fef2f2;">{{ '{:,.0f}'.format(r.k4) if r.k4 else '-' }}</td>
+          <td class="text-end money" style="background:#faf5ff;">{{ '{:,.0f}'.format(r.k5) if r.k5 else '-' }}</td>
+          <td class="text-end money text-warning fw-bold">{{ '{:,.0f}'.format(r.cadangan) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4">Tidak ada data</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light fw-bold">
+        <tr>
+          <td>TOTAL</td>
+          <td class="text-center">{{ rekap|sum(attribute='jml') }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(total_saldo) }}</td>
+          {% for k in range(1,6) %}
+          <td class="text-end money">{{ '{:,.0f}'.format(rekap|sum(attribute='k'+k|string)) }}</td>
+          {% endfor %}
+          <td class="text-end money text-warning">{{ '{:,.0f}'.format(total_cadangan) }}</td>
+        </tr>
+        <tr class="table-warning">
+          <td colspan="2" class="text-muted" style="font-size:.75rem;">Cadangan Risiko:</td>
+          <td></td>
+          {% for k,pct in [(1,1),(2,10),(3,25),(4,50),(5,100)] %}
+          <td class="text-end text-muted" style="font-size:.75rem;">{{ pct }}%</td>
+          {% endfor %}
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}Opname Aset{% endblock %}
+{% block page_title %}Opname Aset{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0" style="font-size:0.76rem">
+      <li class="breadcrumb-item"><a href="{{ url_for('akuntansi.aset_index') }}">Manajemen Aset</a></li>
+      <li class="breadcrumb-item active">Opname</li>
+    </ol>
+  </nav>
+  <button class="btn btn-sm btn-outline-primary no-print" onclick="window.print()">
+    <i class="bi bi-printer me-1"></i>Cetak
+  </button>
+</div>
+
+<div class="card mb-3 no-print">
+  <div class="card-body">
+    <form method="POST">
+      <div class="row g-2 align-items-end mb-3">
+        <div class="col-sm-4">
+          <label class="form-label small">Tanggal Opname</label>
+          <input type="date" class="form-control form-control-sm" name="tanggal_opname" value="{{ today_str }}" required>
+        </div>
+        <div class="col-sm">
+          <button type="submit" class="btn btn-sm btn-success" data-confirm="Simpan hasil opname?">
+            <i class="bi bi-check-lg me-1"></i>Simpan Opname
+          </button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Kode</th>
+              <th>Nama Aset</th>
+              <th>Lokasi</th>
+              <th>Kondisi Data</th>
+              <th class="text-center">Fisik</th>
+              <th class="text-center">Kondisi Fisik</th>
+              <th>Catatan</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in aset_list %}
+            <tr>
+              <td><code>{{ a.kode_aset or '-' }}</code></td>
+              <td>{{ a.nama }}</td>
+              <td>{{ a.lokasi or '-' }}</td>
+              <td>
+                {% if a.kondisi == 'baik' %}<span class="badge bg-success">Baik</span>
+                {% elif a.kondisi == 'rusak_ringan' %}<span class="badge bg-warning text-dark">Rusak Ringan</span>
+                {% else %}<span class="badge bg-danger">Rusak Berat</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <select name="fisik_{{ a.id }}" class="form-select form-select-sm" style="width:100px;">
+                  <option value="ada">Ada</option>
+                  <option value="tidak_ada">Tidak Ada</option>
+                </select>
+              </td>
+              <td class="text-center">
+                <select name="kondisi_{{ a.id }}" class="form-select form-select-sm" style="width:130px;">
+                  <option value="baik">Baik</option>
+                  <option value="rusak_ringan">Rusak Ringan</option>
+                  <option value="rusak_berat">Rusak Berat</option>
+                </select>
+              </td>
+              <td><input type="text" name="catatan_{{ a.id }}" class="form-control form-control-sm" placeholder="Opsional..."></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4">Tidak ada data aset.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if history %}
+<div class="card">
+  <div class="card-header">Riwayat Opname</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Kode</th>
+            <th>Nama Aset</th>
+            <th>Kondisi Catatan</th>
+            <th>Kondisi Fisik</th>
+            <th>Status</th>
+            <th>Catatan</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in history %}
+          <tr>
+            <td>{{ o.tanggal_opname.strftime('%d/%m/%Y') }}</td>
+            <td><code>{{ o.aset.kode_aset or '-' }}</code></td>
+            <td>{{ o.aset.nama }}</td>
+            <td>{{ o.kondisi_catatan or '-' }}</td>
+            <td>{{ o.kondisi_fisik or '-' }}</td>
+            <td>
+              {% if o.status == 'sesuai' %}<span class="badge bg-success">Sesuai</span>
+              {% elif o.status == 'kondisi_berubah' %}<span class="badge bg-warning text-dark">Kondisi Berat</span>
+              {% else %}<span class="badge bg-danger">Hilang</span>
+              {% endif %}
+            </td>
+            <td class="small text-muted">{{ o.catatan or '-' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

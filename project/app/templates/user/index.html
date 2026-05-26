@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Manajemen User{% endblock %}
+{% block page_title %}Manajemen User{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div><h1>Manajemen User</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0"><li class="breadcrumb-item active">Users</li></ol></nav></div>
+  <a href="{{ url_for('user_mgmt.tambah') }}" class="btn btn-primary"><i class="bi bi-person-plus-fill me-1"></i>Tambah User</a>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-shield-lock-fill me-2"></i>Daftar User</div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Username</th><th>Nama Lengkap</th><th>Role</th><th>Status</th><th>Dibuat</th><th></th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td><strong class="money">{{ u.username }}</strong></td>
+          <td>{{ u.nama_lengkap }}</td>
+          <td>
+            {% if u.role == 'admin' %}
+            <span class="badge bg-danger">Admin</span>
+            {% elif u.role == 'manajer_lkd' %}
+            <span class="badge bg-dark">Manajer LKD</span>
+            {% elif u.role == 'kredit' %}
+            <span class="badge bg-primary">Bag. Kredit</span>
+            {% elif u.role == 'kader_desa' %}
+            <span class="badge bg-info">Kader ({{ u.kode_desa }})</span>
+            {% else %}
+            <span class="badge bg-success">{{ u.role_label() }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.aktif %}
+            <span class="badge bg-success">Aktif</span>
+            {% else %}
+            <span class="badge bg-secondary">Nonaktif</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.82rem;">{{ u.created_at.strftime('%d/%m/%Y') if u.created_at else '-' }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('user_mgmt.edit', id=u.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+              {% if u.id != current_user.id %}
+              <form method="POST" action="{{ url_for('user_mgmt.hapus', id=u.id) }}" data-confirm="Hapus user {{ u.username }}?">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header"><i class="bi bi-info-circle me-2 text-primary"></i>Hak Akses per Role</div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-bordered mb-0" style="font-size:.78rem;">
+        <thead><tr><th>Fitur</th><th class="text-center">Admin</th><th class="text-center">Manajer LKD</th><th class="text-center">Bag. Kredit</th><th class="text-center">Bag. Keuangan</th><th class="text-center">Verifikator</th><th class="text-center">Tata Usaha</th><th class="text-center">Kasir</th><th class="text-center">Penagih</th><th class="text-center">Staf</th><th class="text-center">Kader Desa</th></tr></thead>
+        <tbody>
+          {% set hak = [
+            ('Dashboard & Laporan', True, True, True, True, True, True, True, True, True, True),
+            ('Tambah/Edit Nasabah', True, True, True, False, False, True, False, False, True, True),
+            ('Pengajuan Pinjaman', True, True, True, False, False, False, False, False, True, True),
+            ('Proses Verifikasi', True, True, True, False, True, False, False, False, False, False),
+            ('ACC/Tolak Direktur', True, True, False, False, False, False, False, False, False, False),
+            ('Cairkan Pinjaman', True, True, True, True, False, False, False, False, False, False),
+            ('Input Pembayaran', True, True, True, True, False, True, True, True, True, True),
+            ('Rekap Pembayaran', True, True, True, True, False, True, True, True, True, True),
+            ('Setor/Tarik Tabungan', True, True, False, True, False, False, True, False, False, False),
+            ('Jurnal & Buku Besar', True, True, False, True, False, False, True, False, False, False),
+            ('Laporan Keuangan', True, True, False, True, False, False, False, False, False, False),
+            ('Monitoring Tunggakan', True, True, True, True, True, True, True, True, True, True),
+            ('Penagihan', True, True, True, False, False, False, False, True, True, True),
+            ('Manajemen Aset', True, True, False, True, False, False, False, False, False, False),
+            ('Chart of Accounts', True, True, False, True, False, False, False, False, False, False),
+            ('Import/Export Data', True, True, True, True, False, True, True, False, True, False),
+            ('Pengaturan Lembaga', True, False, False, False, False, False, False, False, False, False),
+            ('Manajemen User', True, False, False, False, False, False, False, False, False, False),
+            ('Edit/Hapus Data', True, True, False, False, False, False, False, False, False, False),
+          ] %}
+          {% for f, admin, manajer, kredit, keuangan, verif, tu, kasir, penagih, staf, kader in hak %}
+          <tr>
+            <td>{{ f }}</td>
+            <td class="text-center">{% if admin %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
+            <td class="text-center">{% if manajer %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
+            <td class="text-center">{% if kredit %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
+            <td class="text-center">{% if keuangan %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
+            <td class="text-center">{% if verif %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
+            <td class="text-center">{% if tu %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
+            <td class="text-center">{% if kasir %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
+            <td class="text-center">{% if penagih %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
+            <td class="text-center">{% if staf %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
+            <td class="text-center">{% if kader %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-x-circle-fill text-danger"></i>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

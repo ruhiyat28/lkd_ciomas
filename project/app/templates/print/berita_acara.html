@@ -1,0 +1,81 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Berita Acara Verifikasi {{ p.spk }}{% endblock %}
+{% block content %}
+{% set n = p.nasabah %}
+
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">BUM DESA BERSAMA UPK CIOMAS</div>
+    <div class="nama-lembaga" style="font-size:11pt;">LEMBAGA KEUANGAN DESA (LKD)</div>
+    <div class="alamat">Jl. Raya Ciomas Km.1 Serang 42164 | Telp: (0254)7823984 | WA: 081324771060</div>
+  </div>
+</div>
+
+<div class="doc-title">BERITA ACARA VERIFIKASI LAPANGAN</div>
+<div class="doc-no">No: BA/{{ p.spk }}/{{ p.tanggal_kunjungan.strftime('%Y%m') if p.tanggal_kunjungan else '' }}</div>
+
+<p style="text-align:justify;font-size:9.5pt;line-height:1.6;">
+Pada hari ini, <strong>{{ p.tanggal_kunjungan.strftime('%d %B %Y') if p.tanggal_kunjungan else '____________' }}</strong>, telah dilakukan verifikasi lapangan terhadap pemohon pinjaman atas nama:
+</p>
+
+<table class="info" style="margin-bottom:10px;">
+  <tr><td style="width:120px;">Nama</td><td style="width:10px;">:</td><td><strong>{{ n.nama }}</strong></td></tr>
+  <tr><td>NIK</td><td>:</td><td>{{ n.nik }}</td></tr>
+  <tr><td>Alamat</td><td>:</td><td>{{ n.alamat }}, Desa {{ n.nama_desa }}</td></tr>
+  <tr><td>Pekerjaan</td><td>:</td><td>{{ n.pekerjaan or '-' }}</td></tr>
+  <tr><td>No. SPK</td><td>:</td><td>{{ p.spk }}</td></tr>
+  <tr><td>Jumlah Pinjaman</td><td>:</td><td class="money"><strong>Rp {{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</strong></td></tr>
+  <tr><td>Tenor</td><td>:</td><td>{{ p.tenor }} bulan</td></tr>
+</table>
+
+<p style="font-size:9.5pt;"><strong>Hasil Verifikasi:</strong></p>
+<div style="font-size:9.5pt;text-align:justify;line-height:1.8;padding:10px;border:1px solid #ccc;background:#f9f9f9;min-height:80px;white-space:pre-wrap;">{{ p.hasil_kunjungan or '_____________________________________________________________' }}</div>
+
+{% if p.foto_kunjungan %}
+<div style="margin-top:10px;text-align:center;">
+  <img src="{{ url_for('static', filename=p.foto_kunjungan) }}" style="max-width:100%;max-height:200px;border:1px solid #ccc;border-radius:4px;">
+  <div style="font-size:8pt;color:#666;margin-top:4px;">Foto Verifikasi Lapangan</div>
+</div>
+{% endif %}
+
+<p style="font-size:9.5pt;margin-top:10px;"><strong>Rekomendasi:</strong> 
+<span style="padding:3px 10px;border-radius:4px;background:{{ '#28a745' if p.rekomendasi == 'layak' else '#dc3545' if p.rekomendasi == 'tidak_layak' else '#6c757d' }};color:white;">{{ 'LAYAK' if p.rekomendasi == 'layak' else 'TIDAK LAYAK' if p.rekomendasi == 'tidak_layak' else '-' }}</span>
+</p>
+
+<div style="margin-top:30px;">
+  <table style="width:100%;font-size:9.5pt;">
+    <tr>
+      <td style="width:50%;text-align:center;vertical-align:top;">
+        <p><strong>Petugas Verifikasi</strong></p>
+        {% if verifier and verifier.tanda_tangan %}
+        {% set qr = signature_qr(verifier.tanda_tangan) %}
+        <img src="{{ qr }}" style="width:80px;height:80px;margin:10px auto 0;">
+        <div style="border-bottom:1px solid #000;width:200px;margin:0 auto;"></div>
+        <p style="margin-top:2px;">{{ verifier.nama_lengkap }}</p>
+        {% else %}
+        <div style="height:100px;"></div>
+        <div style="border-bottom:1px solid #000;width:200px;margin:0 auto;"></div>
+        <p style="margin-top:5px;">{{ verifier.nama_lengkap if verifier else p.petugas_kunjungan or '____________' }}</p>
+        {% endif %}
+      </td>
+      <td style="width:50%;text-align:center;vertical-align:top;">
+        <p><strong>Mengetahui, Direktur</strong></p>
+        {% set qr = get_role_signature_qr('direktur') %}
+        {% if qr %}
+        <img src="{{ qr }}" style="width:80px;height:80px;margin:10px auto 0;">
+        {% else %}
+        <div style="height:100px;"></div>
+        {% endif %}
+        <div style="border-bottom:1px solid #000;width:200px;margin:0 auto;"></div>
+        <p style="margin-top:5px;">{{ pengaturan.get('direktur', '____________') }}</p>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div style="margin-top:20px;text-align:center;font-size:8pt;color:#666;">
+  Dokumen ini dicetak secara elektronik pada {{ today.strftime('%d %B %Y') }}
+</div>
+
+{% endblock %}

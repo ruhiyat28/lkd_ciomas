@@ -1,0 +1,35 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Neraca Saldo {{ tgl_sampai }}{% endblock %}
+{% block content %}
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">BUM DESA BERSAMA UPK CIOMAS LKD</div>
+    <div class="alamat">LEMBAGA KEUANGAN DESA (LKD) | Jl. Raya Ciomas Km.1 Serang 42164</div>
+  </div>
+</div>
+<div class="doc-title">NERACA SALDO</div>
+<div class="doc-subtitle">Per {{ tgl_sampai }} | (dalam rupiah)</div>
+<table class="bordered" style="font-size:9pt;">
+  <thead><tr style="background:#eee;font-weight:bold;">
+    <th style="width:24px;">No.</th><th style="width:80px;">Kode</th><th>Nama Akun</th>
+    <th style="width:110px;text-align:right;">Debit (Rp)</th><th style="width:110px;text-align:right;">Kredit (Rp)</th>
+  </tr></thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td style="text-align:center;">{{ loop.index }}</td>
+      <td>{{ r.akun.kode }}</td>
+      <td>{{ r.akun.nama }}</td>
+      <td style="text-align:right;">{% if r.debit %}{{ '{:,.0f}'.format(r.debit) }}{% else %}—{% endif %}</td>
+      <td style="text-align:right;">{% if r.kredit %}{{ '{:,.0f}'.format(r.kredit) }}{% else %}—{% endif %}</td>
+    </tr>
+    {% endfor %}
+    <tr style="font-weight:bold;background:#ddd;">
+      <td colspan="3" style="text-align:right;">TOTAL</td>
+      <td style="text-align:right;">{{ '{:,.0f}'.format(total_d) }}</td>
+      <td style="text-align:right;">{{ '{:,.0f}'.format(total_k) }}</td>
+    </tr>
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Tanda Tangan Elektronik{% endblock %}
+{% block page_title %}Tanda Tangan Elektronik{% endblock %}
+
+{% block content %}
+<div class="alert alert-info">
+  <i class="bi bi-info-circle me-1"></i>Upload tanda tangan digital untuk pengguna yang berwenang menandatangani dokumen. Format PNG dengan latar transparan disarankan.
+</div>
+
+<div class="row g-3">
+  {% for u in users %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-bold">{{ u.nama_lengkap }}</span>
+        <span class="badge bg-secondary">{{ u.role }}</span>
+      </div>
+      <div class="card-body text-center">
+        {% if u.tanda_tangan %}
+        <div class="mb-3 p-3 bg-light rounded">
+          <img src="{{ url_for('static', filename=u.tanda_tangan) }}" style="max-height:80px;max-width:200px;">
+        </div>
+        <p class="text-success small mb-2"><i class="bi bi-check-circle me-1"></i>Tanda tangan sudah terupload</p>
+        {% else %}
+        <div class="mb-3 p-4 bg-light rounded text-muted">
+          <i class="bi bi-image" style="font-size:2rem;"></i>
+          <div class="small mt-1">Belum ada tanda tangan</div>
+        </div>
+        {% endif %}
+        <form method="POST" action="{{ url_for('pengaturan.tanda_tangan') }}" enctype="multipart/form-data">
+          <input type="hidden" name="user_id" value="{{ u.id }}">
+          <div class="input-group input-group-sm">
+            <input type="file" name="tanda_tangan" class="form-control" accept="image/png,image/jpeg,image/webp">
+            <button class="btn btn-outline-primary" type="submit">Upload</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

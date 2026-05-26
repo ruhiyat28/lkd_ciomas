@@ -1,0 +1,62 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Laba Rugi {{ tgl_dari.strftime('%d %B %Y') }} s/d {{ tgl_sampai.strftime('%d %B %Y') }}{% endblock %}
+{% block content %}
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">{{ lembaga.nama or 'BUM DESA BERSAMA UPK CIOMAS LKD' }}</div>
+    <div class="alamat">LEMBAGA KEUANGAN DESA (LKD) | Jl. Raya Ciomas Km.1 Serang 42164</div>
+  </div>
+</div>
+<div class="doc-title">LABA RUGI</div>
+<div class="doc-subtitle">untuk periode yang berakhir pada {{ tgl_sampai.strftime('%d %B %Y') }}<br>(dalam rupiah)</div>
+
+<table class="bordered" style="font-size:8.5pt;">
+  <thead>
+    <tr style="background:#eee;font-weight:bold;">
+      <th style="width:24px;">No.</th><th>Uraian</th>
+      <th style="width:105px;text-align:right;">{{ tgl_sampai.strftime('%B %Y') }}</th>
+      <th style="width:115px;text-align:right;">s.d {{ tgl_sampai.strftime('%d %B %Y') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="font-weight:bold;background:#f0f0f0;"><td>1</td><td>PENDAPATAN USAHA</td><td></td><td></td></tr>
+    {% for r in pend_rows %}
+    <tr><td></td><td style="padding-left:16px;">{{ r.akun.nama }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(r.saldo) }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(r.saldo) }}</td></tr>
+    {% endfor %}
+    <tr style="font-weight:bold;"><td></td><td style="text-align:right;">Total Pendapatan</td><td style="text-align:right;">{{ '{:,.0f}'.format(tot_pend) }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(tot_pend) }}</td></tr>
+    <tr><td colspan="4" style="padding:2px;"></td></tr>
+    {% if hpp_rows %}
+    <tr style="font-weight:bold;background:#f0f0f0;"><td></td><td>HARGA POKOK PENJUALAN</td><td></td><td></td></tr>
+    {% for r in hpp_rows %}<tr><td></td><td style="padding-left:16px;">{{ r.akun.nama }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(r.saldo) }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(r.saldo) }}</td></tr>{% endfor %}
+    <tr style="font-weight:bold;"><td></td><td style="text-align:right;">Total HPP</td><td style="text-align:right;">{{ '{:,.0f}'.format(tot_hpp) }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(tot_hpp) }}</td></tr>
+    <tr style="font-weight:bold;"><td></td><td style="text-align:right;">Laba (Rugi) Kotor</td><td style="text-align:right;">{{ '{:,.0f}'.format(laba_kotor) }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(laba_kotor) }}</td></tr>
+    <tr><td colspan="4" style="padding:2px;"></td></tr>
+    {% endif %}
+    <tr style="font-weight:bold;background:#f0f0f0;"><td></td><td>BEBAN-BEBAN USAHA</td><td></td><td></td></tr>
+    <tr><td></td><td>Beban Administrasi dan Umum</td><td></td><td></td></tr>
+    {% for r in beban_rows %}
+    <tr><td></td><td style="padding-left:16px;">{{ r.akun.nama }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(r.saldo) }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(r.saldo) }}</td></tr>
+    {% endfor %}
+    <tr style="font-weight:bold;"><td></td><td style="text-align:right;">Total Beban-Beban</td><td style="text-align:right;">{{ '{:,.0f}'.format(tot_beban) }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(tot_beban) }}</td></tr>
+    <tr style="font-weight:bold;"><td></td><td style="text-align:right;">LABA (RUGI) OPERASI</td><td style="text-align:right;">{{ '{:,.0f}'.format(laba_usaha) }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(laba_usaha) }}</td></tr>
+    <tr><td colspan="4" style="padding:2px;"></td></tr>
+    {% if lain_rows %}
+    <tr style="font-weight:bold;background:#f0f0f0;"><td></td><td>PENDAPATAN DAN BEBAN LAIN-LAIN</td><td></td><td></td></tr>
+    {% for r in lain_rows %}<tr><td></td><td style="padding-left:16px;">{{ r.akun.nama }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(r.saldo) }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(r.saldo) }}</td></tr>{% endfor %}
+    <tr style="font-weight:bold;"><td></td><td style="text-align:right;">Total Pendapatan dan Beban Lain-lain</td><td style="text-align:right;">{{ '{:,.0f}'.format(tot_lain) }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(tot_lain) }}</td></tr>
+    {% endif %}
+    <tr style="font-weight:bold;background:#ddd;"><td></td><td>LABA (RUGI) BERSIH SEBELUM BAGI HASIL</td><td style="text-align:right;">{{ '{:,.0f}'.format(laba_bersih) }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(laba_bersih) }}</td></tr>
+    <tr style="font-weight:bold;background:#ddd;"><td></td><td>Laba (RUGI) BERSIH SETELAH BAGI HASIL KE PEMILIK</td><td style="text-align:right;">{{ '{:,.0f}'.format(laba_bersih) }}</td><td style="text-align:right;">{{ '{:,.0f}'.format(laba_bersih) }}</td></tr>
+  </tbody>
+</table>
+<div class="ttd-area" style="margin-top:36px;">
+  <div></div>
+  <div class="ttd-box">
+    <div>Serang, {{ tgl_sampai.strftime('%d %B %Y') }}</div><div>Direktur</div>
+    {% set qr = get_role_signature_qr('direktur') %}
+    {% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}
+    <div class="ttd-nama">{{ lembaga.direktur or '____________________' }}</div>
+  </div>
+</div>
+{% endblock %}

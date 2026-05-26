@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import pagination %}
+{% block title %}Tabungan{% endblock %}
+{% block page_title %}Tabungan{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div><h1>Tabungan Nasabah</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0"><li class="breadcrumb-item active">Tabungan</li></ol></nav></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="stat-card stat-blue"><i class="bi bi-piggy-bank-fill stat-icon"></i>
+      <div class="stat-label">Tab. Pokok</div>
+      <div class="stat-value money-val" style="font-size:.95rem;">Rp {{ '{:,.0f}'.format(total_pokok) }}</div>
+      <div class="stat-sub">Tidak bisa tarik jika ada pinjaman aktif</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card stat-green"><i class="bi bi-lock-fill stat-icon"></i>
+      <div class="stat-label">Tab. Wajib</div>
+      <div class="stat-value money-val" style="font-size:.95rem;">Rp {{ '{:,.0f}'.format(total_wajib) }}</div>
+      <div class="stat-sub">Tidak bisa tarik jika ada pinjaman aktif</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card stat-orange"><i class="bi bi-unlock-fill stat-icon"></i>
+      <div class="stat-label">Tab. Sukarela</div>
+      <div class="stat-value money-val" style="font-size:.95rem;">Rp {{ '{:,.0f}'.format(total_sukarela) }}</div>
+      <div class="stat-sub">Bebas ditarik kapan saja</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3"><div class="card-body py-3">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-5"><label class="form-label">Cari Nasabah</label>
+      <input type="text" name="q" class="form-control" placeholder="Nama, ID Nasabah, No. Rekening..." value="{{ search }}">
+    </div>
+    <div class="col-md-3"><label class="form-label">Desa</label>
+      <select name="desa" class="form-select"><option value="">Semua Desa</option>
+        {% for k,n in desa_list %}<option value="{{ k }}" {% if desa_filter==k %}selected{% endif %}>{{ n }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Filter</button></div>
+    {% if search or desa_filter %}<div class="col-md-2"><a href="{{ url_for('tabungan.index') }}" class="btn btn-outline-secondary w-100">Reset</a></div>{% endif %}
+  </form>
+</div></div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between">
+    <span><i class="bi bi-piggy-bank-fill me-2 text-primary"></i>Daftar Rekening</span>
+    <span class="text-muted" style="font-size:.8rem;">{{ rekening_list.total }} rekening</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>No. Rekening</th><th>Nasabah</th><th>Desa</th>
+        <th class="text-end">Tab. Pokok</th><th class="text-end">Tab. Wajib</th>
+        <th class="text-end">Tab. Sukarela</th><th class="text-end">Total</th>
+        <th>Pinjaman</th><th></th></tr></thead>
+      <tbody>
+        {% for rek in rekening_list.items %}
+        <tr>
+          <td class="money" style="font-size:.8rem;">{{ rek.no_rekening }}</td>
+          <td><strong>{{ rek.nasabah.nama }}</strong><br><small class="text-muted">{{ rek.nasabah.nasabah_id }}</small></td>
+          <td><span class="badge" style="background:#e0f2fe;color:#0369a1;">{{ rek.nasabah.kode_desa }}</span></td>
+          <td class="text-end money">{{ '{:,.0f}'.format(rek.saldo_pokok) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(rek.saldo_wajib) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(rek.saldo_sukarela) }}</td>
+          <td class="text-end money fw-bold">{{ '{:,.0f}'.format(rek.total_saldo()) }}</td>
+          <td>
+            {% set aktif = rek.nasabah.pinjaman|selectattr('status','equalto','cair')|list %}
+            {% if aktif %}<span class="badge bg-info">{{ aktif|length }} aktif</span>
+            {% else %}<span class="badge bg-success">Bebas</span>{% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('tabungan.detail', id=rek.id) }}" class="btn btn-sm btn-outline-primary" title="Detail"><i class="bi bi-eye"></i></a>
+              {% if current_user.role in ['admin','kasir'] %}
+              <a href="{{ url_for('tabungan.setor', id=rek.id) }}" class="btn btn-sm btn-success" title="Setor"><i class="bi bi-plus-lg"></i></a>
+              <a href="{{ url_for('tabungan.tarik', id=rek.id) }}" class="btn btn-sm btn-warning" title="Tarik"><i class="bi bi-dash-lg"></i></a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4">Tidak ada data rekening</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pagination(rekening_list, {'q': search, 'desa': desa_filter}, 'rekening') }}
+</div>
+{% endblock %}

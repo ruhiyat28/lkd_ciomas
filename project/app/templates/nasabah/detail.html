@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% block title %}{{ nasabah.nama }}{% endblock %}
+{% block page_title %}Detail Nasabah{% endblock %}
+
+{% block extra_css %}
+<style>
+.doc-preview-card {
+  border: 1.5px dashed var(--border); border-radius: 10px;
+  padding: 10px; text-align: center; transition: all .15s; background: #fafafa;
+}
+.doc-preview-card.has-file { border-style: solid; border-color: var(--success); background: #f0fdf4; }
+.doc-preview-card img.preview-thumb {
+  width: 100%; height: 90px; object-fit: cover; border-radius: 6px;
+  cursor: pointer; transition: opacity .15s;
+}
+.doc-preview-card img.preview-thumb:hover { opacity: .8; }
+.doc-preview-card .pdf-badge {
+  width: 100%; height: 90px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; background: #fff1f0;
+  border-radius: 6px; cursor: pointer;
+}
+.doc-preview-card .doc-label { font-size: .72rem; font-weight: 500; color: #94a3b8; margin-top: 5px; }
+
+/* Modal preview */
+#previewModal .modal-body { padding: 0; background: #111; }
+#previewModal img { max-width: 100%; max-height: 80vh; object-fit: contain; display: block; margin: auto; }
+#previewModal iframe { width: 100%; height: 80vh; border: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1>{{ nasabah.nama }}</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('nasabah.index') }}">Nasabah</a></li>
+      <li class="breadcrumb-item active">{{ nasabah.nasabah_id }}</li>
+    </ol></nav>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if request.args.get('next') %}
+    <a href="{{ request.args.get('next') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Kembali
+    </a>
+    {% endif %}
+    {% if current_user.can_write_pinjaman() %}
+      {% set pinjaman_aktif = nasabah.pinjaman | selectattr('status','eq','cair') | list %}
+      {% if pinjaman_aktif %}
+        <button class="btn btn-success btn-sm disabled" disabled
+          title="Nasabah masih memiliki pinjaman aktif">
+          <i class="bi bi-lock-fill me-1"></i>Pinjaman Aktif
+        </button>
+      {% else %}
+        <a href="{{ url_for('pinjaman.tambah', nasabah_id=nasabah.id) }}" class="btn btn-success btn-sm">
+          <i class="bi bi-plus-circle-fill me-1"></i>Ajukan Pinjaman
+        </a>
+      {% endif %}
+    {% endif %}
+    <a href="{{ url_for('tabungan.by_nasabah', nasabah_id=nasabah.id) }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-piggy-bank-fill me-1"></i>Tabungan
+    </a>
+    {% if current_user.can_write_nasabah() %}
+    <a href="{{ url_for('nasabah.edit', id=nasabah.id) }}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-pencil me-1"></i>Edit
+    </a>
+    {% endif %}
+    {% if current_user.is_admin() %}
+    <form method="POST" action="{{ url_for('nasabah.hapus', id=nasabah.id) }}" class="d-inline"
+          data-confirm="Hapus nasabah ini?">
+      <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Hapus</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-4">
+    <!-- Profil Card -->
+    <div class="card mb-3">
+      <div class="card-body text-center p-4">
+        {% if nasabah.foto %}
+          <img src="{{ url_for('static', filename=nasabah.foto) }}"
+               class="rounded-circle mb-3"
+               style="width:80px;height:80px;object-fit:cover;border:3px solid var(--primary);">
+        {% else %}
+          <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mb-3 mx-auto"
+               style="width:80px;height:80px;font-size:2rem;font-weight:800;">
+            {{ nasabah.nama[0] }}
+          </div>
+        {% endif %}
+        <h5 class="fw-bold mb-1">{{ nasabah.nama }}</h5>
+        <span class="badge bg-primary mb-2">{{ nasabah.nasabah_id }}</span>
+        {% if nasabah.jenis == 'kelompok' %}
+        <span class="badge bg-success ms-1"><i class="bi bi-people-fill me-1"></i>Kelompok</span>
+        {% else %}
+        <span class="badge bg-secondary ms-1"><i class="bi bi-person-fill me-1"></i>Perorangan</span>
+        {% endif %}<br>
+        <span class="badge" style="background:#e0f2fe;color:#0369a1;">{{ nasabah.nama_desa }}</span>
+
+        {% set pinjaman_aktif_list = nasabah.pinjaman | selectattr('status','eq','cair') | list %}
+        {% if pinjaman_aktif_list %}
+        <br><span class="badge bg-warning text-dark mt-1">
+          <i class="bi bi-lock-fill me-1"></i>Pinjaman Aktif
+        </span>
+        {% endif %}
+
+        <hr>
+        <div class="text-start" style="font-size:.83rem;">
+          <div class="mb-2"><span class="text-muted">NIK:</span> <strong class="money">{{ nasabah.nik }}</strong></div>
+          <div class="mb-2"><span class="text-muted">TTL:</span>
+            {{ nasabah.tempat_lahir }}, {{ nasabah.tanggal_lahir.strftime('%d/%m/%Y') if nasabah.tanggal_lahir else '-' }}
+          </div>
+          <div class="mb-2"><span class="text-muted">Kelamin:</span> {{ nasabah.jenis_kelamin or '-' }}</div>
+          <div class="mb-2"><span class="text-muted">Pekerjaan:</span> {{ nasabah.pekerjaan or '-' }}</div>
+          <div class="mb-2"><span class="text-muted">No. HP:</span>
+            {% if nasabah.no_hp %}
+            <a href="https://wa.me/62{{ nasabah.no_hp.lstrip('0') }}" target="_blank" class="text-success">
+              <i class="bi bi-whatsapp"></i> {{ nasabah.no_hp }}
+            </a>
+            {% else %}-{% endif %}
+          </div>
+          <div class="mb-2"><span class="text-muted">Alamat:</span> {{ nasabah.alamat or '-' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pasangan -->
+    {% if nasabah.nama_pasangan %}
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-people me-2"></i>Pasangan / Penjamin</div>
+      <div class="card-body" style="font-size:.83rem;">
+        <div class="mb-1"><strong>{{ nasabah.nama_pasangan }}</strong></div>
+        <div class="text-muted">NIK: {{ nasabah.nik_pasangan or '-' }}</div>
+        {% if nasabah.no_hp_pasangan %}
+        <div><a href="https://wa.me/62{{ nasabah.no_hp_pasangan.lstrip('0') }}"
+                target="_blank" class="text-success">
+          <i class="bi bi-whatsapp"></i> {{ nasabah.no_hp_pasangan }}
+        </a></div>
+        {% endif %}
+        {% if nasabah.keterangan_jaminan %}
+        <div class="mt-2 p-2 bg-light rounded">
+          <i class="bi bi-shield-check text-warning me-1"></i>{{ nasabah.keterangan_jaminan }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="col-md-8">
+    <!-- Dokumen Persyaratan dengan Preview -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <i class="bi bi-file-earmark-check-fill me-2 text-warning"></i>Dokumen Persyaratan
+      </div>
+      <div class="card-body">
+        <div class="row g-2">
+          {% set doc_items = [
+            ('Pas Photo',                  nasabah.foto,             'foto'),
+            ('KTP',                        nasabah.ktp,              'ktp'),
+            ('Kartu Keluarga',             nasabah.kk,               'kk'),
+            ('Srt. Ket. Usaha/Kerja',      nasabah.surat_usaha,      'su'),
+            ('Bukti Penghasilan',          nasabah.bukti_penghasilan,'bp'),
+            ('Jaminan',                    nasabah.jaminan,          'jam'),
+          ] %}
+          {% for label, val, did in doc_items %}
+          <div class="col-6 col-md-4">
+            <div class="doc-preview-card {{ 'has-file' if val else '' }}">
+              {% if val %}
+                {% set ext = val.rsplit('.',1)[-1].lower() if '.' in val else '' %}
+                {% if ext in ['jpg','jpeg','png','webp','gif'] %}
+                  <img src="{{ url_for('static', filename=val) }}"
+                       class="preview-thumb"
+                       alt="{{ label }}"
+                       onclick="openPreview('img','{{ url_for('static', filename=val) }}','{{ label }}')"
+                       title="Klik untuk perbesar">
+                {% elif ext == 'pdf' %}
+                  <div class="pdf-badge"
+                       onclick="openPreview('pdf','{{ url_for('static', filename=val) }}','{{ label }}')"
+                       title="Klik untuk buka PDF">
+                    <i class="bi bi-file-earmark-pdf text-danger" style="font-size:2rem;"></i>
+                    <span style="font-size:.7rem;color:#6b7280;margin-top:4px;">PDF</span>
+                  </div>
+                {% else %}
+                  <a href="{{ url_for('static', filename=val) }}" target="_blank"
+                     class="btn btn-sm btn-outline-success w-100" style="height:90px; display:flex; align-items:center; justify-content:center;">
+                    <i class="bi bi-file-earmark me-1"></i>Lihat
+                  </a>
+                {% endif %}
+                <div class="doc-label">{{ label }}</div>
+                <i class="bi bi-check-circle-fill text-success" style="font-size:.8rem;"></i>
+              {% else %}
+                <div style="height:90px; display:flex; align-items:center; justify-content:center;">
+                  <i class="bi bi-x-circle-fill text-danger" style="font-size:2rem;"></i>
+                </div>
+                <div class="doc-label">{{ label }}</div>
+                <span class="text-danger" style="font-size:.72rem;">Belum upload</span>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Anggota Kelompok -->
+    {% if nasabah.jenis == 'kelompok' %}
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-people-fill me-2 text-success"></i>Anggota Kelompok</span>
+        <span class="badge bg-success">{{ nasabah.anggota|length }} orang</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0" style="font-size:.82rem;">
+          <thead><tr><th>#</th><th>Nama</th><th>NIK</th><th>Jabatan</th><th>No. HP</th></tr></thead>
+          <tbody>
+            {% for a in nasabah.anggota %}
+            <tr>
+              <td>{{ a.urut }}</td>
+              <td><strong>{{ a.nama }}</strong></td>
+              <td class="money" style="font-size:.78rem;">{{ a.nik or '-' }}</td>
+              <td><span class="badge {% if a.jabatan=='ketua' %}bg-warning text-dark
+                {% elif a.jabatan=='sekretaris' %}bg-info{% elif a.jabatan=='bendahara' %}bg-primary
+                {% else %}bg-secondary{% endif %}">{{ a.jabatan|title }}</span></td>
+              <td>{% if a.no_hp %}<a href="https://wa.me/62{{ a.no_hp.lstrip('0') }}"
+                  target="_blank" class="text-success"><i class="bi bi-whatsapp"></i> {{ a.no_hp }}</a>{% else %}-{% endif %}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted">Belum ada anggota</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Riwayat Pinjaman -->
+    <div class="card">
+      <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-cash-stack me-2"></i>Riwayat Pinjaman</span>
+        {% if current_user.can_write_pinjaman() %}
+          {% set pa = nasabah.pinjaman | selectattr('status','eq','cair') | list %}
+          {% if not pa %}
+          <a href="{{ url_for('pinjaman.tambah', nasabah_id=nasabah.id) }}"
+             class="btn btn-sm btn-success"><i class="bi bi-plus"></i> Ajukan</a>
+          {% endif %}
+        {% endif %}
+      </div>
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead><tr><th>SPK</th><th>Jumlah</th><th>Tenor</th><th>Tgl Cair</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {% for p in nasabah.pinjaman|sort(attribute='id', reverse=True) %}
+            <tr>
+              <td class="money" style="font-size:.82rem;">{{ p.spk }}</td>
+              <td class="money">Rp {{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</td>
+              <td>{{ p.tenor }} bln</td>
+              <td>{{ p.tanggal_cair.strftime('%d/%m/%Y') if p.tanggal_cair else '-' }}</td>
+              <td><span class="status-badge status-{{ p.status }}">{{ p.status|replace('_',' ')|title }}</span></td>
+              <td><a href="{{ url_for('pinjaman.detail', id=p.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-3">Belum ada pinjaman</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Preview Dokumen -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content border-0" style="background:#111;">
+      <div class="modal-header border-0 pb-0" style="background:#111;">
+        <h6 class="modal-title text-white" id="previewModalLabel">Preview Dokumen</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0" id="previewModalBody"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openPreview(type, url, label) {
+  document.getElementById('previewModalLabel').textContent = label;
+  const body = document.getElementById('previewModalBody');
+  if (type === 'img') {
+    body.innerHTML = '<img src="' + url + '" style="max-width:100%;max-height:82vh;object-fit:contain;display:block;margin:auto;padding:12px;">';
+  } else {
+    body.innerHTML = '<iframe src="' + url + '" style="width:100%;height:82vh;border:none;"></iframe>';
+  }
+  new bootstrap.Modal(document.getElementById('previewModal')).show();
+}
+</script>
+{% endblock %}

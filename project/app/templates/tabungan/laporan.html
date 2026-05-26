@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Laporan Tabungan{% endblock %}
+{% block page_title %}Laporan Tabungan{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0" style="font-size:0.76rem">
+      <li class="breadcrumb-item"><a href="{{ url_for('tabungan.index') }}">Tabungan</a></li>
+      <li class="breadcrumb-item active">Laporan</li>
+    </ol>
+  </nav>
+  <button class="btn btn-sm btn-outline-primary no-print" onclick="window.print()">
+    <i class="bi bi-printer me-1"></i>Cetak
+  </button>
+</div>
+
+<div class="card mb-3 no-print">
+  <div class="card-body">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-sm-4">
+        <label class="form-label small">Periode</label>
+        <select class="form-select form-select-sm" name="periode">
+          <option value="semua" {% if periode == 'semua' %}selected{% endif %}>Semua</option>
+          <option value="tahun_ini" {% if periode == 'tahun_ini' %}selected{% endif %}>Tahun Berjalan</option>
+        </select>
+      </div>
+      {% if periode == 'tahun_ini' %}
+      <div class="col-sm-3">
+        <label class="form-label small">Tahun</label>
+        <input type="text" class="form-control form-control-sm" name="tahun" value="{{ tahun }}">
+      </div>
+      {% endif %}
+      <div class="col-sm">
+        <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1"></i>Tampilkan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-3">
+    <div class="stat-card stat-blue">
+      <div class="stat-label">Total Tabungan</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(total_semua) }}</div>
+      <i class="bi bi-bank stat-icon"></i>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card stat-green">
+      <div class="stat-label">Total Pokok</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(total_pokok) }}</div>
+      <i class="bi bi-coin stat-icon"></i>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card stat-orange">
+      <div class="stat-label">Total Wajib</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(total_wajib) }}</div>
+      <i class="bi bi-shield-fill stat-icon"></i>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card stat-purple">
+      <div class="stat-label">Total Sukarela</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(total_sukarela) }}</div>
+      <i class="bi bi-piggy-bank stat-icon"></i>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Rekapitulasi per Desa</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover mb-0">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Desa</th>
+            <th class="text-end">Jumlah Rekening</th>
+            <th class="text-end">Saldo Pokok</th>
+            <th class="text-end">Saldo Wajib</th>
+            <th class="text-end">Saldo Sukarela</th>
+            <th class="text-end">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for kode, data in data_per_desa.items() %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ kode }}</td>
+            <td class="text-center">{{ data.count }}</td>
+            <td class="text-end money">Rp {{ '{:,.0f}'.format(data.pokok) }}</td>
+            <td class="text-end money">Rp {{ '{:,.0f}'.format(data.wajib) }}</td>
+            <td class="text-end money">Rp {{ '{:,.0f}'.format(data.sukarela) }}</td>
+            <td class="text-end money fw-600">Rp {{ '{:,.0f}'.format(data.total) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot class="table-group-divider">
+          <tr class="fw-bold">
+            <td colspan="2">Total</td>
+            <td class="text-center">{{ data_per_desa.values()|map(attribute='count')|sum }}</td>
+            <td class="text-end money">Rp {{ '{:,.0f}'.format(total_pokok) }}</td>
+            <td class="text-end money">Rp {{ '{:,.0f}'.format(total_wajib) }}</td>
+            <td class="text-end money">Rp {{ '{:,.0f}'.format(total_sukarela) }}</td>
+            <td class="text-end money">Rp {{ '{:,.0f}'.format(total_semua) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% if not data_per_desa %}
+    <div class="p-4 text-center text-muted small">Tidak ada data.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

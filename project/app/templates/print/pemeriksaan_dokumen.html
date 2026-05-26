@@ -1,0 +1,210 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Pemeriksaan Dokumen Pengajuan{% endblock %}
+{% block content %}
+{% set n = p.nasabah %}
+{% set periksa = p.pemeriksaan %}
+
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">BUM DESA BERSAMA UPK CIOMAS</div>
+    <div class="nama-lembaga" style="font-size:11pt;">LEMBAGA KEUANGAN DESA (LKD)</div>
+    <div class="alamat">Jl. Raya Ciomas Km.1 Serang 42164 | Telp: (0254)7823984 | WA: 081324771060</div>
+  </div>
+</div>
+
+<div class="doc-title">HASIL PEMERIKSAAN DOKUMEN PENGAJUAN</div>
+<div class="doc-no">No: {{ periksa.nomor_surat or p.id }}</div>
+
+<p style="text-align:justify;font-size:9.5pt;line-height:1.6;">
+  Pada hari ini, <strong>{{ periksa.tanggal_pemeriksaan.strftime('%d %B %Y') if periksa and periksa.tanggal_pemeriksaan else '____________' }}</strong>,
+  telah dilakukan pemeriksaan dokumen pengajuan pinjaman atas nama:
+</p>
+
+<table class="info" style="margin-bottom:10px;">
+  <tr><td style="width:120px;">{{ 'Nama Kelompok' if p.jenis_pinjaman == 'spp' else 'Nama' }}</td><td style="width:10px;">:</td><td><strong>{{ n.nama }}</strong></td></tr>
+  {% if p.jenis_pinjaman != 'spp' %}
+  <tr><td>NIK</td><td>:</td><td>{{ n.nik or '-' }}</td></tr>
+  <tr><td>Tempat/Tgl Lahir</td><td>:</td><td>{{ n.tempat_lahir or '-' }}{{ ', ' + n.tanggal_lahir.strftime('%d/%m/%Y') if n.tanggal_lahir else '' }}</td></tr>
+  <tr><td>Alamat</td><td>:</td><td>{{ n.alamat or '-' }}</td></tr>
+  <tr><td>Pekerjaan</td><td>:</td><td>{{ n.pekerjaan or '-' }}</td></tr>
+  <tr><td>No. HP</td><td>:</td><td>{{ n.no_hp or '-' }}</td></tr>
+  {% endif %}
+  <tr><td>Desa</td><td>:</td><td>{{ n.nama_desa or '-' }}</td></tr>
+</table>
+
+<p style="font-size:9.5pt;margin-top:14px;"><strong>Data Pengajuan:</strong></p>
+<table class="info" style="margin-bottom:10px;">
+  <tr><td style="width:140px;">Jumlah Pinjaman</td><td style="width:10px;">:</td><td class="money"><strong>Rp {{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</strong></td></tr>
+  <tr><td>Jasa/Bulan</td><td>:</td><td>{{ p.jasa_persen }}% flat</td></tr>
+  <tr><td>Tenor</td><td>:</td><td>{{ p.tenor }} bulan</td></tr>
+  <tr><td>Tujuan</td><td>:</td><td>{{ p.tujuan or '-' }}</td></tr>
+  <tr><td>Tanggal Pengajuan</td><td>:</td><td>{{ p.tanggal_pengajuan.strftime('%d/%m/%Y') if p.tanggal_pengajuan else '-' }}</td></tr>
+  <tr><td>Jenis</td><td>:</td><td>{{ 'SPP Kelompok' if p.jenis_pinjaman == 'spp' else 'Reguler' }}</td></tr>
+</table>
+
+{% if p.jenis_pinjaman == 'spp' and p.detail_spp %}
+<p style="font-size:9.5pt;"><strong>Rincian Anggota Kelompok:</strong></p>
+<table class="bordered" style="font-size:8.5pt;margin-bottom:10px;">
+  <thead>
+    <tr><th style="width:30px;">No</th><th>Nama Anggota</th><th>NIK</th><th style="text-align:right;">Jumlah</th><th style="width:60px;">KTP</th><th style="width:60px;">KK</th></tr>
+  </thead>
+  <tbody>
+    {% for a in n.anggota %}
+    <tr>
+      <td style="text-align:center;">{{ a.urut }}</td>
+      <td>{{ a.nama }}</td>
+      <td>{{ a.nik or '-' }}</td>
+      <td style="text-align:right;">{{ 'Rp {:,.0f}'.format(p.detail_spp[loop.index0].jumlah) if loop.index0 < p.detail_spp|length else '-' }}</td>
+      <td style="text-align:center;">{% if a.ktp %}&#10003;{% else %}&#10007;{% endif %}</td>
+      <td style="text-align:center;">{% if a.kk %}&#10003;{% else %}&#10007;{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if p.jenis_pinjaman == 'spp' %}
+<!-- ====== KELOMPOK ====== -->
+<p style="font-size:9.5pt;margin-top:14px;"><strong>Hasil Pemeriksaan Dokumen Kelompok:</strong></p>
+<table class="bordered" style="font-size:8.5pt;margin-bottom:10px;">
+  <thead>
+    <tr>
+      <th style="width:30px;">No</th>
+      <th>Jenis Dokumen</th>
+      <th style="width:80px;">Status</th>
+      <th style="width:60px;">Valid</th>
+      <th>Keterangan</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% set docs_spp = [
+      ('surat_tanggung_renteng', 'Surat Pernyataan Tanggung Renteng', p.surat_tanggung_renteng),
+      ('surat_ijin_keluarga', 'Surat Keterangan Ijin Keluarga Dekat', p.surat_ijin_keluarga),
+    ] %}
+    {% for field, label, file_path in docs_spp %}
+    {% set checked = periksa[field + '_valid'] if periksa else False %}
+    <tr>
+      <td style="text-align:center;">{{ loop.index }}</td>
+      <td><strong>{{ label }}</strong></td>
+      <td style="text-align:center;">
+        {% if file_path %}
+        <span style="color:#16a34a;">&#10003; Ada</span>
+        {% else %}
+        <span style="color:#dc2626;">&#10007; Belum</span>
+        {% endif %}
+      </td>
+      <td style="text-align:center;">
+        {% if file_path %}
+          {% if checked %}
+          <span style="color:#16a34a;">&#10003;</span>
+          {% else %}
+          <span style="color:#dc2626;">&#10007;</span>
+          {% endif %}
+        {% else %}
+        <span style="color:#999;">-</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if file_path and checked %}Dokumen valid
+        {% elif file_path and not checked %}Dokumen tidak valid
+        {% else %}Dokumen belum diupload
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<!-- ====== PERORANGAN ====== -->
+<p style="font-size:9.5pt;margin-top:14px;"><strong>Hasil Pemeriksaan Dokumen:</strong></p>
+<table class="bordered" style="font-size:8.5pt;margin-bottom:10px;">
+  <thead>
+    <tr>
+      <th style="width:30px;">No</th>
+      <th>Jenis Dokumen</th>
+      <th style="width:80px;">Status</th>
+      <th style="width:60px;">Valid</th>
+      <th>Keterangan</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% set docs = [
+      ('foto', 'Pas Foto', n.foto),
+      ('ktp', 'KTP', n.ktp),
+      ('kk', 'Kartu Keluarga', n.kk),
+      ('surat_usaha', 'Surat Keterangan Usaha/Kerja', n.surat_usaha),
+      ('bukti_penghasilan', 'Bukti Penghasilan', n.bukti_penghasilan),
+      ('jaminan', 'Jaminan', n.jaminan),
+    ] %}
+    {% for field, label, file_path in docs %}
+    {% set checked = periksa[field + '_valid'] if periksa else False %}
+    <tr>
+      <td style="text-align:center;">{{ loop.index }}</td>
+      <td><strong>{{ label }}</strong></td>
+      <td style="text-align:center;">
+        {% if file_path %}
+        <span style="color:#16a34a;">&#10003; Ada</span>
+        {% else %}
+        <span style="color:#dc2626;">&#10007; Belum</span>
+        {% endif %}
+      </td>
+      <td style="text-align:center;">
+        {% if file_path %}
+          {% if checked %}
+          <span style="color:#16a34a;">&#10003;</span>
+          {% else %}
+          <span style="color:#dc2626;">&#10007;</span>
+          {% endif %}
+        {% else %}
+        <span style="color:#999;">-</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if file_path and checked %}Dokumen valid
+        {% elif file_path and not checked %}Dokumen tidak valid
+        {% else %}Dokumen belum diupload
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if periksa and periksa.catatan_pemeriksa %}
+<p style="font-size:9.5pt;margin-top:14px;"><strong>Catatan Pemeriksa:</strong></p>
+<div style="font-size:9.5pt;text-align:justify;line-height:1.6;padding:10px;border:1px solid #ccc;background:#f9f9f9;min-height:50px;white-space:pre-wrap;">{{ periksa.catatan_pemeriksa }}</div>
+{% endif %}
+
+<p style="font-size:9.5pt;margin-top:14px;"><strong>Kesimpulan & Rekomendasi:</strong></p>
+<div style="padding:8px 12px;border-radius:4px;background:{{ '#28a745' if periksa and periksa.hasil == 'layak' else '#dc3545' }};color:white;display:inline-block;font-weight:bold;font-size:11pt;">
+  {{ 'LAYAK — Dilanjutkan ke Verifikasi Lapangan' if periksa and periksa.hasil == 'layak' else 'TIDAK LAYAK — Ditolak' }}
+</div>
+
+
+
+<!-- ====== TANDA TANGAN ====== -->
+<div style="margin-top:30px;">
+  <p style="text-align:center;font-size:9pt;"><strong>Ciomas, {{ today.strftime('%d %B %Y') }}</strong></p>
+  <table style="width:100%;font-size:9.5pt;">
+    <tr>
+      <td style="text-align:center;vertical-align:top;">
+        <p><strong>Pemeriksa</strong></p>
+        {% set qr = get_role_signature_qr('direktur') %}
+        {% if qr %}
+        <img src="{{ qr }}" style="width:80px;height:80px;margin:10px auto 0;">
+        {% else %}
+        <div style="height:80px;"></div>
+        {% endif %}
+        <div style="border-bottom:1px solid #000;width:200px;margin:8px auto 0;"></div>
+        <p style="margin-top:4px;">{{ pengaturan.get('direktur', '____________') }}</p>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div style="margin-top:20px;text-align:center;font-size:8pt;color:#666;">
+  Dokumen ini dicetak secara elektronik pada {{ today.strftime('%d %B %Y') }}
+</div>
+{% endblock %}

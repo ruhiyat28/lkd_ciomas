@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Perkembangan — {{ nama_desa }}{% endblock %}
+{% block page_title %}Perkembangan: {{ nama_desa }}{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div><h1>{{ nama_desa }}</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('laporan.perkembangan') }}">Perkembangan</a></li>
+    <li class="breadcrumb-item active">{{ nama_desa }}</li>
+  </ol></nav></div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('laporan.perkembangan') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Kembali</a>
+    <a href="?desa={{ desa_filter }}&cetak=1" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>Cetak</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-3"><div class="stat-card stat-blue money-val"><div class="stat-label">Total Alokasi</div><div class="stat-value">{{ '{:,.0f}'.format(total_pinjaman) }}</div></div></div>
+  <div class="col-md-3"><div class="stat-card stat-green money-val"><div class="stat-label">Terbayar</div><div class="stat-value">{{ '{:,.0f}'.format(total_terbayar) }}</div></div></div>
+  <div class="col-md-3"><div class="stat-card stat-red money-val"><div class="stat-label">Saldo</div><div class="stat-value">{{ '{:,.0f}'.format(total_saldo) }}</div></div></div>
+  <div class="col-md-3"><div class="stat-card stat-teal"><div class="stat-label">Tk. Pengembalian</div><div class="stat-value">{{ '{:.1f}'.format(total_terbayar/total_pinjaman*100 if total_pinjaman else 0) }}%</div></div></div>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-table me-2"></i>Detail Per Nasabah — {{ rows|length }} pinjaman</div>
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.82rem;">
+      <thead><tr><th>ID</th><th>Nama</th><th>SPK</th><th class="text-end">Alokasi</th>
+        <th class="text-end">Target</th><th class="text-end">Terbayar</th>
+        <th class="text-end">Saldo</th><th class="text-center">%</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td class="money" style="font-size:.79rem;">{{ r.p.nasabah.nasabah_id }}</td>
+          <td><a href="{{ url_for('pinjaman.detail', id=r.p.id) }}">{{ r.p.nasabah.nama }}</a></td>
+          <td class="money" style="font-size:.78rem;">{{ r.p.spk }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(r.p.jumlah_pinjaman) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(r.target_pokok) }}</td>
+          <td class="text-end money text-success">{{ '{:,.0f}'.format(r.total_pokok) }}</td>
+          <td class="text-end money fw-bold text-danger">{{ '{:,.0f}'.format(r.saldo) }}</td>
+          <td class="text-center">
+            <div class="d-flex align-items-center gap-1">
+              <div class="progress flex-grow-1" style="height:4px;"><div class="progress-bar {{ 'bg-success' if r.persen_target>=100 else 'bg-warning' }}" style="width:{{ [r.persen_target,100]|min }}%"></div></div>
+              <small>{{ '{:.0f}'.format(r.persen_target) }}%</small>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light fw-bold">
+        <tr><td colspan="3">TOTAL ({{ rows|length }})</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(total_pinjaman) }}</td>
+          <td></td>
+          <td class="text-end money text-success">{{ '{:,.0f}'.format(total_terbayar) }}</td>
+          <td class="text-end money text-danger">{{ '{:,.0f}'.format(total_saldo) }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}

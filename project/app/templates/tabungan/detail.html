@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Tabungan {{ rek.nasabah.nama }}{% endblock %}
+{% block page_title %}Detail Tabungan{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div><h1>{{ rek.nasabah.nama }}</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('tabungan.index') }}">Tabungan</a></li>
+    <li class="breadcrumb-item active">{{ rek.no_rekening }}</li>
+  </ol></nav></div>
+  {% if current_user.role in ['admin','kasir'] %}
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('tabungan.mutasi', id=rek.id) }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-journal-text me-1"></i>Mutasi</a>
+    <a href="{{ url_for('tabungan.setor', id=rek.id) }}" class="btn btn-success btn-sm"><i class="bi bi-plus-lg me-1"></i>Setor</a>
+    <a href="{{ url_for('tabungan.tarik', id=rek.id) }}" class="btn btn-warning btn-sm"><i class="bi bi-dash-lg me-1"></i>Tarik</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <!-- Info Nasabah -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-person-fill me-2"></i>Nasabah</div>
+      <div class="card-body" style="font-size:.84rem;">
+        <div class="fw-bold fs-6 mb-1">{{ rek.nasabah.nama }}</div>
+        <span class="badge bg-primary me-1">{{ rek.nasabah.nasabah_id }}</span>
+        <span class="badge" style="background:#e0f2fe;color:#0369a1;">{{ rek.nasabah.nama_desa }}</span>
+        <div class="mt-2 text-muted">No. Rekening: <strong class="money">{{ rek.no_rekening }}</strong></div>
+        {% set aktif = rek.nasabah.pinjaman|selectattr('status','equalto','cair')|list %}
+        {% if aktif %}
+        <div class="alert alert-warning py-1 px-2 mt-2 mb-0" style="font-size:.78rem;">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>
+          Punya {{ aktif|length }} pinjaman aktif. Tab. pokok & wajib tidak bisa ditarik.
+        </div>
+        {% else %}
+        <div class="alert alert-success py-1 px-2 mt-2 mb-0" style="font-size:.78rem;">
+          <i class="bi bi-check-circle-fill me-1"></i>Tidak ada pinjaman aktif. Semua saldo bisa ditarik.
+        </div>
+        {% endif %}
+        {% if not current_user.is_nasabah() %}
+        <a href="{{ url_for('nasabah.detail', id=rek.nasabah.id) }}" class="btn btn-sm btn-outline-primary w-100 mt-2">Lihat Profil Nasabah</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Saldo -->
+    <div class="card">
+      <div class="card-header"><i class="bi bi-piggy-bank-fill me-2 text-primary"></i>Saldo Tabungan</div>
+      <div class="card-body">
+        {% set jenis = [('pokok','Tab. Pokok','stat-blue','lock-fill'),('wajib','Tab. Wajib','stat-green','lock-fill'),('sukarela','Tab. Sukarela','stat-orange','unlock-fill')] %}
+        {% for field, label, cls, icon in jenis %}
+        <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+          <div>
+            <i class="bi bi-{{ icon }} me-1 {{ 'text-primary' if field=='pokok' else ('text-success' if field=='wajib' else 'text-warning') }}"></i>
+            <span style="font-size:.84rem;font-weight:600;">{{ label }}</span>
+          </div>
+          <span class="money fw-bold">Rp {{ '{:,.0f}'.format(rek['saldo_'+field]) }}</span>
+        </div>
+        {% endfor %}
+        <div class="d-flex justify-content-between align-items-center pt-2">
+          <span class="fw-bold">Total</span>
+          <span class="money fw-bold fs-6 text-primary">Rp {{ '{:,.0f}'.format(rek.total_saldo()) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Riwayat Transaksi -->
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-clock-history me-2"></i>Riwayat Transaksi</div>
+      <div class="table-responsive" style="max-height:600px;overflow-y:auto;">
+        <table class="table mb-0" style="font-size:.82rem;">
+          <thead class="sticky-top bg-white">
+            <tr><th>Tgl</th><th>No. Bukti</th><th>Jenis</th><th>Kategori</th><th class="text-end">Jumlah</th><th>Keterangan</th></tr>
+          </thead>
+          <tbody>
+            {% set saldo_run = {'p':0,'w':0,'s':0} %}
+            {% for tr in transaksi_list|sort(attribute='id')|sort(attribute='tanggal') %}
+            <tr class="{{ 'table-success' if tr.jenis=='setor' else 'table-danger' }}">
+              <td>{{ tr.tanggal.strftime('%d/%m/%Y') }}</td>
+              <td class="money" style="font-size:.78rem;">{{ tr.no_bukti or '-' }}</td>
+              <td>
+                {% if tr.jenis == 'setor' %}
+                <span class="badge bg-success">↑ Setor</span>
+                {% else %}
+                <span class="badge bg-danger">↓ Tarik</span>
+                {% endif %}
+              </td>
+              <td><span class="badge {% if tr.kategori=='pokok' %}bg-primary{% elif tr.kategori=='wajib' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ tr.kategori|title }}</span></td>
+              <td class="text-end money fw-bold {{ 'text-success' if tr.jenis=='setor' else 'text-danger' }}">
+                {{ '+' if tr.jenis=='setor' else '-' }}{{ '{:,.0f}'.format(tr.jumlah) }}
+              </td>
+              <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ tr.keterangan }}">{{ tr.keterangan or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="6" class="text-center text-muted py-4">Belum ada transaksi</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

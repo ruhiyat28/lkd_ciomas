@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Kelola Produk Saya{% endblock %}
+{% block page_title %}Kelola Produk Saya{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1>Kelola Produk Saya</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('umkm.katalog') }}">UMKM</a></li>
+        <li class="breadcrumb-item active">Produk Saya</li>
+      </ol>
+    </nav>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('umkm.penjual_pesanan') }}" class="btn btn-outline-info">
+      <i class="bi bi-cart3 me-1"></i>Pesanan Masuk
+    </a>
+    <a href="{{ url_for('umkm.penjual_tambah_produk') }}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Tambah Produk
+    </a>
+  </div>
+</div>
+
+{% if produk_list %}
+<div class="row g-3">
+  {% for produk in produk_list %}
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 rounded-4 h-100">
+      {% if produk.gambar %}
+      <img src="{{ url_for('static', filename=produk.gambar) }}" class="card-img-top rounded-top-4" 
+           style="height:180px;object-fit:cover;" alt="{{ produk.nama_produk }}">
+      {% else %}
+      <div class="card-img-top bg-light rounded-top-4 d-flex align-items-center justify-content-center" style="height:180px;">
+        <i class="bi bi-image text-muted fs-1"></i>
+      </div>
+      {% endif %}
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-2">
+          <span class="badge bg-info me-2">{{ produk.kategori_label() }}</span>
+          {% if produk.aktif %}
+          <span class="badge bg-success">Aktif</span>
+          {% else %}
+          <span class="badge bg-secondary">Nonaktif</span>
+          {% endif %}
+        </div>
+        <h6 class="fw-bold">{{ produk.nama_produk }}</h6>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+          <span class="fw-bold text-primary">Rp {{ produk.harga|number_format }}</span>
+          <span class="text-muted small">Stok: {{ produk.stok }} {{ produk.satuan }}</span>
+        </div>
+      </div>
+      <div class="card-footer bg-white border-0 d-flex gap-2">
+        <a href="#" class="btn btn-sm btn-outline-warning flex-grow-1">
+          <i class="bi bi-pencil"></i> Edit
+        </a>
+        <a href="#" class="btn btn-sm btn-outline-danger">
+          <i class="bi bi-trash"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info text-center">
+  <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
+  <p class="mb-2">Anda belum memiliki produk.</p>
+  <a href="{{ url_for('umkm.penjual_tambah_produk') }}" class="btn btn-primary">
+    <i class="bi bi-plus-circle me-1"></i>Tambah Produk Pertama
+  </a>
+</div>
+{% endif %}
+{% endblock %}

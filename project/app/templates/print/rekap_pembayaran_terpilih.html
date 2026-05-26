@@ -1,0 +1,42 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Rekap Pembayaran Terpilih{% endblock %}
+{% block content %}
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">BUM DESA BERSAMA UPK CIOMAS LKD</div>
+    <div class="alamat">Jl. Raya Ciomas Km.1 Serang 42164 | Telp: (0254)7823984</div>
+  </div>
+</div>
+<div class="doc-title">REKAP PEMBAYARAN</div>
+<div class="doc-subtitle">Dicetak: {{ now.strftime('%d %B %Y') }}</div>
+<table class="bordered" style="font-size:8.5pt;margin-top:8px;">
+  <thead>
+    <tr style="background:#e0e0e0;font-weight:bold;text-align:center;">
+      <th>No</th><th>No. Kuitansi</th><th>Tgl</th><th>Nasabah</th><th>Desa</th>
+      <th>SPK</th><th>Bayar</th><th>Pokok</th><th>Jasa</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for pb in pembayaran_list %}
+    <tr>
+      <td style="text-align:center;">{{ loop.index }}</td>
+      <td class="money">{{ pb.no_kuitansi }}</td>
+      <td>{{ pb.tanggal_bayar.strftime('%d/%m/%Y') }}</td>
+      <td>{{ pb.pinjaman.nasabah.nama }}</td>
+      <td style="text-align:center;">{{ pb.pinjaman.nasabah.kode_desa }}</td>
+      <td class="money">{{ pb.pinjaman.spk }}</td>
+      <td class="money" style="text-align:right;font-weight:bold;">{{ '{:,.0f}'.format(pb.jumlah_bayar) }}</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(pb.bayar_pokok) }}</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(pb.bayar_jasa) }}</td>
+    </tr>
+    {% endfor %}
+    <tr style="font-weight:bold;background:#f5f5f5;">
+      <td colspan="6" style="text-align:right;">TOTAL ({{ pembayaran_list|length }})</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(total_bayar) }}</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(total_pokok) }}</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(total_jasa) }}</td>
+    </tr>
+  </tbody>
+</table>
+{% endblock %}

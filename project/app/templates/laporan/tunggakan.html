@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block title %}Monitoring Tunggakan{% endblock %}
+{% block page_title %}Monitoring Tunggakan{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1 class="mb-0">Monitoring Tunggakan</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0"><li class="breadcrumb-item active">Tunggakan</li></ol></nav>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="?cetak=1" target="_blank" class="btn btn-sm btn-outline-secondary no-print"><i class="bi bi-printer me-1"></i>Cetak</a>
+    {% if rows %}
+    <button class="btn btn-sm btn-success" onclick="kirimWAMassal()">
+      <i class="bi bi-whatsapp me-1"></i>Kirim WA Terpilih
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Kolek Summary Cards -->
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-red">
+      <i class="bi bi-exclamation-triangle-fill stat-icon"></i>
+      <div class="stat-label">Kolek 5 (Macet)</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(kolek_summary[5].total) }}</div>
+      <div class="stat-sub">{{ kolek_summary[5].jml }} <small>nasabah</small></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-orange">
+      <i class="bi bi-exclamation-diamond-fill stat-icon"></i>
+      <div class="stat-label">Kolek 4 (Diragukan)</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(kolek_summary[4].total) }}</div>
+      <div class="stat-sub">{{ kolek_summary[4].jml }} <small>nasabah</small></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-orange">
+      <i class="bi bi-exclamation-circle-fill stat-icon"></i>
+      <div class="stat-label">Kolek 3 (Kurang Lancar)</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(kolek_summary[3].total) }}</div>
+      <div class="stat-sub">{{ kolek_summary[3].jml }} <small>nasabah</small></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-green">
+      <i class="bi bi-info-circle-fill stat-icon"></i>
+      <div class="stat-label">Kolek 2 (Dalam Perhatian)</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(kolek_summary[2].total) }}</div>
+      <div class="stat-sub">{{ kolek_summary[2].jml }} <small>nasabah</small></div>
+    </div>
+  </div>
+</div>
+
+{% if rows %}
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  <span>Terdapat <strong>{{ rows|length }}</strong> nasabah menunggak — total tunggakan
+  <strong class="money">Rp {{ '{:,.0f}'.format(total_tunggak) }}</strong></span>
+</div>
+{% endif %}
+
+<div class="card mb-3"><div class="card-body py-3">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-4"><label class="form-label">Filter Desa</label>
+      <select name="desa" class="form-select" onchange="this.form.submit()">
+        <option value="">Semua Desa</option>
+        {% for k,n in desa_list %}<option value="{{ k }}" {% if desa_filter==k %}selected{% endif %}>{{ n }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4 d-flex align-items-end gap-2">
+      <div class="form-check mb-0">
+        <input class="form-check-input" type="checkbox" id="chkAll" onchange="toggleAll(this)">
+        <label class="form-check-label fw-semibold" for="chkAll">Pilih Semua</label>
+      </div>
+    </div>
+  </form>
+</div></div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i>Daftar Nasabah Menunggak</div>
+  <div class="table-responsive">
+    <table class="table mb-0" id="tblTunggak">
+      <thead>
+        <tr>
+          <th style="width:36px;"><input type="checkbox" id="chkAllHeader" onchange="toggleAll(this)" class="form-check-input"></th>
+          <th>Nasabah</th><th>Desa</th><th>SPK</th>
+          <th class="text-end">Pokok</th><th class="text-end">Jasa</th>
+          <th class="text-end">Total Tunggak</th>
+          <th class="text-center">Lama</th><th class="text-center">Kolek</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr data-nama="{{ r.p.nasabah.nama }}"
+            data-spk="{{ r.p.spk }}"
+            data-tunggak="{{ r.total_tunggak }}"
+            data-bulan="{{ r.bulan_nunggak }}"
+            data-hp="{{ r.p.nasabah.no_hp or '' }}"
+            data-hp2="{{ r.p.nasabah.no_hp_pasangan or '' }}">
+          <td><input type="checkbox" class="form-check-input row-check" value="{{ loop.index0 }}"></td>
+          <td>
+            <strong>{{ r.p.nasabah.nama }}</strong><br>
+            <small class="text-muted money">{{ r.p.nasabah.nasabah_id }}</small>
+          </td>
+          <td><span class="badge" style="background:#e0f2fe;color:#0369a1;">{{ r.p.nasabah.nama_desa }}</span></td>
+          <td class="money" style="font-size:.79rem;">{{ r.p.spk }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(r.tunggak_pokok) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(r.tunggak_jasa) }}</td>
+          <td class="text-end money fw-bold text-danger">{{ '{:,.0f}'.format(r.total_tunggak) }}</td>
+          <td class="text-center"><span class="badge bg-danger">{{ r.bulan_nunggak }} bln</span></td>
+          <td class="text-center"><span class="badge kolek-{{ r.kolek }} rounded-pill" style="font-size:.7rem;">Kol {{ r.kolek }}</span></td>
+          <td>
+            <div class="d-flex gap-1 flex-wrap">
+              {% if r.p.nasabah.no_hp %}
+              {% set msg = "Yth. Bpk/Ibu " ~ r.p.nasabah.nama ~ ", kami dari BUM Desa Bersama UPK Ciomas LKD mengingatkan bahwa angsuran pinjaman Anda (SPK: " ~ r.p.spk ~ ") telah menunggak " ~ r.bulan_nunggak ~ " bulan dengan total tunggakan Rp " ~ '{:,.0f}'.format(r.total_tunggak) ~ ". Mohon segera melakukan pembayaran atau hubungi kami. Terima kasih." %}
+              <a href="https://wa.me/62{{ r.p.nasabah.no_hp.lstrip('0') }}?text={{ msg|urlencode }}"
+                 target="_blank" class="btn btn-success" style="font-size:.72rem;padding:3px 8px;" title="WA Nasabah">
+                <i class="bi bi-whatsapp"></i>
+              </a>
+              {% endif %}
+              {% if r.p.nasabah.no_hp_pasangan %}
+              {% set msg2 = "Yth. Bpk/Ibu, kami dari BUM Desa Bersama UPK Ciomas LKD. Mohon bantu ingatkan Sdr/i " ~ r.p.nasabah.nama ~ " bahwa angsuran pinjaman (SPK: " ~ r.p.spk ~ ") menunggak " ~ r.bulan_nunggak ~ " bulan. Terima kasih." %}
+              <a href="https://wa.me/62{{ r.p.nasabah.no_hp_pasangan.lstrip('0') }}?text={{ msg2|urlencode }}"
+                 target="_blank" class="btn btn-outline-success" style="font-size:.72rem;padding:3px 8px;" title="WA Pasangan">
+                <i class="bi bi-whatsapp"></i><small>P</small>
+              </a>
+              {% endif %}
+              <a href="{{ url_for('pembayaran.index', pinjaman_id=r.p.id) }}" class="btn btn-warning" style="font-size:.72rem;padding:3px 8px;"><i class="bi bi-wallet2"></i></a>
+              <a href="{{ url_for('pinjaman.detail', id=r.p.id) }}" class="btn btn-outline-primary" style="font-size:.72rem;padding:3px 8px;"><i class="bi bi-eye"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="10" class="text-center py-5">
+          <i class="bi bi-check-circle-fill text-success fs-2 d-block mb-2"></i>
+          <strong class="text-success">Tidak ada tunggakan!</strong>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleAll(chk) {
+  document.querySelectorAll('.row-check, #chkAll, #chkAllHeader').forEach(el => el.checked = chk.checked);
+}
+
+function kirimWAMassal() {
+  const selected = [];
+  document.querySelectorAll('.row-check:checked').forEach(chk => {
+    const tr = chk.closest('tr');
+    selected.push({
+      nama   : tr.dataset.nama,
+      spk    : tr.dataset.spk,
+      tunggak: parseInt(tr.dataset.tunggak).toLocaleString('id-ID'),
+      bulan  : tr.dataset.bulan,
+      hp     : tr.dataset.hp,
+    });
+  });
+
+  if (!selected.length) {
+    notif('Pilih minimal 1 nasabah terlebih dahulu.', 'warning');
+    return;
+  }
+
+  // Buka WA satu per satu (browser popup)
+  let opened = 0;
+  selected.forEach((n, i) => {
+    if (!n.hp) return;
+    const msg = encodeURIComponent(
+      `Yth. Bpk/Ibu ${n.nama}, kami dari BUM Desa Bersama UPK Ciomas LKD mengingatkan bahwa angsuran pinjaman Anda (SPK: ${n.spk}) telah menunggak ${n.bulan} bulan dengan total Rp ${n.tunggak}. Mohon segera melakukan pembayaran. Terima kasih.`
+    );
+    setTimeout(() => {
+      window.open(`https://wa.me/62${n.hp.replace(/^0/, '')}?text=${msg}`, '_blank');
+    }, i * 800); // jeda 800ms antar tab agar tidak diblokir browser
+    opened++;
+  });
+
+  if (opened === 0) {
+    notif('Nasabah terpilih tidak memiliki nomor HP.', 'warning');
+  } else {
+    notif(`${opened} tab WA dibuka. Pastikan browser mengizinkan popup.`, 'info');
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,450 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if nasabah else 'Tambah' }} Nasabah{% endblock %}
+{% block page_title %}{{ 'Edit' if nasabah else 'Tambah' }} Nasabah{% endblock %}
+
+{% block content %}
+{% set jenis_aktif = nasabah.jenis if nasabah else (jenis or 'perorangan') %}
+
+<div class="page-header">
+  <h1>{{ 'Edit' if nasabah else 'Tambah' }} Nasabah</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('nasabah.index') }}">Nasabah</a></li>
+    <li class="breadcrumb-item active">{{ 'Edit' if nasabah else 'Tambah' }}</li>
+  </ol></nav>
+</div>
+
+<form method="POST" enctype="multipart/form-data" id="formNasabah">
+  <input type="hidden" name="jenis" id="inputJenis" value="{{ jenis_aktif }}">
+
+  {# ── TAB JENIS (hanya saat tambah baru) ── #}
+  {% if not nasabah %}
+  <ul class="nav nav-tabs mb-0" id="jenisTabs">
+    <li class="nav-item">
+      <a class="nav-link {% if jenis_aktif=='perorangan' %}active{% endif %}" href="#"
+         id="tabPerorangan" onclick="setJenis('perorangan');return false;">
+        <i class="bi bi-person-fill me-1"></i>Perorangan
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if jenis_aktif=='kelompok' %}active{% endif %}" href="#"
+         id="tabKelompok" onclick="setJenis('kelompok');return false;">
+        <i class="bi bi-people-fill me-1"></i>Kelompok / SPP
+      </a>
+    </li>
+  </ul>
+  {% else %}
+  <div class="alert alert-info py-2 mb-3" style="font-size:.83rem;">
+    <i class="bi bi-info-circle me-2"></i>
+    Jenis: <strong>{{ 'Kelompok / SPP' if nasabah.jenis=='kelompok' else 'Perorangan' }}</strong>
+  </div>
+  {% endif %}
+
+  <div class="card {% if not nasabah %}border-top-0{% endif %}" style="{% if not nasabah %}border-top-left-radius:0;border-top-right-radius:0;{% endif %}">
+    <div class="card-body">
+      <div class="row g-3">
+
+        {# ═══ KOLOM UTAMA ═══ #}
+        <div class="col-lg-8">
+
+          {# Identitas #}
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-md-4">
+              <label class="form-label">Desa <span class="text-danger">*</span></label>
+              <select name="kode_desa" class="form-select" required {% if nasabah %}disabled{% endif %}>
+                <option value="">-- Pilih Desa --</option>
+                {% for k,n in desa_list %}
+                <option value="{{ k }}" {% if nasabah and nasabah.kode_desa==k %}selected{% endif %}>{{ n }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% if not nasabah %}
+            <div class="col-12 col-md-4">
+              <label class="form-label">ID Nasabah <small class="text-muted fw-normal">(kosong=otomatis)</small></label>
+              <input type="text" name="nasabah_id_manual" class="form-control money text-uppercase" placeholder="Misal: UT-001">
+            </div>
+            {% endif %}
+            <div class="col-12 col-md-{{ '4' if not nasabah else '8' }}">
+              <label class="form-label">
+                <span id="labelNama">{{ 'Nama Kelompok' if jenis_aktif=='kelompok' else 'Nama Lengkap' }}</span>
+                <span class="text-danger">*</span>
+              </label>
+              <input type="text" name="nama" class="form-control text-uppercase" required
+                value="{{ nasabah.nama if nasabah else '' }}">
+            </div>
+          </div>
+
+          {# ── SECTION PERORANGAN ── #}
+          <div id="secPerorangan" {% if jenis_aktif=='kelompok' %}style="display:none"{% endif %}>
+            <div class="row g-3">
+              <div class="col-12 col-md-5">
+                <label class="form-label">NIK</label>
+                <input type="text" name="nik" class="form-control money" maxlength="16" placeholder="16 digit NIK"
+                  value="{{ nasabah.nik if nasabah and not nasabah.nik.startswith('NOID-') else '' }}">
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label">Jenis Kelamin</label>
+                <select name="jenis_kelamin" class="form-select">
+                  <option value="">-</option>
+                  <option value="Laki-laki" {% if nasabah and nasabah.jenis_kelamin=='Laki-laki' %}selected{% endif %}>Laki-laki</option>
+                  <option value="Perempuan" {% if nasabah and nasabah.jenis_kelamin=='Perempuan' %}selected{% endif %}>Perempuan</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Tanggal Lahir</label>
+                <input type="date" name="tanggal_lahir" class="form-control"
+                  value="{{ nasabah.tanggal_lahir.strftime('%Y-%m-%d') if nasabah and nasabah.tanggal_lahir else '' }}">
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Tempat Lahir</label>
+                <input type="text" name="tempat_lahir" class="form-control"
+                  value="{{ nasabah.tempat_lahir if nasabah else '' }}">
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Pekerjaan</label>
+                <input type="text" name="pekerjaan" class="form-control"
+                  value="{{ nasabah.pekerjaan if nasabah and nasabah.jenis=='perorangan' else '' }}">
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">No. HP / WA</label>
+                <input type="text" name="no_hp" class="form-control" placeholder="08..."
+                  value="{{ nasabah.no_hp if nasabah else '' }}">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Alamat</label>
+                <textarea name="alamat" class="form-control" rows="2">{{ nasabah.alamat if nasabah else '' }}</textarea>
+              </div>
+            </div>
+
+            {# Pasangan #}
+            <hr class="my-3">
+            <div class="row g-3">
+              <div class="col-12"><label class="form-label fw-bold text-muted">Pasangan / Penjamin</label></div>
+              <div class="col-12 col-md-5">
+                <label class="form-label">Nama Pasangan</label>
+                <input type="text" name="nama_pasangan" class="form-control text-uppercase"
+                  value="{{ nasabah.nama_pasangan if nasabah else '' }}">
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">NIK Pasangan</label>
+                <input type="text" name="nik_pasangan" class="form-control money"
+                  value="{{ nasabah.nik_pasangan if nasabah else '' }}">
+              </div>
+              <div class="col-12 col-md-3">
+                <label class="form-label">No. HP Pasangan</label>
+                <input type="text" name="no_hp_pasangan" class="form-control"
+                  value="{{ nasabah.no_hp_pasangan if nasabah else '' }}">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Keterangan Jaminan</label>
+                <input type="text" name="keterangan_jaminan" class="form-control"
+                  placeholder="Misal: BPKB Motor Honda Beat 2020"
+                  value="{{ nasabah.keterangan_jaminan if nasabah else '' }}">
+              </div>
+            </div>
+          </div>
+
+          {# ── SECTION KELOMPOK ── #}
+          <div id="secKelompok" {% if jenis_aktif!='kelompok' %}style="display:none"{% endif %}>
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label">No. HP / WA Kelompok</label>
+                <input type="text" name="no_hp" class="form-control" placeholder="08..."
+                  value="{{ nasabah.no_hp if nasabah else '' }}">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Alamat Sekretariat</label>
+                <input type="text" name="alamat" class="form-control"
+                  value="{{ nasabah.alamat if nasabah else '' }}">
+              </div>
+            </div>
+
+            {# Daftar anggota — layout 2 baris per anggota #}
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label mb-0 fw-bold">Daftar Anggota <span class="text-danger">*</span></label>
+              <button type="button" class="btn btn-success btn-sm" onclick="tambahAnggota()">
+                <i class="bi bi-plus-lg me-1"></i>Tambah Anggota
+              </button>
+            </div>
+            <div id="bodyAnggota" class="d-flex flex-column gap-2">
+              {% if nasabah and nasabah.jenis=='kelompok' and nasabah.anggota %}
+                {% for a in nasabah.anggota %}
+                <div class="anggota-row card border" style="background:#f8fafc;">
+                  <div class="card-body p-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="badge bg-primary anggota-num">Anggota #{{ loop.index }}</span>
+                      <button type="button" class="btn btn-outline-danger btn-sm" onclick="hapusAnggota(this)" style="padding:2px 8px;">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                    <div class="row g-2 mb-2">
+                      <div class="col-12 col-md-4">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">NIK</label>
+                        <input type="text" name="anggota_nik[]" class="form-control form-control-sm money" maxlength="16" value="{{ a.nik or '' }}" placeholder="NIK">
+                      </div>
+                      <div class="col-12 col-md-5">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Nama <span class="text-danger">*</span></label>
+                        <input type="text" name="anggota_nama[]" class="form-control form-control-sm text-uppercase" value="{{ a.nama }}" required>
+                      </div>
+                      <div class="col-12 col-md-3">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Jabatan</label>
+                        <select name="anggota_jabatan[]" class="form-select form-select-sm">
+                          <option value="anggota" {% if a.jabatan=='anggota' %}selected{% endif %}>Anggota</option>
+                          <option value="ketua" {% if a.jabatan=='ketua' %}selected{% endif %}>Ketua</option>
+                          <option value="sekretaris" {% if a.jabatan=='sekretaris' %}selected{% endif %}>Sekretaris</option>
+                          <option value="bendahara" {% if a.jabatan=='bendahara' %}selected{% endif %}>Bendahara</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                      <div class="col-12 col-md-6">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Upload KTP</label>
+                        <input type="file" name="anggota_ktp[]" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf">
+                        {% if a.ktp %}<div class="small text-muted mt-1">Sudah ada: <a href="{{ url_for('static', filename=a.ktp) }}" target="_blank">lihat</a></div>{% endif %}
+                        <input type="hidden" name="anggota_ktp_old[]" value="{{ a.ktp or '' }}">
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Upload KK</label>
+                        <input type="file" name="anggota_kk[]" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf">
+                        {% if a.kk %}<div class="small text-muted mt-1">Sudah ada: <a href="{{ url_for('static', filename=a.kk) }}" target="_blank">lihat</a></div>{% endif %}
+                        <input type="hidden" name="anggota_kk_old[]" value="{{ a.kk or '' }}">
+                      </div>
+                    </div>
+                    <div class="row g-2">
+                      <div class="col-12 col-md-8">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Alamat</label>
+                        <input type="text" name="anggota_alamat[]" class="form-control form-control-sm" value="{{ a.alamat or '' }}" placeholder="Alamat lengkap">
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Nomor Telp</label>
+                        <input type="text" name="anggota_hp[]" class="form-control form-control-sm" value="{{ a.no_hp or '' }}" placeholder="08xxxxxxxxxx">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              {% else %}
+                <div class="anggota-row card border" style="background:#f8fafc;">
+                  <div class="card-body p-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="badge bg-primary anggota-num">Anggota #1</span>
+                      <button type="button" class="btn btn-outline-danger btn-sm" onclick="hapusAnggota(this)" style="padding:2px 8px;">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                    <div class="row g-2 mb-2">
+                      <div class="col-12 col-md-4">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">NIK</label>
+                        <input type="text" name="anggota_nik[]" class="form-control form-control-sm money" maxlength="16" placeholder="NIK">
+                      </div>
+                      <div class="col-12 col-md-5">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Nama <span class="text-danger">*</span></label>
+                        <input type="text" name="anggota_nama[]" class="form-control form-control-sm text-uppercase" placeholder="Nama ketua">
+                      </div>
+                      <div class="col-12 col-md-3">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Jabatan</label>
+                        <select name="anggota_jabatan[]" class="form-select form-select-sm">
+                          <option value="ketua" selected>Ketua</option>
+                          <option value="sekretaris">Sekretaris</option>
+                          <option value="bendahara">Bendahara</option>
+                          <option value="anggota">Anggota</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                      <div class="col-12 col-md-6">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Upload KTP</label>
+                        <input type="file" name="anggota_ktp[]" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf">
+                        <input type="hidden" name="anggota_ktp_old[]" value="">
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Upload KK</label>
+                        <input type="file" name="anggota_kk[]" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf">
+                        <input type="hidden" name="anggota_kk_old[]" value="">
+                      </div>
+                    </div>
+                    <div class="row g-2">
+                      <div class="col-12 col-md-8">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Alamat</label>
+                        <input type="text" name="anggota_alamat[]" class="form-control form-control-sm" placeholder="Alamat lengkap">
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Nomor Telp</label>
+                        <input type="text" name="anggota_hp[]" class="form-control form-control-sm" placeholder="08xxxxxxxxxx">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+            <div class="mt-2" style="font-size:.78rem;color:var(--text-muted);">
+              <i class="bi bi-info-circle me-1"></i>Minimal 1 anggota. Jabatan Ketua wajib ada.
+            </div>
+          </div>
+        </div>
+
+        {# ═══ KOLOM DOKUMEN ═══ #}
+        <div class="col-lg-4">
+          <div class="card bg-light border-0">
+            <div class="card-header bg-transparent">
+              <i class="bi bi-file-earmark-check-fill me-2 text-warning"></i>Dokumen Persyaratan
+            </div>
+            <div class="card-body">
+              {% set is_kelompok = (jenis is defined and jenis == 'kelompok') or (nasabah is defined and nasabah.jenis == 'kelompok') %}
+              {% if is_kelompok %}
+              {% set docs = [
+                ('foto','Foto Kelompok','bi-camera',nasabah.foto if nasabah else None),
+                ('jaminan','Dokumen Jaminan','bi-shield-check',nasabah.jaminan if nasabah else None),
+                ('surat_tanggung_renteng_nasabah','Surat Pernyataan Tanggung Renteng','bi-file-earmark-text',nasabah.surat_tanggung_renteng_nasabah if nasabah else None),
+                ('surat_ijin_keluarga_nasabah','Surat Ijin Keluarga Dekat','bi-file-earmark-text',nasabah.surat_ijin_keluarga_nasabah if nasabah else None),
+              ] %}
+              {% else %}
+              {% set docs = [
+                ('foto','Pas Photo','bi-person-square',nasabah.foto if nasabah else None),
+                ('ktp','KTP','bi-credit-card-2-front',nasabah.ktp if nasabah else None),
+                ('kk','Kartu Keluarga','bi-house-heart',nasabah.kk if nasabah else None),
+                ('surat_usaha','SKU / SKK','bi-briefcase',nasabah.surat_usaha if nasabah else None),
+                ('bukti_penghasilan','Bukti Penghasilan','bi-cash-coin',nasabah.bukti_penghasilan if nasabah else None),
+                ('jaminan','Dokumen Jaminan','bi-shield-check',nasabah.jaminan if nasabah else None),
+              ] %}
+              {% endif %}
+              {% if is_kelompok %}
+              <div class="alert alert-info mb-3 py-2" style="font-size:.75rem;">
+                <i class="bi bi-info-circle me-1"></i>
+                <strong>KTP & KK</strong> masing-masing anggota diupload pada bagian <strong>Anggota Kelompok</strong> di atas.
+              </div>
+              {% endif %}
+              {% for fname,flabel,ficon,fval in docs %}
+              <div class="doc-upload-item mb-2 {{ 'has-file' if fval else '' }}" id="wrap_{{ fname }}">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <i class="bi {{ ficon }} text-primary"></i>
+                  <span style="font-size:.75rem;font-weight:500;color:#94a3b8;">{{ flabel }}</span>
+                  {% if fval %}<i class="bi bi-check-circle-fill ms-auto text-success" style="font-size:.85rem;"></i>
+                  {% else %}<i class="bi bi-circle ms-auto" style="font-size:.85rem;color:#94a3b8;"></i>{% endif %}
+                </div>
+                {% if fval %}<div class="mb-1"><a href="{{ url_for('static',filename=fval) }}" target="_blank" class="btn btn-outline-success btn-sm" style="font-size:.72rem;"><i class="bi bi-eye me-1"></i>Lihat</a></div>{% endif %}
+                <input type="file" name="{{ fname }}" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf,.webp"
+                  onchange="document.getElementById('wrap_{{ fname }}').classList.add('has-file')">
+              </div>
+              {% endfor %}
+
+              <hr style="border-color: var(--text-muted); opacity: 0.3; margin: 12px 0;">
+              <div class="doc-upload-item mb-2 {{ 'has-file' if nasabah and nasabah.tanda_tangan else '' }}" id="wrap_tanda_tangan">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <i class="bi bi-pen text-danger"></i>
+                  <span style="font-size:.75rem;font-weight:500;color:#94a3b8;">Tanda Tangan Digital</span>
+                  {% if nasabah and nasabah.tanda_tangan %}<i class="bi bi-check-circle-fill ms-auto text-success" style="font-size:.85rem;"></i>
+                  {% else %}<i class="bi bi-circle ms-auto" style="font-size:.85rem;color:#94a3b8;"></i>{% endif %}
+                </div>
+                {% if nasabah and nasabah.tanda_tangan %}
+                <div class="mb-1 text-center p-2 bg-light rounded">
+                  <img src="{{ url_for('static', filename=nasabah.tanda_tangan) }}" style="max-height:50px;max-width:150px;">
+                </div>
+                {% endif %}
+                <input type="file" name="tanda_tangan" class="form-control form-control-sm" accept=".png,.jpg,.jpeg,.webp"
+                  onchange="document.getElementById('wrap_tanda_tangan').classList.add('has-file')">
+                <div class="text-muted" style="font-size:.65rem;">PNG transparan disarankan. Tampil sebagai QR pada dokumen cetak.</div>
+              </div>
+
+              <div class="d-grid gap-2 mt-3">
+                <button type="submit" class="btn btn-primary fw-bold">
+                  <i class="bi bi-save-fill me-1"></i>{{ 'Simpan Perubahan' if nasabah else 'Simpan Nasabah' }}
+                </button>
+                <a href="{{ url_for('nasabah.index') }}" class="btn btn-outline-secondary">Batal</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var jenisAktif = '{{ jenis_aktif }}';
+
+function setJenis(j) {
+  jenisAktif = j;
+  document.getElementById('inputJenis').value = j;
+
+  // Tab aktif
+  document.getElementById('tabPerorangan').classList.toggle('active', j === 'perorangan');
+  document.getElementById('tabKelompok').classList.toggle('active', j === 'kelompok');
+
+  // Section visibility
+  document.getElementById('secPerorangan').style.display = (j === 'perorangan') ? '' : 'none';
+  document.getElementById('secKelompok').style.display   = (j === 'kelompok')   ? '' : 'none';
+
+  // Label nama
+  document.getElementById('labelNama').textContent = (j === 'kelompok') ? 'Nama Kelompok' : 'Nama Lengkap';
+}
+
+function tambahAnggota() {
+  var body = document.getElementById('bodyAnggota');
+  var n = body.querySelectorAll('.anggota-row').length + 1;
+  var div = document.createElement('div');
+  div.className = 'anggota-row card border';
+  div.style.background = '#f8fafc';
+  div.innerHTML =
+    '<div class="card-body p-2">' +
+      '<div class="d-flex justify-content-between align-items-center mb-2">' +
+        '<span class="badge bg-primary anggota-num">Anggota #' + n + '</span>' +
+        '<button type="button" class="btn btn-outline-danger btn-sm" onclick="hapusAnggota(this)" style="padding:2px 8px;">' +
+          '<i class="bi bi-trash"></i></button>' +
+      '</div>' +
+      '<div class="row g-2 mb-2">' +
+        '<div class="col-12 col-md-4">' +
+          '<label class="form-label form-label-sm mb-1" style="font-size:.72rem;">NIK</label>' +
+          '<input type="text" name="anggota_nik[]" class="form-control form-control-sm money" maxlength="16" placeholder="NIK">' +
+        '</div>' +
+        '<div class="col-12 col-md-5">' +
+          '<label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Nama <span class="text-danger">*</span></label>' +
+          '<input type="text" name="anggota_nama[]" class="form-control form-control-sm text-uppercase" placeholder="Nama anggota">' +
+        '</div>' +
+        '<div class="col-12 col-md-3">' +
+          '<label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Jabatan</label>' +
+          '<select name="anggota_jabatan[]" class="form-select form-select-sm">' +
+            '<option value="anggota" selected>Anggota</option>' +
+            '<option value="ketua">Ketua</option>' +
+            '<option value="sekretaris">Sekretaris</option>' +
+            '<option value="bendahara">Bendahara</option>' +
+          '</select>' +
+        '</div>' +
+      '</div>' +
+      '<div class="row g-2 mb-2">' +
+        '<div class="col-12 col-md-6">' +
+          '<label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Upload KTP</label>' +
+          '<input type="file" name="anggota_ktp[]" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf">' +
+          '<input type="hidden" name="anggota_ktp_old[]" value="">' +
+        '</div>' +
+        '<div class="col-12 col-md-6">' +
+          '<label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Upload KK</label>' +
+          '<input type="file" name="anggota_kk[]" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf">' +
+          '<input type="hidden" name="anggota_kk_old[]" value="">' +
+        '</div>' +
+      '</div>' +
+      '<div class="row g-2">' +
+        '<div class="col-12 col-md-8">' +
+          '<label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Alamat</label>' +
+          '<input type="text" name="anggota_alamat[]" class="form-control form-control-sm" placeholder="Alamat lengkap">' +
+        '</div>' +
+        '<div class="col-12 col-md-4">' +
+          '<label class="form-label form-label-sm mb-1" style="font-size:.72rem;">Nomor Telp</label>' +
+          '<input type="text" name="anggota_hp[]" class="form-control form-control-sm" placeholder="08xxxxxxxxxx">' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  body.appendChild(div);
+}
+
+function hapusAnggota(btn) {
+  var row = btn.closest('.anggota-row');
+  if (row) row.remove();
+  document.querySelectorAll('#bodyAnggota .anggota-num').forEach(function(el, i) {
+    el.textContent = 'Anggota #' + (i + 1);
+  });
+}
+</script>
+{% endblock %}

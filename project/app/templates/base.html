@@ -1,0 +1,2125 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d6efd">
+  <meta name="description" content="Aplikasi Manajemen Keuangan Desa - UPK Ciomas">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
+  <title>{% block title %}LKD{% endblock %} — UPK Ciomas</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1a56db;
+      --primary-dark: #1044b4;
+      --accent: #f97316;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --sb-w: 248px;
+      --sb-w-collapsed: 68px;
+      --sb-bg: #0f172a;
+      --sb-text: #94a3b8;
+      --topbar-h: 56px;
+      --body-bg: #f1f5f9;
+      --card-bg: #fff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #cbd5e1;
+      --font: 'Plus Jakarta Sans', sans-serif;
+      --mono: 'DM Mono', monospace;
+    }
+
+    --bubble-radius: 20px;
+    --bubble-radius-sm: 16px;
+    --bubble-shadow: 0 8px 32px rgba(15,23,42,0.07);
+    --bubble-shadow-sm: 0 4px 16px rgba(15,23,42,0.05);
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--body-bg);
+      color: var(--text-main);
+    }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--sb-w);
+      height: 100vh;
+      background: var(--sb-bg);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+
+    .sb-nav-content {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+      padding-bottom: 40px;
+    }
+
+    .sb-nav-content::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sb-nav-content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+    }
+
+    #sidebar::-webkit-scrollbar {
+      display: none;
+    }
+
+    #sidebar::-webkit-scrollbar-thumb {
+      display: none;
+    }
+
+    .sb-brand {
+      padding: 14px 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      height: auto;
+      min-height: 58px;
+    }
+
+    .sb-brand-icon {
+      width: 36px;
+      height: 36px;
+      background: #fff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-size: 1rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .sb-brand > div {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .sb-brand strong {
+      display: block;
+      color: #fff;
+      font-size: 0.73rem;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .sb-brand span {
+      color: var(--sb-text);
+      font-size: 0.62rem;
+      line-height: 1.1;
+      display: block;
+      margin-top: 8px;
+    }
+
+    /* ── NAV GROUPS (collapsible) ── */
+    .sb-group {
+      margin: 4px 0;
+    }
+
+    .sb-group-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px 6px;
+      cursor: pointer;
+      user-select: none;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      color: var(--sb-text);
+      transition: color 0.15s;
+    }
+
+    .sb-group-header:hover {
+      color: #e2e8f0;
+    }
+
+    .sb-group-header .sb-group-icon {
+      font-size: 0.88rem;
+      width: 16px;
+      text-align: center;
+    }
+
+    .sb-group-header .sb-group-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      flex: 1;
+    }
+
+    .sb-group-header .sb-chevron {
+      font-size: 0.65rem;
+      transition: transform 0.2s;
+    }
+
+    .sb-group-header.collapsed .sb-chevron {
+      transform: rotate(-90deg);
+    }
+
+    /* Direct links (Dashboard, Aset) */
+    .sb-direct {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px 6px;
+    }
+
+    .sb-direct a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 7px;
+      color: var(--sb-text);
+      text-decoration: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      width: 100%;
+      transition: all 0.12s;
+    }
+
+    .sb-direct a i {
+      font-size: 0.9rem;
+      width: 16px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .sb-direct a:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+    }
+
+    .sb-direct a.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+/* Items inside collapsible groups */
+    .sb-items {
+      display: grid;
+      grid-template-rows: 0fr;
+      overflow: hidden;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+    }
+
+    .sb-items > .sb-items-inner {
+      min-height: 0;
+      overflow: hidden;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+
+    .sb-items.collapsed {
+      grid-template-rows: 0fr !important;
+    }
+
+    .sb-items:not(.collapsed) {
+      grid-template-rows: 1fr !important;
+    }
+
+    .sb-item {
+      margin: 1px 6px;
+    }
+
+    .sb-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      color: var(--sb-text);
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .sb-link i {
+      font-size: 0.85rem;
+      width: 16px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .sb-link:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+    }
+
+    .sb-link.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* Indent submenu items to distinguish from group headers */
+    .sb-items .sb-item {
+      margin: 1px 4px;
+      padding-left: 16px !important;
+    }
+
+    .sb-items .sb-link {
+      font-size: 0.72rem;
+      padding: 5px 8px;
+    }
+
+    .sb-items .sb-link i {
+      font-size: 0.8rem;
+    }
+
+    .sb-footer {
+      padding: 8px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+      background: var(--sb-bg);
+      z-index: 10;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+
+    /* ── COLLAPSED SIDEBAR ── */
+    #sidebar.sb-collapsed {
+      width: var(--sb-w-collapsed);
+    }
+    #sidebar.sb-collapsed .sb-brand strong,
+    #sidebar.sb-collapsed .sb-brand span {
+      font-size: 0.6rem;
+    }
+    #sidebar.sb-collapsed .sb-brand {
+      justify-content: center;
+      padding: 10px 4px;
+    }
+    #sidebar.sb-collapsed .sb-brand-icon {
+      margin: 0;
+      width: 28px;
+      height: 28px;
+    }
+    #sidebar.sb-collapsed .sb-brand div {
+      display: none;
+    }
+    /* Group headers: icon only */
+    #sidebar.sb-collapsed .sb-group-header {
+      display: flex;
+      justify-content: center;
+      padding: 8px 6px;
+      margin: 2px 0;
+      border-radius: 10px;
+      height: 40px;
+      position: relative;
+    }
+    #sidebar.sb-collapsed .sb-group-header .sb-group-label,
+    #sidebar.sb-collapsed .sb-group-header .sb-chevron {
+      display: none;
+    }
+    #sidebar.sb-collapsed .sb-group-header .sb-group-icon {
+      font-size: 1.15rem;
+      width: auto;
+      margin: 0;
+    }
+    #sidebar.sb-collapsed .sb-group-header:hover,
+    #sidebar.sb-collapsed .sb-group-header.expanded {
+      background: rgba(255,255,255,0.08);
+    }
+    /* Sub-items: hidden by default, shown when expanded with icons only */
+    #sidebar.sb-collapsed .sb-items {
+      display: grid !important;
+      grid-template-rows: 0fr;
+    }
+    
+    #sidebar.sb-collapsed .sb-items:not(.collapsed) {
+      grid-template-rows: 1fr !important;
+    }
+    /* Sub-items: icon only when collapsed */
+    #sidebar.sb-collapsed .sb-item {
+      display: flex;
+      justify-content: center;
+      padding: 0 !important;
+      margin: 1px 0;
+    }
+    
+    #sidebar.sb-collapsed .sb-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 36px;
+      padding: 0;
+      border-radius: 8px;
+      color: var(--sb-text);
+      text-decoration: none;
+      position: relative;
+      font-size: 0;
+    }
+    
+    #sidebar.sb-collapsed .sb-link i {
+      font-size: 1.05rem;
+      width: auto;
+    }
+    
+    /* Hide text and badge content */
+    #sidebar.sb-collapsed .sb-link-text,
+    #sidebar.sb-collapsed .badge {
+      display: none !important;
+    }
+    /* Direct links: icon only */
+    #sidebar.sb-collapsed .sb-direct {
+      padding: 2px 6px;
+      justify-content: center;
+    }
+    #sidebar.sb-collapsed .sb-direct a {
+      width: 42px;
+      height: 42px;
+      padding: 0;
+      justify-content: center;
+      border-radius: 10px;
+      position: relative;
+    }
+    #sidebar.sb-collapsed .sb-direct a {
+      font-size: 0;
+    }
+    #sidebar.sb-collapsed .sb-direct a i {
+      font-size: 1.05rem;
+    }
+    /* Active state in collapsed mode */
+    #sidebar.sb-collapsed .sb-direct .sb-link.active,
+    #sidebar.sb-collapsed .sb-item .sb-link.active {
+      background: rgba(59, 130, 246, 0.15);
+    }
+    
+    #sidebar.sb-collapsed .sb-direct .sb-link.active i,
+    #sidebar.sb-collapsed .sb-item .sb-link.active i {
+      color: #60a5fa;
+    }
+    
+    /* Tooltip on hover for collapsed sidebar */
+    #sidebar.sb-collapsed .sb-direct .sb-link:hover::after,
+    #sidebar.sb-collapsed .sb-item .sb-link:hover::after,
+    #sidebar.sb-collapsed .sb-group-header:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: calc(100% + 10px);
+      top: 50%;
+      transform: translateY(-50%);
+      background: #1e293b;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 2000;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    #sidebar.sb-collapsed .sb-direct .sb-link:hover::before,
+    #sidebar.sb-collapsed .sb-item .sb-link:hover::before,
+    #sidebar.sb-collapsed .sb-group-header:hover::before {
+      content: '';
+      position: absolute;
+      left: calc(100% + 5px);
+      top: 50%;
+      transform: translateY(-50%);
+      border: 6px solid transparent;
+      border-right-color: #1e293b;
+      z-index: 2000;
+      pointer-events: none;
+    }
+
+    /* Adjust topbar and main when sidebar collapsed */
+    #sidebar.sb-collapsed ~ #topbar {
+      left: var(--sb-w-collapsed);
+    }
+    #sidebar.sb-collapsed ~ #main-content {
+      margin-left: var(--sb-w-collapsed);
+    }
+    /* ── TOPBAR ── */
+    #topbar {
+      position: fixed;
+      top: 0;
+      left: var(--sb-w);
+      right: 0;
+      height: var(--topbar-h);
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      z-index: 900;
+      gap: 10px;
+    }
+
+    .topbar-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--body-bg);
+      padding: 4px 11px 4px 5px;
+      border-radius: 99px;
+      font-size: 0.78rem;
+    }
+
+    .user-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.7rem;
+      flex-shrink: 0;
+    }
+
+    .user-role-badge {
+      font-size: 0.63rem;
+      color: var(--text-muted);
+    }
+
+    .notif-bell {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--body-bg);
+      color: #475569;
+      cursor: pointer;
+      transition: all .2s;
+      font-size: 1.1rem;
+    }
+    .notif-bell:hover {
+      background: #e2e8f0;
+      color: var(--primary);
+    }
+    .notif-bell .badge {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      font-size: .6rem;
+      padding: 2px 5px;
+      min-width: 16px;
+      border-radius: 99px;
+    }
+    .notif-dropdown {
+      width: 360px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .notif-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background .15s;
+    }
+    .notif-item:last-child {
+      border-bottom: none;
+    }
+    .notif-item-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: .8rem;
+    }
+    .notif-item-body {
+      flex: 1;
+      font-size: .8rem;
+      line-height: 1.4;
+    }
+    .notif-item-close {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0;
+      opacity: 0;
+      transition: opacity .15s;
+    }
+    .notif-item:hover .notif-item-close {
+      opacity: 1;
+    }
+
+    /* ── MAIN ── */
+    #main-content {
+      margin-left: var(--sb-w);
+      padding-top: var(--topbar-h);
+      min-height: 100vh;
+    }
+
+    .page-body {
+      padding: 20px;
+    }
+
+    .page-header {
+      margin-bottom: 18px;
+    }
+
+    .page-header h1 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      margin: 0;
+    }
+
+    .page-header .breadcrumb {
+      font-size: 0.76rem;
+      margin: 3px 0 0;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      border: 1px solid rgba(203, 213, 225, 0.4);
+      border-radius: 16px;
+      background: var(--card-bg);
+      box-shadow: var(--bubble-shadow-sm);
+    }
+
+    .card-header {
+      background: transparent;
+      border-bottom: 1px solid var(--border);
+      padding: 11px 16px;
+      font-weight: 700;
+      font-size: 0.86rem;
+    }
+
+    .card-body {
+      padding: 16px;
+    }
+
+    /* ── STAT CARDS ── */
+    .stat-card {
+      border-radius: 20px;
+      padding: 14px 16px;
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+      height: 96px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+    }
+
+    .stat-card .stat-icon {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 2.4rem;
+      opacity: 0.13;
+    }
+
+    .stat-card .stat-label {
+      font-size: 0.67rem;
+      font-weight: 700;
+      opacity: 0.85;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-card .stat-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .stat-card .stat-sub {
+      font-size: 0.69rem;
+      opacity: 0.72;
+    }
+
+    .stat-compact {
+      height: auto;
+      padding: 10px 14px;
+    }
+
+    .stat-compact .stat-value {
+      font-size: 1.05rem;
+    }
+
+    .stat-blue {
+      background: linear-gradient(135deg, #1a56db, #0ea5e9);
+    }
+
+    .stat-green {
+      background: linear-gradient(135deg, #16a34a, #4ade80);
+    }
+
+    .stat-orange {
+      background: linear-gradient(135deg, #f97316, #fbbf24);
+    }
+
+    .stat-red {
+      background: linear-gradient(135deg, #dc2626, #f87171);
+    }
+
+    .stat-purple {
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    }
+
+    .stat-teal {
+      background: linear-gradient(135deg, #0891b2, #22d3ee);
+    }
+
+    /* ── BUBBLE UTILITIES ── */
+    .bubble-card {
+      border-radius: 20px;
+      box-shadow: var(--bubble-shadow);
+      background: var(--card-bg);
+      border: none;
+    }
+    .bubble-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .bubble-shadow {
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+    }
+
+    /* ── TABLES ── */
+    .table {
+      font-size: 0.82rem;
+    }
+
+    .table thead th {
+      background: #f8fafc;
+      font-weight: 700;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 2.5px solid var(--border);
+      padding: 8px 12px;
+    }
+
+    .table td {
+      padding: 8px 12px;
+      vertical-align: middle;
+      border-color: var(--border);
+      border-bottom-width: 1.2px;
+    }
+
+    .table tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    /* ── FORMS ── */
+    .form-label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      margin-bottom: 3px;
+      color: #94a3b8;
+      letter-spacing: 0.01em;
+    }
+
+    .form-control::placeholder,
+    .form-select::placeholder {
+      color: #cbd5e1;
+      opacity: 1;
+    }
+
+    .form-control,
+    .form-select {
+      font-size: 0.83rem;
+      border-radius: 7px;
+      border: 1.2px solid var(--border);
+      padding: 7px 10px;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
+    }
+
+    .doc-upload-item {
+      border: 2px dashed var(--border);
+      border-radius: 9px;
+      padding: 10px;
+      text-align: center;
+      transition: border-color 0.15s;
+    }
+
+    .doc-upload-item.has-file {
+      border-color: var(--success);
+      border-style: solid;
+      background: #f0fdf4;
+    }
+
+    /* ── MISC ── */
+    .money {
+      font-family: var(--mono);
+      font-weight: 500;
+    }
+
+    .btn {
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 7px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      border-color: var(--primary-dark);
+    }
+
+    .alert {
+      border-radius: 9px;
+      font-size: 0.82rem;
+    }
+
+
+
+    /* SweetAlert2 custom styling */
+    .swal-popup-top-right {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    }
+    .swal-title {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .swal-confirm-btn {
+      font-size: 0.82rem;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 8px 20px;
+    }
+    .swal-cancel-btn {
+      font-size: 0.82rem;
+      font-weight: 500;
+      border-radius: 8px;
+      padding: 8px 20px;
+    }
+    .swal-toast-top-right {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      border-radius: 12px;
+    }
+
+    .progress {
+      height: 5px;
+      border-radius: 99px;
+      background: #e2e8f0;
+    }
+
+    .progress-bar {
+      border-radius: 99px;
+    }
+
+    .badge.kolek-1 {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .badge.kolek-2 {
+      background: #fef9c3;
+      color: #a16207;
+    }
+
+    .badge.kolek-3 {
+      background: #fed7aa;
+      color: #c2410c;
+    }
+
+    .badge.kolek-4 {
+      background: #fecaca;
+      color: #b91c1c;
+    }
+
+    .badge.kolek-5 {
+      background: #e9d5ff;
+      color: #6d28d9;
+    }
+
+    /* Status badge pinjaman */
+    .status-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 99px;
+      font-size: .72rem;
+      font-weight: 700;
+    }
+
+    .status-pengajuan {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .status-cek_dokumen {
+      background: #fef9c3;
+      color: #a16207;
+    }
+
+    .status-verifikasi {
+      background: #fed7aa;
+      color: #c2410c;
+    }
+
+    .status-acc_direktur {
+      background: #f3e8ff;
+      color: #7e22ce;
+    }
+
+    .status-cair {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .status-lunas {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-ditolak {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .bg-light-primary {
+      background-color: #ebf2ff;
+    }
+
+    .bg-light-success {
+      background-color: #f0fdf4;
+    }
+
+    .bg-light-warning {
+      background-color: #fffbeb;
+    }
+
+    .bg-light-danger {
+      background-color: #fef2f2;
+    }
+
+    .bg-light-info {
+      background-color: #e0f2fe;
+    }
+
+    @media (max-width: 768px) {
+      /* Bottom Navigation - Fixed Static - NO SCROLL REQUIRED */
+      .bottom-nav {
+        display: flex !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        background: #fff !important;
+        border-top: 1px solid #e2e8f0 !important;
+        padding: 8px 0 !important;
+        margin: 0 !important;
+        z-index: 99999 !important;
+        box-shadow: 0 -2px 8px rgba(0,0,0,0.08) !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: translate3d(0,0,0) !important;
+        flex-wrap: nowrap !important;
+        justify-content: space-around !important;
+        gap: 0 !important;
+        overflow: visible !important;
+      }
+
+      .bottom-nav * {
+        visibility: visible !important;
+        opacity: 1 !important;
+        box-sizing: border-box !important;
+      }
+
+      .bottom-nav a {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+        max-width: 20% !important;
+        width: auto !important;
+        text-align: center !important;
+        padding: 4px 1px !important;
+        margin: 0 !important;
+        color: #64748b !important;
+        text-decoration: none !important;
+        font-size: 0.6rem !important;
+        font-weight: 500 !important;
+        display: inline-flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 1px !important;
+        border: none !important;
+        background: transparent !important;
+        overflow: visible !important;
+      }
+
+      .bottom-nav a i.bi {
+        display: inline-flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        font-size: 1.2rem !important;
+      }
+
+      .bottom-nav a i {
+        font-family: 'bootstrap-icons' !important;
+        font-style: normal !important;
+        font-weight: normal !important;
+        font-variant: normal !important;
+        text-transform: normal !important;
+        line-height: 1.2 !important;
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
+        display: inline-block !important;
+        font-size: 1.2rem !important;
+        width: auto !important;
+        min-width: auto !important;
+        height: auto !important;
+        text-align: center !important;
+        margin: 0 !important;
+      }
+
+      .bottom-nav a.active {
+        color: #0d6efd !important;
+        background: transparent !important;
+      }
+
+      .bottom-nav a.active i {
+        font-weight: 600 !important;
+      }
+
+      .bottom-nav a span {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        display: block !important;
+        line-height: 1.2 !important;
+        font-size: inherit !important;
+      }
+
+      /* Override untuk .container agar tidak mempengaruhi navbar */
+      .container-fluid, .container {
+        overflow: visible !important;
+      }
+
+      /* Fix untuk halaman pembayaran */
+      .card, .card-body, .row, .col-md-*, [class*="col-"] {
+        overflow: visible !important;
+      }
+
+      /* Add padding to body for bottom nav */
+      body {
+        padding-bottom: 60px;
+      }
+
+      #sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        width: var(--sb-w) !important;
+      }
+      #sidebar.sb-collapsed {
+        width: var(--sb-w) !important;
+      }
+      #sidebar.show {
+        transform: none;
+        box-shadow: 4px 0 20px rgba(0, 0, 0, .4);
+      }
+
+      #topbar {
+        left: 0;
+        margin-left: 0;
+        padding: 0 12px;
+      }
+
+      #main-content {
+        margin-left: 0;
+      }
+
+      .page-body {
+        padding: 10px;
+      }
+
+      /* Page header more compact */
+      .page-header {
+        margin-bottom: 10px !important;
+      }
+
+      .page-header h1 {
+        font-size: 0.95rem;
+      }
+
+      /* Overlay when sidebar open */
+      #sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .4);
+        z-index: 999;
+      }
+
+      #sidebar-overlay.show {
+        display: block;
+      }
+
+      /* Table scroll */
+      .table-responsive-mobile {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* Stat cards - compact on mobile */
+      .stat-card {
+        height: auto !important;
+        min-height: 60px;
+        padding: 8px 10px !important;
+      }
+
+      .stat-card .stat-icon {
+        font-size: 1.4rem !important;
+        right: 5px !important;
+        opacity: 0.15;
+      }
+
+      .stat-card .stat-label {
+        font-size: 0.55rem !important;
+        margin-bottom: 1px;
+      }
+
+      .stat-card .stat-value {
+        font-size: 0.85rem !important;
+        line-height: 1.1;
+      }
+
+      .stat-card .stat-sub {
+        font-size: 0.55rem !important;
+        margin-top: 1px !important;
+      }
+
+      /* Form full width */
+      .col-form-label {
+        font-size: 0.8rem;
+      }
+
+      /* Safe area for notch devices */
+      :root {
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-left: env(safe-area-inset-left, 0px);
+        --safe-right: env(safe-area-inset-right, 0px);
+      }
+
+      #sidebar {
+        padding-left: var(--safe-left);
+      }
+
+      #main-content {
+        padding-bottom: calc(var(--safe-bottom) + 16px);
+      }
+
+      /* Touch-friendly targets (min 44px) */
+      .btn,
+      .sb-link,
+      .sb-group-header,
+      .dropdown-item,
+      .page-link,
+      .form-control,
+      .form-select,
+      .nav-link,
+      .status-badge {
+        min-height: 44px;
+      }
+
+      .btn,
+      .form-control,
+      .form-select {
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+      }
+
+      .btn-sm {
+        min-height: 32px;
+        padding: 4px 8px !important;
+        font-size: 0.7rem !important;
+      }
+      
+      .btn-sm.btn-icon {
+        padding: 6px 8px !important;
+      }
+
+      .sb-link,
+      .sb-group-header {
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+      }
+
+      .page-link {
+        padding: 8px 14px;
+      }
+
+      /* Table cells touch-friendly */
+      .table td,
+      .table th {
+        padding: 12px 8px !important;
+      }
+
+      /* Form columns full-width on mobile */
+      .col-md-1,
+      .col-md-2,
+      .col-md-3,
+      .col-md-4,
+      .col-md-5,
+      .col-md-6,
+      .col-md-7,
+      .col-md-8,
+      .col-md-9,
+      .col-md-10,
+      .col-md-11 {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+      }
+
+      .row.g-2,
+      .row.g-3 {
+        gap: 0.5rem !important;
+      }
+      
+      /* Card body compact */
+      .card-body {
+        padding: 10px !important;
+      }
+      
+      .card-header {
+        padding: 8px 12px !important;
+        font-size: 0.8rem !important;
+      }
+
+      /* Page header adjustments */
+      .page-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+      }
+
+      .page-header .mt-3,
+      .page-header .mt-md-0 {
+        margin-top: 0.5rem !important;
+      }
+
+      /* Action buttons wrapping */
+      .d-flex.flex-wrap.gap-2 {
+        gap: 0.5rem !important;
+      }
+
+      /* ===== DASHBOARD MOBILE IMPROVEMENTS ===== */
+      
+      /* Quick action buttons - wrap properly */
+      .card-body.d-flex.flex-wrap.gap-2 {
+        gap: 8px !important;
+        justify-content: flex-start !important;
+      }
+      
+      .quick-btn {
+        flex: 0 0 auto;
+      }
+      
+      .quick-btn .btn {
+        padding: 8px 10px !important;
+        font-size: 0.9rem;
+      }
+      
+      /* Filter form - keep inline but compact */
+      form.d-flex.gap-2 {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        width: 100%;
+        gap: 6px !important;
+      }
+      
+      form.d-flex.gap-2 select,
+      form.d-flex.gap-2 button {
+        flex: 1;
+        min-width: 0;
+        font-size: 0.75rem !important;
+        padding: 6px 8px !important;
+      }
+      
+      form.d-flex.gap-2 button {
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+      
+      /* Alert banner - stack on mobile */
+      .alert.d-flex.align-items-center {
+        flex-direction: column !important;
+        text-align: center;
+      }
+      
+      .alert.d-flex.align-items-center > div:first-child {
+        margin-bottom: 12px !important;
+      }
+      
+      .alert.d-flex.align-items-center .ms-3 {
+        margin-left: 0 !important;
+        margin-top: 10px;
+      }
+      
+      /* Stat cards row - ensure 2 columns */
+      .row.g-3 > .col-6 {
+        padding-left: 6px;
+        padding-right: 6px;
+      }
+      
+      /* Large stat cards for nasabah */
+      .col-md-6 {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+      }
+      
+      /* Charts container */
+      .card-body.d-flex.flex-column .position-relative {
+        min-height: 200px !important;
+        height: 200px !important;
+      }
+      
+      /* Rekap per desa table */
+      .table-responsive {
+        font-size: 0.75rem;
+      }
+      
+      /* Cards with icons - adjust font sizes */
+      .fs-5 {
+        font-size: 1rem !important;
+      }
+      
+      .fw-bold.fs-5 {
+        font-size: 0.95rem !important;
+      }
+      
+      /* Gradient cards - remove large icons on mobile */
+      .card-body.position-relative > i.bi {
+        font-size: 4rem !important;
+        right: -10px !important;
+        bottom: -10px !important;
+      }
+      
+      /* Progress bars and kolek cards */
+      .lh-1 {
+        font-size: 1.3rem !important;
+      }
+      
+      /* Card body padding reduction */
+      .card-body {
+        padding: 12px !important;
+      }
+      
+      /* Show user name in topbar on mobile */
+      .user-pill {
+        padding: 4px 8px 4px 4px;
+      }
+      
+      .user-avatar {
+        width: 32px;
+        height: 32px;
+      }
+      
+      /* Breadcrumb */
+      .breadcrumb {
+        font-size: 0.7rem;
+      }
+      
+      /* Page title */
+      .topbar-title {
+        font-size: 0.85rem;
+      }
+      
+      .page-header h1 {
+        font-size: 1rem;
+      }
+      
+      /* Horizontal scroll for tables */
+      .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -12px;
+        padding: 0 12px;
+      }
+    }
+
+    @media print {
+
+      #sidebar,
+      #topbar,
+      .no-print {
+        display: none !important;
+      }
+
+      #main-content {
+        margin: 0;
+      }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+  {# ── SIDEBAR OVERLAY (mobile) ── #}
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  {# ── SIDEBAR ── #}
+  <nav id="sidebar">
+    <div class="sb-brand">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="sb-brand-icon"
+        style="background: white; object-fit: contain; padding: 2px;">
+      <div>
+        <strong>BUM DESA BERSAMA</strong>
+        <span>UPK Ciomas LKD</span>
+      </div>
+    </div>
+
+    <div class="sb-nav-content">
+    {% if current_user.is_nasabah() %}
+    {# ══════ SIDEBAR NASABAH (sederhana) ══════ #}
+    <div class="sb-direct" style="padding: 8px 6px 0;">
+      <a href="{{ url_for('main.dashboard') }}" class="{% if request.endpoint == 'main.dashboard' %}active{% endif %}" data-tooltip="Beranda">
+        <i class="bi bi-house-fill"></i><span class="sb-link-text">Beranda</span>
+      </a>
+    </div>
+    <div class="sb-direct" style="padding: 2px 6px;">
+      <a href="{{ url_for('pinjaman.index') }}"
+        class="{% if 'pinjaman' in (request.endpoint or '') %}active{% endif %}" data-tooltip="Pinjaman">
+        <i class="bi bi-cash-stack"></i><span class="sb-link-text">Pinjaman</span>
+      </a>
+    </div>
+    <div class="sb-direct" style="padding: 2px 6px;">
+      <a href="{{ url_for('tabungan.index') }}"
+        class="{% if 'tabungan' in (request.endpoint or '') %}active{% endif %}" data-tooltip="Riwayat">
+        <i class="bi bi-clock-history"></i><span class="sb-link-text">Riwayat</span>
+      </a>
+    </div>
+    <div class="sb-direct" style="padding: 2px 6px;">
+      <a href="{{ url_for('main.profil_nasabah') }}"
+        class="{% if request.endpoint == 'main.profil_nasabah' %}active{% endif %}" data-tooltip="Profil">
+        <i class="bi bi-person-circle"></i><span class="sb-link-text">Profil</span>
+      </a>
+    </div>
+    <div class="sb-direct" style="padding: 2px 6px;">
+      <a href="{{ url_for('umkm.katalog') }}"
+        class="{% if request.endpoint == 'umkm.katalog' or request.endpoint == 'umkm.pesanan_saya' or request.endpoint == 'umkm.status_penjual' %}active{% endif %}" data-tooltip="UMKM">
+        <i class="bi bi-shop"></i><span class="sb-link-text">UMKM</span>
+      </a>
+    </div>
+
+    {% else %}
+    {# ══════ SIDEBAR STANDAR (admin/staf/kader) ══════ #}
+    {# Dashboard (direct) #}
+    <div class="sb-direct" style="padding: 8px 6px 0;">
+      <a href="{{ url_for('main.dashboard') }}" class="{% if request.endpoint == 'main.dashboard' %}active{% endif %}" data-tooltip="Dashboard">
+        <i class="bi bi-speedometer2"></i><span class="sb-link-text">Dashboard</span>
+      </a>
+    </div>
+
+    {# ── DANA BERGULIR ── #}
+    {% set db_active = request.endpoint and (
+    request.endpoint.startswith('nasabah.') or
+    request.endpoint.startswith('pinjaman.') or
+    request.endpoint.startswith('pembayaran.') or
+    request.endpoint.startswith('jaminan.') or
+    request.endpoint.startswith('bonus.') or
+    request.endpoint.startswith('pemeriksaan.') or
+    (request.endpoint.startswith('laporan.') and ('laporan.perkembangan' in request.endpoint or 'laporan.kolektibilitas' in request.endpoint or 'laporan.tunggakan' in request.endpoint))
+    ) %}
+    <div class="sb-group">
+      <button class="sb-group-header {% if not db_active %}collapsed{% endif %}" data-target="sb-danbgr"
+        onclick="event.preventDefault(); toggleGroup(this)" data-tooltip="Dana Bergulir">
+        <i class="bi bi-people-fill sb-group-icon" style="color: #34d399;"></i>
+        <span class="sb-group-label">Dana Bergulir</span>
+        <i class="bi bi-chevron-down sb-chevron"></i>
+      </button>
+      <div class="sb-items {% if not db_active %}collapsed{% endif %}" id="sb-danbgr">
+        <div class="sb-items-inner">
+          <div class="sb-item">
+            <a href="{{ url_for('nasabah.index') }}"
+              class="sb-link {% if 'nasabah' in (request.endpoint or '') and 'jaminan' not in (request.endpoint or '') %}active{% endif %}" data-tooltip="Nasabah">
+              <i class="bi bi-person-fill"></i><span class="sb-link-text">Nasabah</span>
+              {% set calon_count = get_calon_nasabah_count() %}
+              {% if calon_count > 0 %}<span class="badge bg-danger ms-auto rounded-pill"
+                style="font-size: 0.6rem; padding: 0.2rem 0.5rem;">{{ calon_count }}</span>{% endif %}
+            </a>
+          </div>
+          <div class="sb-item"><a href="{{ url_for('pinjaman.index') }}"
+              class="sb-link {% if 'pinjaman' in (request.endpoint or '') %}active{% endif %}" data-tooltip="Pinjaman"><i
+                class="bi bi-cash-stack"></i><span class="sb-link-text">Pinjaman</span></a></div>
+          <div class="sb-item"><a href="{{ url_for('pembayaran.index') }}"
+              class="sb-link {% if 'pembayaran' in (request.endpoint or '') and not request.args.get('status_acc') %}active{% endif %}" data-tooltip="Pembayaran"><i
+                class="bi bi-wallet2"></i><span class="sb-link-text">Pembayaran</span></a></div>
+          <div class="sb-item"><a href="{{ url_for('pemeriksaan.index') }}"
+              class="sb-link {% if 'pemeriksaan' in (request.endpoint or '') %}active{% endif %}" data-tooltip="Pemeriksaan Dokumen">
+              <i class="bi bi-clipboard-check"></i><span class="sb-link-text">Pemeriksaan Dokumen</span>
+              {% set pemeriksaan_count = get_pending_pengajuan_count() %}
+              {% if pemeriksaan_count > 0 %}<span class="badge bg-warning text-dark ms-auto rounded-pill" style="font-size: 0.6rem;">{{ pemeriksaan_count }}</span>{% endif %}
+          </a></div>
+          {% if current_user.can_acc_pembayaran() %}
+          <div class="sb-item"><a href="{{ url_for('pembayaran.index', status_acc='menunggu') }}"
+              class="sb-link {% if request.args.get('status_acc') == 'menunggu' %}active{% endif %}" data-tooltip="Menunggu ACC">
+            <i class="bi bi-hourglass-split"></i><span class="sb-link-text">Menunggu ACC</span>
+            {% set acc_count = get_pending_acc_pembayaran_count() %}
+            {% if acc_count > 0 %}<span class="badge bg-warning text-dark ms-auto rounded-pill" style="font-size: 0.6rem;">{{ acc_count }}</span>{% endif %}
+          </a></div>
+          {% endif %}
+
+          {% if not current_user.is_kader() %}
+          <div class="sb-item"><a href="{{ url_for('jaminan.index') }}"
+              class="sb-link {% if 'jaminan' in (request.endpoint or '') %}active{% endif %}" data-tooltip="Jaminan"><i
+                class="bi bi-shield-fill-check"></i><span class="sb-link-text">Jaminan</span></a></div>
+          {% endif %}
+          <div class="sb-item"><a href="{{ url_for('laporan.perkembangan') }}"
+              class="sb-link {% if request.endpoint == 'laporan.perkembangan' %}active{% endif %}" data-tooltip="Perkembangan Pinjaman"><i
+                class="bi bi-graph-up-arrow"></i><span class="sb-link-text">Perkembangan Pinjaman</span></a></div>
+          <div class="sb-item"><a href="{{ url_for('laporan.kolektibilitas') }}"
+              class="sb-link {% if request.endpoint == 'laporan.kolektibilitas' %}active{% endif %}" data-tooltip="Kolektibilitas"><i
+                class="bi bi-bar-chart-fill"></i><span class="sb-link-text">Kolektibilitas</span></a></div>
+          <div class="sb-item"><a href="{{ url_for('laporan.tunggakan') }}"
+              class="sb-link {% if request.endpoint == 'laporan.tunggakan' %}active{% endif %}" data-tooltip="Monitoring Pinjaman"><i
+                class="bi bi-exclamation-triangle-fill"></i><span class="sb-link-text">Monitoring Pinjaman</span></a></div>
+          {% if current_user.is_admin() %}
+          <div class="sb-item"><a href="{{ url_for('bonus.index') }}" class="sb-link {% if 'bonus' in (request.endpoint or '') %}active{% endif %}" data-tooltip="Bonus Penagihan">
+            <i class="bi bi-gift"></i><span class="sb-link-text">Bonus Penagihan</span>
+            {% set bonus_count = get_pending_bonus_count() %}
+            {% if bonus_count > 0 %}<span class="badge bg-info ms-auto rounded-pill" style="font-size: 0.6rem;">{{ bonus_count }}</span>{% endif %}
+          </a></div>
+          {% endif %}
+          {% if current_user.role != 'nasabah' and not current_user.is_admin() %}
+          <div class="sb-item"><a href="{{ url_for('bonus.saya') }}" class="sb-link {% if 'bonus' in (request.endpoint or '') %}active{% endif %}" data-tooltip="Bonus Penagihan Saya">
+            <i class="bi bi-gift"></i><span class="sb-link-text">Bonus Penagihan Saya</span></a></div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# ── TABUNGAN ── #}
+    {% if not current_user.is_kader() %}
+    {% set tab_active = request.endpoint and request.endpoint.startswith('tabungan.') %}
+    <div class="sb-group">
+      <button class="sb-group-header {% if not tab_active %}collapsed{% endif %}" data-target="sb-tabungan"
+        onclick="event.preventDefault(); toggleGroup(this)" data-tooltip="Tabungan">
+        <i class="bi bi-piggy-bank-fill sb-group-icon" style="color: #f59e0b;"></i>
+        <span class="sb-group-label">Tabungan</span>
+        <i class="bi bi-chevron-down sb-chevron"></i>
+      </button>
+      <div class="sb-items {% if not tab_active %}collapsed{% endif %}" id="sb-tabungan">
+        <div class="sb-items-inner">
+        <div class="sb-item"><a href="{{ url_for('tabungan.index') }}"
+            class="sb-link {% if request.endpoint in ['tabungan.index', 'tabungan.detail', 'tabungan.setor', 'tabungan.tarik', 'tabungan.mutasi'] %}active{% endif %}" data-tooltip="Tabungan Nasabah"><i
+              class="bi bi-bank"></i><span class="sb-link-text">Tabungan Nasabah</span></a></div>
+        {% if current_user.role in ['admin','kasir','keuangan'] %}
+        <div class="sb-item">
+          <a href="{{ url_for('tabungan.daftar_pengajuan') }}"
+            class="sb-link {% if request.endpoint in ['tabungan.daftar_pengajuan', 'tabungan.proses_pengajuan'] %}active{% endif %}" data-tooltip="Pengajuan Tarik">
+            <i class="bi bi-clock-history"></i><span class="sb-link-text">Pengajuan Tarik</span>
+            {% set pt_count = get_pengajuan_tarik_count() %}
+            {% if pt_count > 0 %}<span class="badge bg-warning text-dark ms-auto rounded-pill"
+              style="font-size: 0.6rem;">{{ pt_count }}</span>{% endif %}
+          </a>
+        </div>
+        <div class="sb-item"><a href="{{ url_for('tabungan.laporan') }}"
+            class="sb-link {% if request.endpoint == 'tabungan.laporan' %}active{% endif %}" data-tooltip="Laporan"><i
+              class="bi bi-file-earmark-bar-graph"></i><span class="sb-link-text">Laporan</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('tabungan.rekap_setoran') }}"
+            class="sb-link {% if request.endpoint == 'tabungan.rekap_setoran' %}active{% endif %}" data-tooltip="Rekap Setoran"><i
+              class="bi bi-receipt"></i><span class="sb-link-text">Rekap Setoran</span></a></div>
+        {% endif %}
+      </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── AKUNTANSI ── #}
+    {% if not current_user.is_kader() %}
+    {% set ak_active = request.endpoint and (
+    'jurnal' in request.endpoint or 'buku_besar' in request.endpoint
+    ) %}
+    <div class="sb-group">
+      <button class="sb-group-header {% if not ak_active %}collapsed{% endif %}" data-target="sb-akuntansi"
+        onclick="event.preventDefault(); toggleGroup(this)" data-tooltip="Akuntansi">
+        <i class="bi bi-calculator sb-group-icon" style="color: #60a5fa;"></i>
+        <span class="sb-group-label">Akuntansi</span>
+        <i class="bi bi-chevron-down sb-chevron"></i>
+      </button>
+      <div class="sb-items {% if not ak_active %}collapsed{% endif %}" id="sb-akuntansi">
+        <div class="sb-items-inner">
+        <div class="sb-item"><a href="{{ url_for('akuntansi.jurnal') }}"
+            class="sb-link {% if request.endpoint in ['akuntansi.jurnal','akuntansi.jurnal_tambah','akuntansi.jurnal_detail','akuntansi.jurnal_hapus'] %}active{% endif %}" data-tooltip="Jurnal Umum"><i
+              class="bi bi-journal-text"></i><span class="sb-link-text">Jurnal Umum</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('akuntansi.buku_besar') }}"
+            class="sb-link {% if request.endpoint == 'akuntansi.buku_besar' %}active{% endif %}" data-tooltip="Buku Besar"><i
+              class="bi bi-book-fill"></i><span class="sb-link-text">Buku Besar</span></a></div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── LAPORAN ── #}
+    {% if not current_user.is_kader() %}
+    {% set lap_active = request.endpoint and (
+    'neraca' in request.endpoint or 'laba_rugi' in request.endpoint or
+    'arus_kas' in request.endpoint or 'perubahan_ekuitas' in request.endpoint or
+    'neraca_saldo' in request.endpoint
+    ) %}
+    <div class="sb-group">
+      <button class="sb-group-header {% if not lap_active %}collapsed{% endif %}" data-target="sb-laporan"
+        onclick="event.preventDefault(); toggleGroup(this)" data-tooltip="Laporan">
+        <i class="bi bi-file-earmark-bar-graph sb-group-icon" style="color: #a78bfa;"></i>
+        <span class="sb-group-label">Laporan</span>
+        <i class="bi bi-chevron-down sb-chevron"></i>
+      </button>
+      <div class="sb-items {% if not lap_active %}collapsed{% endif %}" id="sb-laporan">
+        <div class="sb-items-inner">
+        <div class="sb-item"><a href="{{ url_for('akuntansi.neraca') }}"
+            class="sb-link {% if request.endpoint == 'akuntansi.neraca' %}active{% endif %}" data-tooltip="Neraca"><i
+              class="bi bi-bank"></i><span class="sb-link-text">Neraca</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('akuntansi.laba_rugi') }}"
+            class="sb-link {% if request.endpoint == 'akuntansi.laba_rugi' %}active{% endif %}" data-tooltip="Laba Rugi"><i
+              class="bi bi-clipboard-data-fill"></i><span class="sb-link-text">Laba Rugi</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('akuntansi.arus_kas') }}"
+            class="sb-link {% if request.endpoint == 'akuntansi.arus_kas' %}active{% endif %}" data-tooltip="Arus Kas"><i
+              class="bi bi-arrow-left-right"></i><span class="sb-link-text">Arus Kas</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('akuntansi.perubahan_ekuitas') }}"
+            class="sb-link {% if request.endpoint == 'akuntansi.perubahan_ekuitas' %}active{% endif %}" data-tooltip="Perubahan Ekuitas"><i
+              class="bi bi-pie-chart-fill"></i><span class="sb-link-text">Perubahan Ekuitas</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('akuntansi.neraca_saldo') }}"
+            class="sb-link {% if request.endpoint == 'akuntansi.neraca_saldo' %}active{% endif %}" data-tooltip="Neraca Saldo"><i
+              class="bi bi-table"></i><span class="sb-link-text">Neraca Saldo</span></a></div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── MANAJEMEN ASET ── #}
+    {% if not current_user.is_kader() %}
+    {% set aset_active = request.endpoint and request.endpoint.startswith('akuntansi.aset') %}
+    <div class="sb-group">
+      <button class="sb-group-header {% if not aset_active %}collapsed{% endif %}" data-target="sb-aset"
+        onclick="event.preventDefault(); toggleGroup(this)" data-tooltip="Manajemen Aset">
+        <i class="bi bi-building-fill sb-group-icon" style="color: #60a5fa;"></i>
+        <span class="sb-group-label">Manajemen Aset</span>
+        <i class="bi bi-chevron-down sb-chevron"></i>
+      </button>
+      <div class="sb-items {% if not aset_active %}collapsed{% endif %}" id="sb-aset">
+        <div class="sb-items-inner">
+        <div class="sb-item"><a href="{{ url_for('akuntansi.aset_index') }}"
+            class="sb-link {% if request.endpoint == 'akuntansi.aset_index' or request.endpoint == 'akuntansi.aset_tambah' or request.endpoint == 'akuntansi.aset_edit' %}active{% endif %}" data-tooltip="Daftar Aset"><i
+              class="bi bi-list-ul"></i><span class="sb-link-text">Daftar Aset</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('akuntansi.aset_penyusutan') }}"
+            class="sb-link {% if request.endpoint == 'akuntansi.aset_penyusutan' %}active{% endif %}" data-tooltip="Penyusutan"><i
+              class="bi bi-calculator"></i><span class="sb-link-text">Penyusutan</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('akuntansi.aset_mutasi') }}"
+            class="sb-link {% if request.endpoint == 'akuntansi.aset_mutasi' %}active{% endif %}" data-tooltip="Mutasi"><i
+              class="bi bi-arrow-left-right"></i><span class="sb-link-text">Mutasi</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('akuntansi.aset_opname') }}"
+            class="sb-link {% if request.endpoint == 'akuntansi.aset_opname' %}active{% endif %}" data-tooltip="Opname"><i
+              class="bi bi-clipboard-check"></i><span class="sb-link-text">Opname</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('akuntansi.aset_laporan') }}"
+            class="sb-link {% if request.endpoint == 'akuntansi.aset_laporan' %}active{% endif %}" data-tooltip="Laporan"><i
+              class="bi bi-file-earmark-bar-graph"></i><span class="sb-link-text">Laporan</span></a></div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+
+
+    {# ── UMKM (dipindahkan ke bawah Manajemen Aset) ── #}
+    {% set umkm_active = request.endpoint and 'umkm' in request.endpoint %}
+    <div class="sb-group">
+      <button class="sb-group-header {% if not umkm_active %}collapsed{% endif %}" data-target="sb-umkm"
+        onclick="event.preventDefault(); toggleGroup(this)" data-tooltip="UMKM">
+        <i class="bi bi-shop sb-group-icon" style="color: #10b981;"></i>
+        <span class="sb-group-label">UMKM</span>
+        <i class="bi bi-chevron-down sb-chevron"></i>
+      </button>
+      <div class="sb-items {% if not umkm_active %}collapsed{% endif %}" id="sb-umkm">
+        <div class="sb-items-inner">
+        {% if current_user.is_nasabah() or current_user.is_kader() %}
+        <div class="sb-item">
+          <a href="{{ url_for('umkm.katalog') }}"
+            class="sb-link {% if request.endpoint == 'umkm.katalog' %}active{% endif %}" data-tooltip="Katalog Produk">
+            <i class="bi bi-grid"></i><span class="sb-link-text">Katalog Produk</span>
+          </a>
+        </div>
+        <div class="sb-item">
+          <a href="{{ url_for('umkm.pesanan_saya') }}"
+            class="sb-link {% if request.endpoint == 'umkm.pesanan_saya' %}active{% endif %}" data-tooltip="Pesanan Saya">
+            <i class="bi bi-cart3"></i><span class="sb-link-text">Pesanan Saya</span>
+          </a>
+        </div>
+        <div class="sb-item">
+          <a href="{{ url_for('umkm.status_penjual') }}"
+            class="sb-link {% if 'penjual' in request.endpoint or 'status_penjual' in request.endpoint %}active{% endif %}" data-tooltip="Status Penjual">
+            <i class="bi bi-person-badge"></i><span class="sb-link-text">Status Penjual</span>
+          </a>
+        </div>
+        {% endif %}
+        {% if current_user.can_edit_delete() and not current_user.is_kader() %}
+        <div class="sb-item">
+          <a href="{{ url_for('umkm.admin_dashboard') }}"
+            class="sb-link {% if request.endpoint == 'umkm.admin_dashboard' %}active{% endif %}" data-tooltip="Dashboard Admin">
+            <i class="bi bi-speedometer2"></i><span class="sb-link-text">Dashboard Admin</span>
+            {% set umkm_penjual = get_umkm_penjual_count() %}
+            {% if umkm_penjual > 0 %}<span class="badge bg-warning text-dark ms-auto rounded-pill"
+              style="font-size: 0.6rem;">{{ umkm_penjual }}</span>{% endif %}
+          </a>
+        </div>
+        <div class="sb-item">
+          <a href="{{ url_for('umkm.admin_produk') }}"
+            class="sb-link {% if 'admin_produk' in request.endpoint %}active{% endif %}" data-tooltip="Kelola Produk">
+            <i class="bi bi-box-seam"></i><span class="sb-link-text">Kelola Produk</span>
+          </a>
+        </div>
+        <div class="sb-item">
+          <a href="{{ url_for('umkm.admin_pesanan') }}"
+            class="sb-link {% if 'admin_pesanan' in request.endpoint %}active{% endif %}" data-tooltip="Transaksi">
+            <i class="bi bi-receipt"></i><span class="sb-link-text">Transaksi</span>
+            {% set umkm_pesanan = get_umkm_pesanan_count() %}
+            {% if umkm_pesanan > 0 %}<span class="badge bg-info ms-auto rounded-pill"
+              style="font-size: 0.6rem;">{{ umkm_pesanan }}</span>{% endif %}
+          </a>
+        </div>
+        <div class="sb-item">
+          <a href="{{ url_for('umkm.admin_penjual') }}"
+            class="sb-link {% if 'admin_penjual' in request.endpoint %}active{% endif %}" data-tooltip="Pengajuan Penjual">
+            <i class="bi bi-person-plus"></i><span class="sb-link-text">Pengajuan Penjual</span>
+            {% set umkm_penjual = get_umkm_penjual_count() %}
+            {% if umkm_penjual > 0 %}<span class="badge bg-warning text-dark ms-auto rounded-pill"
+              style="font-size: 0.6rem;">{{ umkm_penjual }}</span>{% endif %}
+          </a>
+        </div>
+        {% if current_user.is_admin() or current_user.is_manajer() %}
+        <div class="sb-item">
+          <a href="{{ url_for('umkm.admin_pembayaran') }}"
+            class="sb-link {% if 'admin_pembayaran' in request.endpoint %}active{% endif %}" data-tooltip="Pengaturan Pembayaran">
+            <i class="bi bi-credit-card"></i><span class="sb-link-text">Pengaturan Pembayaran</span>
+          </a>
+        </div>
+        {% endif %}
+        {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% endif %}
+
+    {# ── PENGATURAN ── #}
+    {% if not current_user.is_kader() %}
+    {% set pg_active = request.endpoint and (
+    'pengaturan' in request.endpoint or 'coa' in request.endpoint or
+    'user_mgmt' in request.endpoint or 'import_export' in request.endpoint or
+    'saldo_awal' in request.endpoint or request.endpoint == 'pengaturan.rkp'
+    or request.endpoint == 'main.admin_ajuan_dokumen' or request.endpoint == 'pengaturan.tanda_tangan'
+    or request.endpoint == 'pengaturan.pengumuman'
+    ) %}
+    <div class="sb-group">
+      <button class="sb-group-header {% if not pg_active %}collapsed{% endif %}" data-target="sb-pengaturan"
+        onclick="event.preventDefault(); toggleGroup(this)" data-tooltip="Pengaturan">
+        <i class="bi bi-gear-fill sb-group-icon" style="color: #fb923c;"></i>
+        <span class="sb-group-label">Pengaturan</span>
+        <i class="bi bi-chevron-down sb-chevron"></i>
+      </button>
+      <div class="sb-items {% if not pg_active %}collapsed{% endif %}" id="sb-pengaturan">
+        <div class="sb-items-inner">
+{% if current_user.is_admin() or current_user.role == 'manajer_lkd' %}
+        <div class="sb-item"><a href="{{ url_for('pengaturan.index') }}"
+            class="sb-link {% if request.endpoint == 'pengaturan.index' %}active{% endif %}" data-tooltip="Pengaturan Lembaga"><i
+              class="bi bi-building"></i><span class="sb-link-text">Pengaturan Lembaga</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('akuntansi.coa') }}"
+            class="sb-link {% if 'coa' in (request.endpoint or '') %}active{% endif %}" data-tooltip="Chart of Account"><i
+              class="bi bi-list-nested"></i><span class="sb-link-text">Chart of Account</span></a></div>
+{% if current_user.is_admin() %}
+        <div class="sb-item"><a href="{{ url_for('user_mgmt.index') }}"
+            class="sb-link {% if 'user_mgmt' in (request.endpoint or '') %}active{% endif %}" data-tooltip="Manajemen User"><i
+              class="bi bi-shield-lock-fill"></i><span class="sb-link-text">Manajemen User</span></a></div>
+{% endif %}
+        <div class="sb-item"><a href="{{ url_for('pengaturan.rkp') }}"
+            class="sb-link {% if request.endpoint == 'pengaturan.rkp' %}active{% endif %}" data-tooltip="Rencana Kerja"><i
+              class="bi bi-calendar-check"></i><span class="sb-link-text">Rencana Kerja & Pendapatan</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('akuntansi.saldo_awal') }}"
+            class="sb-link {% if request.endpoint == 'akuntansi.saldo_awal' %}active{% endif %}" data-tooltip="Saldo Awal"><i
+              class="bi bi-wallet2"></i><span class="sb-link-text">Saldo Awal</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('import_export.index') }}"
+            class="sb-link {% if 'import_export' in (request.endpoint or '') %}active{% endif %}" data-tooltip="Import & Eksport"><i
+              class="bi bi-download"></i><span class="sb-link-text">Import & Eksport</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('pengaturan.users_nasabah') }}"
+            class="sb-link {% if 'users-nasabah' in (request.path or '') %}active{% endif %}" data-tooltip="User Nasabah"><i
+              class="bi bi-person-badge-fill"></i><span class="sb-link-text">User Nasabah</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('main.admin_ajuan_dokumen') }}"
+            class="sb-link {% if 'admin_ajuan_dokumen' in (request.endpoint or '') %}active{% endif %}" data-tooltip="Pengajuan Dokumen"><i
+              class="bi bi-file-earmark-arrow-up"></i><span class="sb-link-text">Pengajuan Dokumen</span>
+            {% set doc_count = get_pending_dokumen_count() %}
+            {% if doc_count > 0 %}<span class="badge bg-warning text-dark ms-auto rounded-pill"
+              style="font-size: 0.6rem;">{{ doc_count }}</span>{% endif %}
+          </a></div>
+        <div class="sb-item"><a href="{{ url_for('pengaturan.tanda_tangan') }}"
+            class="sb-link {% if request.endpoint == 'pengaturan.tanda_tangan' %}active{% endif %}" data-tooltip="Tanda Tangan Elektronik"><i
+              class="bi bi-pen-fill"></i><span class="sb-link-text">Tanda Tangan Elektronik</span></a></div>
+        <div class="sb-item"><a href="{{ url_for('pengaturan.pengumuman') }}"
+            class="sb-link {% if 'pengumuman' in (request.endpoint or '') %}active{% endif %}" data-tooltip="Broadcast Pengumuman"><i
+              class="bi bi-megaphone-fill"></i><span class="sb-link-text">Broadcast Pengumuman</span></a></div>
+{% endif %}
+{% if current_user.is_admin() %}
+        <div class="sb-item"><a href="{{ url_for('pengaturan.bonus') }}"
+            class="sb-link {% if request.endpoint == 'pengaturan.bonus' %}active{% endif %}" data-tooltip="Pengaturan Bonus"><i
+              class="bi bi-gift"></i><span class="sb-link-text">Pengaturan Bonus</span></a></div>
+{% endif %}
+        <div class="sb-item"><a href="{{ url_for('pengaturan.tutup_buku') }}"
+            class="sb-link {% if request.endpoint == 'pengaturan.tutup_buku' %}active{% endif %}" data-tooltip="Tutup Buku Tahunan"><i
+              class="bi bi-journal-check"></i><span class="sb-link-text">Tutup Buku Tahunan</span></a></div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="sb-footer">
+      <div style="text-align: center; padding: 8px 6px; color: #9ca3af; font-size: 0.7rem;">
+        &copy; 2026 UPK Ciomas LKD
+      </div>
+    </div>
+  </nav>
+
+{# ── TOPBAR ── #}
+  <header id="topbar">
+    <!-- Hamburger removed - no sidebar on mobile -->
+    <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+    
+    {% set notifs = get_flashed_messages(with_categories=true) %}
+    <div class="dropdown">
+      <div class="notif-bell" data-bs-toggle="dropdown" aria-expanded="false" title="Notifikasi">
+        <i class="bi bi-bell"></i>
+        {% if notifs %}
+        <span class="badge bg-danger">{{ notifs|length }}</span>
+        {% endif %}
+      </div>
+      <div class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-0 rounded-3 notif-dropdown">
+        {% if notifs %}
+        <div class="p-2 border-bottom bg-light" style="font-size:.75rem;font-weight:600;color:#64748b;letter-spacing:.02em;">
+          <i class="bi bi-bell-fill me-1"></i> NOTIFIKASI
+        </div>
+        {% for cat, msg in notifs %}
+        <div class="notif-item">
+          <div class="notif-item-icon text-white bg-{{ cat if cat in ['success','danger','warning','info'] else 'primary' }}">
+            <i class="bi bi-{% if cat=='success' %}check-circle{% elif cat=='danger' %}x-circle{% elif cat=='warning' %}exclamation-triangle{% else %}info-circle{% endif %}-fill"></i>
+          </div>
+          <div class="notif-item-body">{{ msg }}</div>
+          <button type="button" class="notif-item-close" onclick="this.closest('.notif-item').remove();updNotifBadge()">&times;</button>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-center py-4 text-muted" style="font-size:.8rem;">
+          <i class="bi bi-bell-slash d-block mb-1" style="font-size:1.5rem;"></i>
+          Tidak ada notifikasi
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="dropdown">
+      <div class="user-pill" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+        <div class="user-avatar">{{ current_user.nama_lengkap[0].upper() }}</div>
+        <div class="d-none d-sm-block">
+          <div style="font-weight: 700; font-size: 0.76rem;">{{ current_user.nama_lengkap }}</div>
+          <div class="user-role-badge">{{ current_user.role_label() }}</div>
+        </div>
+        <i class="bi bi-chevron-down ms-1 text-muted d-none d-sm-inline" style="font-size: 0.7rem;"></i>
+      </div>
+      <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-1 rounded-3">
+        <li class="p-2 d-sm-none border-bottom mb-1">
+          <div style="font-weight: 700; font-size: 0.8rem;">{{ current_user.nama_lengkap }}</div>
+          <div class="user-role-badge" style="font-size: 0.65rem;">{{ current_user.role_label() }}</div>
+        </li>
+        {% if current_user.is_nasabah() %}
+        <li><a class="dropdown-item py-2 rounded-2" href="{{ url_for('main.profil_nasabah') }}">
+            <i class="bi bi-person-circle me-2"></i>Profil Saya
+          </a></li>
+        {% endif %}
+        {% if not current_user.is_admin() and not current_user.is_manajer() and current_user.role != 'nasabah' %}
+        <li><a class="dropdown-item py-2 rounded-2" href="{{ url_for('bonus.saya') }}">
+            <i class="bi bi-gift me-2"></i>Bonus Saya
+          </a></li>
+        {% endif %}
+        <li><a class="dropdown-item py-2 rounded-2" href="{{ url_for('auth.change_password') }}">
+            <i class="bi bi-shield-lock me-2"></i>Ganti Password
+          </a></li>
+        <li><a class="dropdown-item py-2 rounded-2 text-danger" href="{{ url_for('auth.logout') }}">
+            <i class="bi bi-box-arrow-right me-2"></i>Keluar Aplikasi
+          </a></li>
+      </ul>
+    </div>
+  </header>
+
+  {# ── MAIN ── #}
+  <main id="main-content">
+    <div class="page-body">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    function updNotifBadge() {
+      var items = document.querySelectorAll('.notif-item');
+      var badge = document.querySelector('.notif-bell .badge');
+      if (badge) {
+        if (items.length === 0) badge.remove();
+        else badge.textContent = items.length;
+      }
+    }
+    function toggleSidebar() {
+      var sb = document.getElementById('sidebar');
+      var icon = document.getElementById('sbCollapseIcon');
+      sb.classList.toggle('sb-collapsed');
+      var collapsed = sb.classList.contains('sb-collapsed');
+      localStorage.setItem('sb_collapsed', collapsed ? '1' : '0');
+      if (icon) {
+        icon.className = collapsed ? 'bi bi-layout-sidebar' : 'bi bi-layout-sidebar-inset';
+      }
+    }
+    // Restore collapse state on load
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.innerWidth >= 768) {
+        var sb = document.getElementById('sidebar');
+        var icon = document.getElementById('sbCollapseIcon');
+        if (localStorage.getItem('sb_collapsed') === '1') {
+          sb.classList.add('sb-collapsed');
+          if (icon) {
+            icon.classList.remove('bi-layout-sidebar-inset');
+            icon.classList.add('bi-layout-sidebar');
+          }
+        }
+      }
+      // Close sidebar on nav link click
+      if (window.innerWidth < 768) {
+        document.querySelectorAll('.sb-link, .sb-direct a').forEach(function (el) {
+          el.addEventListener('click', closeSidebar);
+        });
+      }
+    });
+
+    function closeSidebar() {
+      var sb = document.getElementById('sidebar');
+      var overlay = document.getElementById('sidebar-overlay');
+      if (sb) sb.classList.remove('open');
+      if (overlay) overlay.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    function toggleGroup(btn) {
+      var targetId = btn.dataset.target;
+      var panel = document.getElementById(targetId);
+      var isPanelCollapsed = panel.classList.contains('collapsed');
+
+      if (isPanelCollapsed) {
+        btn.classList.remove('collapsed');
+        panel.classList.remove('collapsed');
+      } else {
+        btn.classList.add('collapsed');
+        panel.classList.add('collapsed');
+      }
+    }
+
+    /* ── SweetAlert2 Konfirmasi via data-confirm ── */
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-confirm]');
+      if (!btn) return;
+      e.preventDefault();
+      var pesan = btn.getAttribute('data-confirm');
+      var form = btn.closest('form');
+      Swal.fire({
+        title: 'Konfirmasi',
+        text: pesan,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, lanjutkan',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+        position: 'center',
+        customClass: { popup: 'swal-popup-top-right', title: 'swal-title', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' }
+      }).then(function(result) {
+        if (result.isConfirmed && form) form.submit();
+      });
+    });
+
+    document.addEventListener('submit', function(e) {
+      var form = e.target;
+      if (!form.hasAttribute('data-confirm')) return;
+      e.preventDefault();
+      var pesan = form.getAttribute('data-confirm');
+      Swal.fire({
+        title: 'Konfirmasi',
+        text: pesan,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, lanjutkan',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+        position: 'center',
+        customClass: { popup: 'swal-popup-top-right', title: 'swal-title', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' }
+      }).then(function(result) {
+        if (result.isConfirmed) form.submit();
+      });
+    });
+
+    function notif(pesan, tipe) {
+      Swal.fire({
+        text: pesan,
+        icon: tipe || 'warning',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        customClass: { popup: 'swal-toast-top-right' }
+      });
+    }
+  </script>
+  {% block extra_js %}{% endblock %}
+
+  <!-- Bottom Navigation (Mobile Only) -->
+  <nav class="bottom-nav d-none" style="visibility: visible !important; opacity: 1 !important;">
+    {% if current_user.is_nasabah() %}
+    <a href="{{ url_for('main.dashboard') }}" class="{{ 'active' if request.endpoint=='main.dashboard' else '' }}">
+      <i class="bi bi-house-door" style="visibility: visible !important;"></i>
+      <span>Beranda</span>
+    </a>
+    <a href="{{ url_for('pinjaman.index') }}" class="{{ 'active' if 'pinjaman' in request.endpoint else '' }}">
+      <i class="bi bi-cash-stack" style="visibility: visible !important;"></i>
+      <span>Pinjaman</span>
+    </a>
+    <a href="{{ url_for('tabungan.index') if not current_user.is_nasabah() else url_for('tabungan.by_nasabah', nasabah_id=current_user.nasabah_id_fk) }}" class="{{ 'active' if 'tabungan' in request.endpoint else '' }}">
+      <i class="bi bi-piggy-bank" style="visibility: visible !important;"></i>
+      <span>Tabungan</span>
+    </a>
+    <a href="{{ url_for('umkm.katalog') }}" class="{{ 'active' if 'umkm' in request.endpoint else '' }}">
+      <i class="bi bi-shop" style="visibility: visible !important;"></i>
+      <span>UMKM</span>
+    </a>
+    {% else %}
+    <a href="{{ url_for('nasabah.index') }}" class="{{ 'active' if 'nasabah' in request.endpoint else '' }}">
+      <i class="bi bi-people" style="visibility: visible !important;"></i>
+      <span>Nasabah</span>
+    </a>
+    <a href="{{ url_for('pinjaman.index') }}" class="{{ 'active' if 'pinjaman' in request.endpoint else '' }}">
+      <i class="bi bi-cash-stack" style="visibility: visible !important;"></i>
+      <span>Pinjaman</span>
+    </a>
+    <a href="{{ url_for('pembayaran.index') }}" class="{{ 'active' if 'pembayaran' in request.endpoint else '' }}">
+      <i class="bi bi-receipt" style="visibility: visible !important;"></i>
+      <span>Bayar</span>
+    </a>
+    <a href="{{ url_for('laporan.tunggakan') }}" class="{{ 'active' if request.endpoint == 'laporan.tunggakan' else '' }}">
+      <i class="bi bi-exclamation-triangle" style="visibility: visible !important;"></i>
+      <span>Tagih</span>
+    </a>
+{% endif %}
+  </nav>
+
+  <script>
+    // Show bottom nav only on mobile and force icon render
+    (function() {
+      if (window.innerWidth < 768) {
+        var nav = document.querySelector('.bottom-nav');
+        nav.classList.remove('d-none');
+        nav.style.display = 'flex';
+        // Force re-render icons
+        nav.querySelectorAll('i.bi').forEach(function(icon) {
+          var clone = icon.cloneNode(true);
+          icon.parentNode.replaceChild(clone, icon);
+        });
+      }
+    })();
+  </script>
+  
+  <!-- Service Worker for PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+        .then(reg => console.log('SW registered'))
+        .catch(err => console.log('SW registration failed:', err));
+    }
+  </script>
+</body>
+
+</html>

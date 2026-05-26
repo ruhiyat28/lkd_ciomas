@@ -1,0 +1,40 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Laporan Perubahan Ekuitas {{ tgl_sampai.strftime('%d %B %Y') }}{% endblock %}
+{% block content %}
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">{{ lembaga.nama or 'BUM DESA BERSAMA UPK CIOMAS LKD' }}</div>
+    <div class="alamat">LEMBAGA KEUANGAN DESA (LKD) | Jl. Raya Ciomas Km.1 Serang 42164</div>
+  </div>
+</div>
+<div class="doc-title">LAPORAN PERUBAHAN EKUITAS</div>
+<div class="doc-subtitle">untuk periode yang berakhir pada {{ tgl_sampai.strftime('%d %B %Y') }}<br>(dalam rupiah)</div>
+
+<table class="bordered" style="font-size:9pt;">
+  <thead><tr style="background:#eee;font-weight:bold;">
+    <th style="width:24px;">No.</th><th>Uraian</th><th style="width:120px;text-align:right;">{{ tgl_sampai.year }}</th>
+  </tr></thead>
+  <tbody>
+    <tr style="font-weight:bold;background:#f0f0f0;"><td>1</td><td>PENYERTAAN MODAL</td><td></td></tr>
+    <tr><td></td><td style="padding-left:16px;">Penyertaan Modal Awal</td><td style="text-align:right;">{{ '{:,.0f}'.format(modal_awal) }}</td></tr>
+    <tr style="font-weight:bold;"><td></td><td style="text-align:right;">Penyertaan Modal Akhir</td><td style="text-align:right;">{{ '{:,.0f}'.format(modal_akhir) }}</td></tr>
+    <tr><td colspan="3"></td></tr>
+    <tr style="font-weight:bold;background:#f0f0f0;"><td>2</td><td>SALDO LABA</td><td></td></tr>
+    <tr><td></td><td style="padding-left:16px;">Saldo Laba Awal</td><td style="text-align:right;">{{ '{:,.0f}'.format(laba_awal) }}</td></tr>
+    <tr><td></td><td style="padding-left:16px;">Laba (Rugi) periode berjalan</td><td style="text-align:right;">{{ '{:,.0f}'.format(laba_periode) }}</td></tr>
+    <tr style="font-weight:bold;"><td></td><td style="text-align:right;">Saldo Laba Akhir</td><td style="text-align:right;">{{ '{:,.0f}'.format(laba_awal + laba_periode) }}</td></tr>
+    <tr><td colspan="3"></td></tr>
+    <tr style="font-weight:bold;background:#ddd;"><td></td><td>EKUITAS AKHIR</td><td style="text-align:right;">{{ '{:,.0f}'.format(ekuitas_akhir) }}</td></tr>
+  </tbody>
+</table>
+<div class="ttd-area" style="margin-top:36px;">
+  <div></div>
+  <div class="ttd-box">
+    <div>Serang, {{ tgl_sampai.strftime('%d %B %Y') }}</div><div>Direktur</div>
+    {% set qr = get_role_signature_qr('direktur') %}
+    {% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}
+    <div class="ttd-nama">{{ lembaga.direktur or '____________________' }}</div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}SPK {{ p.spk }}{% endblock %}
+{% block content %}
+{% set n = p.nasabah %}
+{% set jadwal = p.get_jadwal_angsuran() %}
+
+<!-- KOP -->
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">BUM DESA BERSAMA UPK CIOMAS</div>
+    <div class="nama-lembaga" style="font-size:11pt;">LEMBAGA KEUANGAN DESA (LKD)</div>
+    <div class="alamat">Jl. Raya Ciomas Km.1 Serang 42164 | Telp: (0254)7823984 | WA: 081324771060</div>
+  </div>
+</div>
+
+<div class="doc-title">SURAT PERJANJIAN KREDIT</div>
+<div class="doc-no">No: <strong>{{ p.spk }}</strong></div>
+
+<p style="text-align:justify;font-size:9.5pt;line-height:1.6;">
+Pada hari ini, <strong>{{ p.tanggal_cair.strftime('%A, %d %B %Y') if p.tanggal_cair else '___________________' }}</strong>, telah diadakan perjanjian pemberian kredit antara:
+</p>
+
+<table class="info" style="margin-bottom:10px;">
+  <tr><td><strong>Pihak I (Pemberi)</strong></td><td>:</td><td>BUM DESA BERSAMA UPK CIOMAS LKD, diwakili oleh Manajer LKD</td></tr>
+  <tr><td><strong>Pihak II (Penerima)</strong></td><td>:</td><td><strong>{{ n.nama }}</strong></td></tr>
+  <tr><td>NIK</td><td>:</td><td class="money">{{ n.nik }}</td></tr>
+  <tr><td>Alamat</td><td>:</td><td>{{ n.alamat }}</td></tr>
+  <tr><td>Desa</td><td>:</td><td>{{ n.nama_desa }}</td></tr>
+  <tr><td>Pekerjaan</td><td>:</td><td>{{ n.pekerjaan or '-' }}</td></tr>
+</table>
+
+<p style="font-size:9.5pt;"><strong>Telah sepakat mengadakan perjanjian kredit dengan ketentuan sebagai berikut:</strong></p>
+
+<table class="bordered" style="font-size:9.5pt;margin-bottom:12px;">
+  <tr><td style="width:50%;padding:5px 8px;"><strong>Jumlah Pinjaman</strong></td><td style="padding:5px 8px;" class="money"><strong>Rp {{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</strong></td></tr>
+  <tr><td style="padding:5px 8px;">Jasa per Bulan</td><td style="padding:5px 8px;">{{ p.jasa_persen }}% (Flat Rate)</td></tr>
+  <tr><td style="padding:5px 8px;">Jangka Waktu</td><td style="padding:5px 8px;">{{ p.tenor }} Bulan</td></tr>
+  <tr><td style="padding:5px 8px;">Tanggal Cair</td><td style="padding:5px 8px;">{{ p.tanggal_cair.strftime('%d %B %Y') if p.tanggal_cair else '-' }}</td></tr>
+  <tr><td style="padding:5px 8px;">Mulai Angsuran</td><td style="padding:5px 8px;">{{ p.tanggal_mulai_angsuran.strftime('%d %B %Y') if p.tanggal_mulai_angsuran else '-' }}</td></tr>
+  {% set calc = p.hitung_angsuran() if p.angsuran_total is none or p.angsuran_total == 0 else {'pokok': p.angsuran_pokok or 0, 'jasa': p.angsuran_jasa or 0, 'total': p.angsuran_total or 0} %}
+  <tr><td style="padding:5px 8px;">Angsuran per Bulan</td><td style="padding:5px 8px;" class="money"><strong>Rp {{ '{:,.0f}'.format(calc.total) }}</strong> (Pokok: Rp {{ '{:,.0f}'.format(calc.pokok) }} + Jasa: Rp {{ '{:,.0f}'.format(calc.jasa) }})</td></tr>
+  {% set last_pokok = p.angsuran_terakhir_pokok if p.angsuran_terakhir_pokok else calc.pokok %}
+  <tr><td style="padding:5px 8px;">Angsuran Terakhir</td><td style="padding:5px 8px;" class="money">Rp {{ '{:,.0f}'.format(last_pokok + calc.jasa) }}</td></tr>
+  <tr><td style="padding:5px 8px;">Tujuan Pinjaman</td><td style="padding:5px 8px;">{{ p.tujuan or '-' }}</td></tr>
+  <tr><td style="padding:5px 8px;">Jaminan</td><td style="padding:5px 8px;">{{ n.keterangan_jaminan or '-' }}</td></tr>
+</table>
+
+<p style="font-size:8.5pt;text-align:justify;line-height:1.5;">
+Pihak II menyatakan bersedia dan sanggup membayar angsuran tepat waktu sesuai jadwal yang telah disepakati. Apabila Pihak II tidak memenuhi kewajibannya, maka Pihak I berhak mengambil tindakan sesuai ketentuan yang berlaku.
+</p>
+
+{% if p.jenis_pinjaman == 'spp' and p.detail_spp %}
+<p style="font-size:9.5pt;margin:10px 0 4px;"><strong>Rincian Pinjaman per Anggota:</strong></p>
+<table class="bordered" style="font-size:9pt;margin-bottom:12px;">
+  <tr style="background:#e0e0e0;font-weight:bold;text-align:center;">
+    <th style="width:25px;">No</th><th>Nama Anggota</th><th>NIK</th>
+    <th style="width:120px;text-align:right;">Jumlah (Rp)</th><th>Keterangan</th>
+  </tr>
+  {% for d in p.detail_spp %}
+  <tr>
+    <td style="text-align:center;">{{ d.urut }}</td>
+    <td>{{ d.nama_anggota }}</td>
+    <td class="money" style="font-size:8pt;">{{ d.nik_anggota or '-' }}</td>
+    <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(d.jumlah) }}</td>
+    <td style="font-size:8.5pt;">{{ d.keterangan or '-' }}</td>
+  </tr>
+  {% endfor %}
+  <tr style="font-weight:bold;background:#f5f5f5;">
+    <td colspan="3" style="text-align:right;">TOTAL</td>
+    <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</td>
+    <td></td>
+  </tr>
+</table>
+{% endif %}
+<div class="ttd-area">
+  <div class="ttd-box">
+    <div class="ttd-jabatan">Pihak II (Peminjam),</div>
+    <div class="ttd-line"></div>
+    <div class="ttd-nama">{{ n.nama }}</div>
+    <div class="ttd-jabatan">NIK: {{ n.nik }}</div>
+  </div>
+  {% set qr = get_role_signature_qr('direktur') %}
+  <div class="ttd-box">
+    <div class="ttd-jabatan">Diketahui, Direktur</div>
+    {% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}
+    <div class="ttd-nama">{{ pengaturan.get('direktur', '.........................') }}</div>
+  </div>
+  {% set qr = get_role_signature_qr('manajer_lkd') %}
+  <div class="ttd-box">
+    <div class="ttd-jabatan">Pihak I, Manajer LKD</div>
+    {% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}
+    <div class="ttd-nama">{{ pengaturan.get('manajer_lkd', '.........................') }}</div>
+  </div>
+</div>
+{% endblock %}

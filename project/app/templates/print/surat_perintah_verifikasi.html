@@ -1,0 +1,82 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Surat Perintah Verifikasi Lapangan{% endblock %}
+{% block content %}
+{% set n = p.nasabah %}
+{% set periksa = p.pemeriksaan %}
+
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">BUM DESA BERSAMA UPK CIOMAS</div>
+    <div class="nama-lembaga" style="font-size:11pt;">LEMBAGA KEUANGAN DESA (LKD)</div>
+    <div class="alamat">Jl. Raya Ciomas Km.1 Serang 42164 | Telp: (0254)7823984 | WA: 081324771060</div>
+  </div>
+</div>
+
+<div class="doc-title">SURAT PERINTAH VERIFIKASI LAPANGAN</div>
+<div class="doc-no">No: SPV/{{ periksa.nomor_surat or p.id }}</div>
+
+<p style="text-align:justify;font-size:9.5pt;line-height:1.6;">
+  Yang bertanda tangan di bawah ini, <strong>Direktur BUM Desa Bersama UPK Ciomas LKD</strong>, dengan ini memerintahkan kepada:
+</p>
+
+<table class="info" style="margin-bottom:10px;">
+  <tr><td style="width:120px;">Jabatan</td><td style="width:10px;">:</td><td><strong>Tim Verifikator Lapangan</strong></td></tr>
+  <tr><td>Petugas</td><td>:</td><td>{{ periksa.nama_verifikator or '____________________' }}</td></tr>
+</table>
+
+<p style="text-align:justify;font-size:9.5pt;line-height:1.6;">
+  Untuk melakukan <strong>verifikasi lapangan</strong> terhadap pengajuan pinjaman sebagai berikut:
+</p>
+
+<table class="info" style="margin-bottom:10px;">
+  <tr><td style="width:140px;">Nama Pemohon</td><td style="width:10px;">:</td><td><strong>{{ n.nama }}</strong></td></tr>
+  <tr><td>Desa</td><td>:</td><td>{{ n.nama_desa }}</td></tr>
+  <tr><td>No. SPK</td><td>:</td><td>{{ p.spk }}</td></tr>
+  <tr><td>Jumlah Pinjaman</td><td>:</td><td class="money"><strong>Rp {{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</strong></td></tr>
+  <tr><td>Jenis Pinjaman</td><td>:</td><td>{{ 'SPP Kelompok' if p.jenis_pinjaman == 'spp' else 'Reguler' }}</td></tr>
+  <tr><td>Tujuan</td><td>:</td><td>{{ p.tujuan or '-' }}</td></tr>
+</table>
+
+<p style="text-align:justify;font-size:9.5pt;line-height:1.6;font-weight:bold;color:#b91c1c;">
+  <i>Harap lakukan verifikasi lapangan sesuai dengan ketentuan yang berlaku dan laporkan hasilnya kepada Direktur paling lambat 7 (tujuh) hari kerja setelah surat ini diterima.</i>
+</p>
+
+<p style="text-align:justify;font-size:9pt;line-height:1.6;border:1px solid #ccc;padding:8px;background:#f0fdf4;">
+<strong>Hal-hal yang perlu diverifikasi:</strong><br>
+1. Kebenaran identitas dan alamat pemohon<br>
+2. Kelayakan usaha dan kemampuan membayar<br>
+3. Kebenaran dokumen jaminan (jika ada)<br>
+4. Kondisi lingkungan dan tempat tinggal<br>
+5. Referensi dari tetangga/ aparat desa<br>
+{% if p.jenis_pinjaman == 'spp' %}
+6. Keberadaan dan kesediaan seluruh anggota kelompok<br>
+7. Kebenaran pernyataan tanggung renteng antar anggota<br>
+8. Kesesuaian identitas anggota dengan dokumen KTP/KK<br>
+{% endif %}
+</p>
+
+<!-- ====== TANDA TANGAN DIREKTUR ====== -->
+<div style="margin-top:30px;">
+  <p style="text-align:center;font-size:9pt;"><strong>Ciomas, {{ today.strftime('%d %B %Y') }}</strong></p>
+  <table style="width:100%;font-size:9.5pt;">
+    <tr>
+      <td style="text-align:center;vertical-align:top;">
+        <p><strong>Direktur</strong></p>
+        {% set qr = get_role_signature_qr('direktur') %}
+        {% if qr %}
+        <img src="{{ qr }}" style="width:80px;height:80px;margin:10px auto 0;">
+        {% else %}
+        <div style="height:80px;"></div>
+        {% endif %}
+        <div style="border-bottom:1px solid #000;width:200px;margin:8px auto 0;"></div>
+        <p style="margin-top:4px;">{{ pengaturan.get('direktur', '____________') }}</p>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div style="margin-top:20px;text-align:center;font-size:8pt;color:#666;">
+  Dokumen ini dicetak secara elektronik pada {{ today.strftime('%d %B %Y') }}
+</div>
+{% endblock %}

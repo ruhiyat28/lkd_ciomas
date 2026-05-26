@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% block title %}Jurnal Baru{% endblock %}
+{% block page_title %}Input Jurnal Umum{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Input Jurnal Umum</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('akuntansi.jurnal') }}">Jurnal</a></li>
+    <li class="breadcrumb-item active">Baru</li>
+  </ol></nav>
+</div>
+
+<form method="POST" id="formJurnal">
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card mb-3">
+        <div class="card-header"><i class="bi bi-journal-text me-2 text-primary"></i>Header Jurnal</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Tanggal <span class="text-danger">*</span></label>
+              <input type="date" name="tanggal" class="form-control" value="{{ today_str }}" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Referensi</label>
+              <input type="text" name="referensi" class="form-control" placeholder="No. bukti (opsional)">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Keterangan <span class="text-danger">*</span></label>
+              <input type="text" name="keterangan" class="form-control" placeholder="Uraian transaksi" required>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-table me-2"></i>Baris Jurnal</span>
+          <button type="button" class="btn btn-sm btn-success" onclick="tambahBaris()"><i class="bi bi-plus-lg me-1"></i>Tambah Baris</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm mb-0" id="tabelJurnal">
+            <thead><tr>
+              <th style="width:36px;">#</th>
+              <th>Pilih Akun (Kode — Nama)</th>
+              <th class="text-end" style="width:145px;">Debit (Rp)</th>
+              <th class="text-end" style="width:145px;">Kredit (Rp)</th>
+              <th style="width:40px;"></th>
+            </tr></thead>
+            <tbody id="bodyJurnal">
+              <tr><td colspan="6" class="text-center text-muted py-3" style="font-size:.82rem;">Klik "Tambah Baris" untuk mulai input</td></tr>
+            </tbody>
+            <tfoot class="table-light fw-bold">
+              <tr>
+                <td colspan="3" class="text-end">TOTAL</td>
+                <td class="text-end money" id="totalDebit">0</td>
+                <td class="text-end money" id="totalKredit">0</td>
+                <td></td>
+              </tr>
+              <tr id="balanceRow">
+                <td colspan="6" class="text-center" id="balanceInfo" style="font-size:.8rem;"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-primary" id="btnSimpan"><i class="bi bi-save-fill me-1"></i>Simpan Jurnal</button>
+        <a href="{{ url_for('akuntansi.jurnal') }}" class="btn btn-outline-secondary">Batal</a>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card sticky-top" style="top:80px;">
+        <div class="card-header"><i class="bi bi-info-circle me-2 text-info"></i>Panduan</div>
+        <div class="card-body" style="font-size:.82rem;">
+          <p class="mb-2"><strong>Aturan jurnal:</strong></p>
+          <ul class="mb-2 ps-3">
+            <li>Total Debit harus = Total Kredit</li>
+            <li>Minimal 2 baris (1 debit, 1 kredit)</li>
+            <li>Klik tombol <kbd>🔍</kbd> atau ketik kode untuk mencari akun</li>
+          </ul>
+          <p class="mb-2"><strong>Saldo Normal:</strong></p>
+          <ul class="mb-0 ps-3">
+            <li><span class="badge bg-primary">Debit</span> Aset, Beban</li>
+            <li><span class="badge bg-danger">Kredit</span> Liabilitas, Ekuitas, Pendapatan</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+let barisCount = 0;
+
+window.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('bodyJurnal').innerHTML = '';
+  tambahBaris(); tambahBaris();
+});
+
+function tambahBaris() {
+  barisCount++;
+  const tbody = document.getElementById('bodyJurnal');
+  const tr = document.createElement('tr');
+  tr.id = 'baris-' + barisCount;
+  const n = barisCount;
+  tr.innerHTML = `
+    <td class="text-muted" style="font-size:.75rem;vertical-align:middle;">${n}</td>
+    <td>
+      <select name="akun_id[]" class="form-select form-select-sm select-akun" style="font-size:.82rem;" onchange="updateRowFocus(this, ${n})">
+        <option value="">-- Cari Akun --</option>
+        {% for a in akun_list %}
+        <option value="{{ a.id }}" data-kode="{{ a.kode }}" data-nama="{{ a.nama }}" data-saldo="{{ a.saldo_normal }}">
+          {{ a.kode }} — {{ a.nama }}
+        </option>
+        {% endfor %}
+      </select>
+    </td>
+    <td><input type="text" name="debit[]" class="form-control form-control-sm money text-end" placeholder="0"
+      oninput="this.value=this.value.replace(/[^0-9]/g,'');hitungTotal()" style="font-size:.82rem;"></td>
+    <td><input type="text" name="kredit[]" class="form-control form-control-sm money text-end" placeholder="0"
+      oninput="this.value=this.value.replace(/[^0-9]/g,'');hitungTotal()" style="font-size:.82rem;"></td>
+    <td><button type="button" class="btn btn-outline-danger btn-sm px-2" style="font-size:.72rem;" onclick="hapusBaris(${n})"><i class="bi bi-trash"></i></button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function hapusBaris(id) {
+  const el = document.getElementById('baris-' + id);
+  if (el) el.remove();
+  hitungTotal();
+}
+
+function updateRowFocus(sel, barisId) {
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt.value) return;
+  const tr = document.getElementById('baris-' + barisId);
+  if (opt.dataset.saldo === 'debit') tr.querySelector('[name="debit[]"]').focus();
+  else tr.querySelector('[name="kredit[]"]').focus();
+}
+
+function hitungTotal() {
+  let totalD = 0, totalK = 0;
+  document.querySelectorAll('[name="debit[]"]').forEach(el => { totalD += parseInt(el.value||'0') || 0; });
+  document.querySelectorAll('[name="kredit[]"]').forEach(el => { totalK += parseInt(el.value||'0') || 0; });
+  document.getElementById('totalDebit').textContent  = totalD.toLocaleString('id-ID');
+  document.getElementById('totalKredit').textContent = totalK.toLocaleString('id-ID');
+  const info = document.getElementById('balanceInfo');
+  if (totalD === totalK && totalD > 0) {
+    info.innerHTML = '<span class="text-success">✓ Balance: Debit = Kredit = Rp ' + totalD.toLocaleString('id-ID') + '</span>';
+  } else if (totalD > 0 || totalK > 0) {
+    info.innerHTML = '<span class="text-danger">✗ Belum balance — selisih Rp ' + Math.abs(totalD-totalK).toLocaleString('id-ID') + '</span>';
+  } else {
+    info.innerHTML = '';
+  }
+}
+
+document.getElementById('formJurnal').addEventListener('submit', function(e) {
+  const akunIds = Array.from(document.querySelectorAll('.select-akun')).map(x=>x.value).filter(Boolean);
+  if (akunIds.length < 2) { e.preventDefault(); notif('Minimal 2 baris akun harus diisi!', 'warning'); return; }
+  let d=0, k=0;
+  document.querySelectorAll('[name="debit[]"]').forEach(el => d += parseInt(el.value||'0')||0);
+  document.querySelectorAll('[name="kredit[]"]').forEach(el => k += parseInt(el.value||'0')||0);
+  if (d !== k) { e.preventDefault(); notif('Jurnal tidak balance! Debit = ' + d.toLocaleString('id-ID') + ', Kredit = ' + k.toLocaleString('id-ID'), 'danger'); }
+});
+</script>
+{% endblock %}

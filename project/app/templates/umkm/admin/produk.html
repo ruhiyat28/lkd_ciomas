@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}Kelola Produk UMKM{% endblock %}
+{% block page_title %}Kelola Produk UMKM{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1>Kelola Produk UMKM</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('umkm.admin_dashboard') }}">UMKM</a></li>
+        <li class="breadcrumb-item active">Produk</li>
+      </ol>
+    </nav>
+  </div>
+  <a href="{{ url_for('umkm.admin_tambah_produk') }}" class="btn btn-primary">
+    <i class="bi bi-plus-circle me-1"></i>Tambah Produk
+  </a>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="card-body">
+    <div class="d-flex gap-2 mb-3">
+      <a href="{{ url_for('umkm.admin_produk', kategori='', status=status) }}" 
+         class="btn btn-sm {% if not kategori %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        Semua Kategori
+      </a>
+      {% for k, l in [('makanan', 'Makanan'), ('minuman', 'Minuman'), ('kerajinan', 'Kerajinan'), ('pertanian', 'Pertanian')] %}
+      <a href="{{ url_for('umkm.admin_produk', kategori=k, status=status) }}" 
+         class="btn btn-sm {% if kategori==k %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        {{ l }}
+      </a>
+      {% endfor %}
+    </div>
+    
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Gambar</th>
+            <th>Produk</th>
+            <th>Penjual</th>
+            <th>Kategori</th>
+            <th>Harga</th>
+            <th>Stok</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for produk in produk_list %}
+          <tr>
+            <td>
+              {% if produk.gambar %}
+              <img src="{{ url_for('static', filename=produk.gambar) }}" alt="{{ produk.nama_produk }}" 
+                   class="rounded" style="width:50px;height:50px;object-fit:cover;">
+              {% else %}
+              <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width:50px;height:50px;">
+                <i class="bi bi-image text-muted"></i>
+              </div>
+              {% endif %}
+            </td>
+            <td>
+              <div class="fw-bold">{{ produk.nama_produk }}</div>
+              <small class="text-muted">{{ produk.deskripsi[:50] }}...</small>
+            </td>
+            <td>{{ produk.penjual.nama }}</td>
+            <td><span class="badge bg-info">{{ produk.kategori_label() }}</span></td>
+            <td>Rp {{ produk.harga|number_format }}</td>
+            <td>
+              <span class="{% if produk.stok <= 0 %}text-danger fw-bold{% elif produk.stok < 10 %}text-warning fw-bold{% else %}text-success{% endif %}">
+                {{ produk.stok }} {{ produk.satuan }}
+              </span>
+            </td>
+            <td>
+              {% if produk.aktif %}
+              <span class="badge bg-success">Aktif</span>
+              {% else %}
+              <span class="badge bg-secondary">Nonaktif</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="btn-group btn-group-sm">
+                <a href="{{ url_for('umkm.admin_edit_produk', id=produk.id) }}" class="btn btn-warning">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#hapusModal{{ produk.id }}">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+              
+              <div class="modal fade" id="hapusModal{{ produk.id }}">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <form method="POST" action="{{ url_for('umkm.admin_hapus_produk', id=produk.id) }}">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Hapus Produk</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                      </div>
+                      <div class="modal-body">
+                        <p>Hapus produk <strong>{{ produk.nama_produk }}</strong>?</p>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-danger">Hapus</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-4">Belum ada produk.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

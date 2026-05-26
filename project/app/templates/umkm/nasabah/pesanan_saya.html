@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Pesanan Saya{% endblock %}
+{% block page_title %}Pesanan Saya{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1>Pesanan Saya</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('umkm.katalog') }}">UMKM</a></li>
+        <li class="breadcrumb-item active">Pesanan Saya</li>
+      </ol>
+    </nav>
+  </div>
+  <a href="{{ url_for('umkm.katalog') }}" class="btn btn-primary">
+    <i class="bi bi-cart3 me-1"></i>Belanja Lagi
+  </a>
+</div>
+
+{% if pesanan_list %}
+<div class="row g-3">
+  {% for pesanan in pesanan_list %}
+  <div class="col-md-12">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <strong>{{ pesanan.nomor_pesanan }}</strong>
+          <span class="text-muted ms-2">{{ pesanan.tanggal_pesanan.strftime('%d/%m/%Y %H:%M') }}</span>
+        </div>
+        {% if pesanan.status == 'menunggu' %}
+        <span class="badge bg-warning text-dark">Menunggu</span>
+        {% elif pesanan.status == 'diproses' %}
+        <span class="badge bg-info">Diproses</span>
+        {% elif pesanan.status == 'dikirim' %}
+        <span class="badge bg-primary">Dikirim</span>
+        {% elif pesanan.status == 'selesai' %}
+        <span class="badge bg-success">Selesai</span>
+        {% else %}
+        <span class="badge bg-danger">Dibatalkan</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-8">
+            <h6 class="mb-2">Penjual: {{ pesanan.penjual.nama }}</h6>
+            <ul class="list-unstyled mb-0">
+              {% for detail in pesanan.detail_list %}
+              <li class="d-flex justify-content-between mb-1">
+                <span>{{ detail.produk.nama_produk }} ({{ detail.jumlah }} {{ detail.produk.satuan }})</span>
+                <span>Rp {{ detail.subtotal|number_format }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+          <div class="col-md-4 text-end">
+            <div class="mb-2">
+              <small class="text-muted">Total</small><br>
+              <span class="fs-5 fw-bold text-primary">Rp {{ pesanan.total_harga|number_format }}</span>
+            </div>
+            <a href="{{ url_for('umkm.detail_pesanan_nasabah', id=pesanan.nomor_pesanan) }}" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye"></i> Detail
+            </a>
+            {% if pesanan.status_pembayaran == 'belum_bayar' and pesanan.status != 'dibatalkan' %}
+            <form method="POST" action="{{ url_for('umkm.batal_pesanan', id=pesanan.nomor_pesanan) }}" class="d-inline">
+              <button type="submit" class="btn btn-sm btn-outline-danger" data-confirm="Yakin ingin membatalkan pesanan?">
+                <i class="bi bi-x-circle"></i> Batalkan
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info text-center">
+  <i class="bi bi-cart-x fs-1 d-block mb-2"></i>
+  <p class="mb-2">Anda belum memiliki pesanan.</p>
+  <a href="{{ url_for('umkm.katalog') }}" class="btn btn-primary">
+    <i class="bi bi-cart-plus me-1"></i>Mulai Belanja
+  </a>
+</div>
+{% endif %}
+{% endblock %}

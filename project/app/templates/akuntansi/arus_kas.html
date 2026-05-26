@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Laporan Arus Kas{% endblock %}
+{% block page_title %}Laporan Arus Kas{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start"><h1>Laporan Arus Kas</h1>
+  <a href="?dari={{ tgl_dari_str }}&sampai={{ tgl_sampai_str }}&cetak=1" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-printer me-1"></i>Cetak</a></div>
+
+<div class="card mb-3 no-print"><div class="card-body py-3">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-3"><label class="form-label">Dari</label>
+      <input type="date" name="dari" class="form-control" value="{{ tgl_dari_str }}"></div>
+    <div class="col-md-3"><label class="form-label">Sampai</label>
+      <input type="date" name="sampai" class="form-control" value="{{ tgl_sampai_str }}"></div>
+    <div class="col-md-2"><button type="submit" class="btn btn-primary w-100 mt-3">Filter</button></div>
+  </form>
+</div></div>
+
+<div class="card">
+
+  <div class="card-body px-4">
+
+    {# Makro baris #}
+    {% macro baris(label, nilai, bold=False, indent=False, garis=False) %}
+    {% set pad = '5px 8px 0 24px' if indent else '5px 8px 0 8px' %}
+    <tr {% if garis %}style="border-top:1px solid var(--border);"{% endif %}>
+      <td style="{{ 'padding: ' ~ pad ~ ';' }}" class="{% if bold %}fw-bold{% endif %}">{{ label }}</td>
+      <td style="padding:5px 8px 5px 0;text-align:right;" class="money {% if bold %}fw-bold{% endif %} {% if nilai < 0 %}text-danger{% elif nilai > 0 and bold %}text-success{% endif %}">
+        {% if nilai != 0 %}{{ '{:,.0f}'.format(nilai|abs) }}{% if nilai < 0 %} ({{ '{:,.0f}'.format(nilai|abs) }}){% endif %}{% else %}-{% endif %}
+      </td>
+    </tr>
+    {% endmacro %}
+
+    <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+
+      {# ── I. ARUS KAS DARI AKTIVITAS OPERASI ── #}
+      <tr><td colspan="2" class="fw-bold" style="padding:12px 8px 6px;font-size:.88rem;background:#f8fafc;">
+        I. ARUS KAS DARI AKTIVITAS OPERASI
+      </td></tr>
+      <tr><td colspan="2" style="padding:2px 8px 2px 16px;color:var(--text-muted);font-size:.8rem;">Arus Kas Masuk:</td></tr>
+      {{ baris('Penerimaan Angsuran Pokok', kas_masuk_ops_pokok, indent=True) }}
+      {{ baris('Penerimaan Jasa Pinjaman', kas_masuk_ops_jasa, indent=True) }}
+      {{ baris('Penerimaan Administrasi & Denda', kas_masuk_ops_admin, indent=True) }}
+      <tr><td colspan="2" style="padding:2px 8px 2px 16px;color:var(--text-muted);font-size:.8rem;">Arus Kas Keluar:</td></tr>
+      {{ baris('Pencairan Pinjaman kepada Nasabah', kas_keluar_pencairan, indent=True) }}
+      {{ baris('Pembayaran Beban Operasional', kas_keluar_ops_beban, indent=True) }}
+      {{ baris('Pembayaran Gaji & Honorarium', kas_keluar_gaji, indent=True) }}
+      {{ baris('Arus Kas Bersih dari Aktivitas Operasi', net_ops, bold=True, garis=True) }}
+
+      {# ── II. ARUS KAS DARI AKTIVITAS INVESTASI ── #}
+      <tr><td colspan="2" class="fw-bold" style="padding:16px 8px 6px;font-size:.88rem;background:#f8fafc;">
+        II. ARUS KAS DARI AKTIVITAS INVESTASI
+      </td></tr>
+      <tr><td colspan="2" style="padding:2px 8px 2px 16px;color:var(--text-muted);font-size:.8rem;">Arus Kas Masuk:</td></tr>
+      {{ baris('Penerimaan dari Penjualan Aset', kas_masuk_inv_aset, indent=True) }}
+      {{ baris('Penerimaan Investasi Lainnya', kas_masuk_inv_lain, indent=True) }}
+      <tr><td colspan="2" style="padding:2px 8px 2px 16px;color:var(--text-muted);font-size:.8rem;">Arus Kas Keluar:</td></tr>
+      {{ baris('Pembelian Aset Tetap', kas_keluar_inv_aset, indent=True) }}
+      {{ baris('Pengeluaran Investasi Lainnya', kas_keluar_inv_lain, indent=True) }}
+      {{ baris('Arus Kas Bersih dari Aktivitas Investasi', net_inv, bold=True, garis=True) }}
+
+      {# ── III. ARUS KAS DARI AKTIVITAS PENDANAAN ── #}
+      <tr><td colspan="2" class="fw-bold" style="padding:16px 8px 6px;font-size:.88rem;background:#f8fafc;">
+        III. ARUS KAS DARI AKTIVITAS PENDANAAN
+      </td></tr>
+      <tr><td colspan="2" style="padding:2px 8px 2px 16px;color:var(--text-muted);font-size:.8rem;">Arus Kas Masuk:</td></tr>
+      {{ baris('Setoran Modal / Dana Bergulir Diterima', kas_masuk_pend_modal, indent=True) }}
+      {{ baris('Penerimaan Pendanaan Lainnya', kas_masuk_pend_lain, indent=True) }}
+      <tr><td colspan="2" style="padding:2px 8px 2px 16px;color:var(--text-muted);font-size:.8rem;">Arus Kas Keluar:</td></tr>
+      {{ baris('Pengembalian Modal / Dana Bergulir', kas_keluar_pend_modal, indent=True) }}
+      {{ baris('Arus Kas Bersih dari Aktivitas Pendanaan', net_pend, bold=True, garis=True) }}
+
+      {# ── TOTAL & SALDO ── #}
+      <tr style="border-top:2px solid var(--border);background:#f0fdf4;">
+        <td class="fw-bold" style="padding:8px;">KENAIKAN (PENURUNAN) BERSIH KAS</td>
+        <td class="money fw-bold text-end" style="padding:8px;">
+          <span class="{{ 'text-success' if net_total >= 0 else 'text-danger' }}">
+            {{ '{:,.0f}'.format(net_total|abs) }}{% if net_total < 0 %} (Turun){% else %} (Naik){% endif %}
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:5px 8px;">Saldo Kas Awal Periode</td>
+        <td class="money text-end" style="padding:5px 8px;">{{ '{:,.0f}'.format(saldo_awal_kas) }}</td>
+      </tr>
+      <tr style="border-top:2px solid var(--border);background:#eff6ff;">
+        <td class="fw-bold" style="padding:8px;">SALDO KAS AKHIR PERIODE</td>
+        <td class="money fw-bold text-primary text-end" style="padding:8px;">{{ '{:,.0f}'.format(saldo_akhir_kas) }}</td>
+      </tr>
+    </table>
+  </div>
+</div>
+{% endblock %}

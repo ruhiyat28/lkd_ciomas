@@ -1,0 +1,471 @@
+{% extends 'base.html' %}
+{% block title %}Pembayaran{% endblock %}
+{% block page_title %}Input Pembayaran{% endblock %}
+{% block content %}
+
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+  <div><h1>Input Pembayaran</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0"><li class="breadcrumb-item active">Pembayaran</li></ol></nav></div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-blue">
+      <i class="bi bi-wallet2 stat-icon"></i>
+      <div class="stat-label">Transaksi Hari Ini</div>
+      <div class="stat-value">{{ bayar_hari_ini }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-green money-val">
+      <i class="bi bi-cash-coin stat-icon"></i>
+      <div class="stat-label">Penerimaan Hari Ini</div>
+      <div class="stat-value">Rp {{ '{:,.0f}'.format(total_hari_ini) }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-orange">
+      <i class="bi bi-hourglass-split stat-icon"></i>
+      <div class="stat-label">Menunggu ACC</div>
+      <div class="stat-value">{{ menunggu_acc }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-teal">
+      <i class="bi bi-calendar-check stat-icon"></i>
+      <div class="stat-label">Transaksi Bulan Ini</div>
+      <div class="stat-value">{{ bayar_bulan_ini }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Cari Nasabah -->
+<div class="card mb-3">
+  <div class="card-header"><i class="bi bi-search me-2 text-primary"></i>Cari Pinjaman Aktif</div>
+  <div class="card-body py-3">
+    <form method="GET" class="row g-2 align-items-end" id="searchForm">
+      <div class="col-md-7 position-relative">
+        <input type="hidden" name="pinjaman_id" id="searchId">
+        <input type="text" name="q" id="searchQuery" class="form-control" autofocus
+          placeholder="Ketik nama nasabah, ID nasabah, atau No. SPK..."
+          value="{{ search }}" autocomplete="off">
+        <div id="autocomplete-results" class="dropdown-menu w-100 shadow-sm mt-1" style="display: none; max-height: 300px; overflow-y: auto;">
+          <!-- Results will be injected here -->
+        </div>
+      </div>
+      <div class="col-md-2"><button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-1"></i>Cari</button></div>
+      {% if search and not pinjaman %}
+      <div class="col-md-2"><a href="{{ url_for('pembayaran.index') }}" class="btn btn-outline-secondary w-100">Reset</a></div>
+      {% endif %}
+    </form>
+    {% if search and not pinjaman %}
+    <div class="alert alert-warning mt-2 mb-0 py-2"><i class="bi bi-exclamation-triangle me-2"></i>Pinjaman aktif tidak ditemukan for "<strong>{{ search }}</strong>"</div>
+    {% endif %}
+  </div>
+</div>
+
+{% if pinjaman %}
+<!-- ══ FORM PEMBAYARAN ══ -->
+<form method="POST" id="formBayar">
+  <input type="hidden" name="pinjaman_id" value="{{ pinjaman.id }}">
+  <div class="row g-3 mb-4">
+
+    <!-- Kiri: Profil Pinjaman -->
+    <div class="col-md-5">
+      <div class="card mb-3">
+        <div class="card-header bg-primary text-white py-2"><i class="bi bi-person-fill me-2"></i>Profil Pinjaman</div>
+        <div class="card-body" style="font-size:.83rem;">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width:40px;height:40px;flex-shrink:0;">{{ pinjaman.nasabah.nama[0] }}</div>
+            <div>
+              <div class="fw-bold">{{ pinjaman.nasabah.nama }}</div>
+              <span class="badge bg-primary">{{ pinjaman.nasabah.nasabah_id }}</span>
+              <span class="badge ms-1" style="background:#e0f2fe;color:#0369a1;">{{ pinjaman.nasabah.nama_desa }}</span>
+            </div>
+          </div>
+          <table class="table table-sm table-borderless mb-2">
+            <tr><td class="text-muted">No. SPK</td><td class="money fw-bold">{{ pinjaman.spk }}</td></tr>
+            <tr><td class="text-muted">Pinjaman</td><td class="money text-primary fw-bold">Rp {{ '{:,.0f}'.format(pinjaman.jumlah_pinjaman) }}</td></tr>
+            <tr><td class="text-muted">Angsuran/Bln</td><td class="money fw-bold text-success">Rp {{ '{:,.0f}'.format(pinjaman.angsuran_total or 0) }}</td></tr>
+            <tr><td class="text-muted">Saldo Pokok</td><td class="money fw-bold text-danger">Rp {{ '{:,.0f}'.format(pinjaman.get_saldo_pokok()) }}</td></tr>
+          </table>
+          {% if bulan_nunggak > 0 %}
+          <div class="alert alert-danger py-2 mb-0" style="font-size:.8rem;">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            <strong>Tunggakan {{ bulan_nunggak }} bulan:</strong>
+            Pokok Rp {{ '{:,.0f}'.format(tunggak_pokok) }} + Jasa Rp {{ '{:,.0f}'.format(tunggak_jasa) }}
+            = <strong>Rp {{ '{:,.0f}'.format(tunggak_pokok+tunggak_jasa) }}</strong>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if rekening %}
+      <div class="card">
+        <div class="card-header py-2" style="font-size:.84rem;"><i class="bi bi-piggy-bank-fill me-2 text-primary"></i>Tabungan</div>
+        <div class="card-body" style="font-size:.82rem;">
+          <div class="d-flex justify-content-between mb-1"><span class="text-muted">Sukarela</span><span class="money">Rp {{ '{:,.0f}'.format(rekening.saldo_sukarela) }}</span></div>
+          <div class="d-flex justify-content-between mb-1"><span class="text-muted">Wajib</span><span class="money">Rp {{ '{:,.0f}'.format(rekening.saldo_wajib) }}</span></div>
+          <div class="d-flex justify-content-between mb-2"><span class="text-muted">Pokok</span><span class="money">Rp {{ '{:,.0f}'.format(rekening.saldo_pokok) }}</span></div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="pakai_tabungan" id="chkTab" onchange="toggleTab()">
+            <label class="form-check-label fw-semibold" for="chkTab" style="font-size:.82rem;">Gunakan sebagai tambahan</label>
+          </div>
+          <div id="panelTab" class="d-none mt-2">
+            <div class="mb-1">
+              <select name="jenis_tabungan" class="form-select form-select-sm" id="selJenis" onchange="updateSaldoTab()">
+                <option value="sukarela">Sukarela (Rp {{ '{:,.0f}'.format(rekening.saldo_sukarela) }})</option>
+                <option value="wajib">Wajib (Rp {{ '{:,.0f}'.format(rekening.saldo_wajib) }}) — angsuran</option>
+                <option value="pokok">Pokok (Rp {{ '{:,.0f}'.format(rekening.saldo_pokok) }}) — angsuran</option>
+              </select>
+            </div>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">Rp</span>
+              <input type="text" name="jumlah_tabungan" id="inputTab" class="form-control money"
+                placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,'');hitungTotal()">
+            </div>
+            <div class="form-text" id="saldoTabInfo">Maks: Rp {{ '{:,.0f}'.format(rekening.saldo_sukarela) }}</div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Kanan: Input Form -->
+    <div class="col-md-7">
+      {% if current_user.can_write_pembayaran() %}
+      <div class="card">
+        <div class="card-header"><i class="bi bi-cash-coin me-2 text-success"></i>Input Pembayaran</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Tanggal Bayar</label>
+              <input type="date" name="tanggal_bayar" class="form-control" value="{{ today_str }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Total Dibayar <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text fw-bold">Rp</span>
+                <input type="text" name="jumlah_bayar" id="inputBayar" class="form-control money"
+                  placeholder="0" autocomplete="off" readonly style="font-size: 0.95rem; letter-spacing: -0.02em;">
+              </div>
+              <div class="form-text">Dibayar secara Tunai/Transfer</div>
+            </div>
+          </div>
+
+          <div class="mt-3 p-3 bg-light rounded">
+            <label class="form-label fw-bold text-primary mb-2">Alokasi Pembayaran</label>
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <label class="form-label mb-1" style="font-size:.85rem;">Bayar Pokok</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text">Rp</span>
+                  <input type="text" name="bayar_pokok" id="inputPokok" class="form-control money fw-bold" placeholder="0" 
+                    style="font-size: 0.82rem;" oninput="this.value=this.value.replace(/[^0-9]/g,'');syncBalik()">
+                </div>
+              </div>
+              <div class="col-6">
+                <label class="form-label mb-1" style="font-size:.85rem;">Bayar Jasa</label>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text">Rp</span>
+                  <input type="text" name="bayar_jasa" id="inputJasa" class="form-control money fw-bold" placeholder="0" 
+                    style="font-size: 0.78rem;" oninput="this.value=this.value.replace(/[^0-9]/g,'');syncBalik()">
+                </div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between text-muted mt-2 pt-2 border-top" style="font-size:.85rem;">
+              <span>Total Alokasi:</span>
+              <span class="money fw-bold text-dark" id="displayTotal" style="font-size: 0.95rem; letter-spacing: -0.03em;">Rp 0</span>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-success btn-lg w-100 mt-3 fw-bold">
+            <i class="bi bi-check-circle-fill me-2"></i>Proses & Cetak Kuitansi
+          </button>
+        </div>
+      </div>
+      {% else %}
+      <div class="alert alert-info border-0 shadow-sm"><i class="bi bi-info-circle-fill me-2"></i>Anda hanya memiliki akses lihat (read-only) untuk pembayaran ini.</div>
+      {% endif %}
+
+      <!-- Riwayat pembayaran pinjaman ini -->
+      {% if pinjaman.pembayaran %}
+      <div class="card mt-3">
+        <div class="card-header py-2" style="font-size:.84rem;"><i class="bi bi-clock-history me-2"></i>Riwayat Pembayaran Pinjaman Ini</div>
+        <div>
+          <table class="table table-sm mb-0" style="font-size:.79rem;">
+            <thead><tr><th>Tgl</th><th>Kuitansi</th><th class="text-end">Bayar</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              {% for pb in pinjaman.pembayaran|sort(attribute='tanggal_bayar',reverse=True) %}
+              <tr>
+                <td>{{ pb.tanggal_bayar.strftime('%d/%m/%y') }}</td>
+                <td class="money">{{ pb.no_kuitansi }}</td>
+                <td class="text-end money">{{ '{:,.0f}'.format(pb.jumlah_bayar) }}</td>
+                <td>
+                  {% if pb.status_acc == 'menunggu' %}<span class="badge bg-warning text-dark" style="font-size:.6rem;">Menunggu</span>
+                  {% elif pb.status_acc == 'diterima' %}<span class="badge bg-success" style="font-size:.6rem;">ACC</span>
+                  {% elif pb.status_acc == 'ditolak' %}<span class="badge bg-danger" style="font-size:.6rem;">Ditolak</span>
+                  {% else %}<span class="badge bg-secondary" style="font-size:.6rem;">Valid</span>{% endif %}
+                </td>
+                <td><a href="{{ url_for('pembayaran.cetak_kuitansi', id=pb.id) }}" target="_blank" class="btn btn-outline-primary" style="font-size:.7rem;padding:1px 5px;"><i class="bi bi-printer"></i></a></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</form>
+{% endif %}
+
+<!-- ══ REKAP PEMBAYARAN ══ -->
+<div class="card mt-4">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span><i class="bi bi-table me-2"></i>Rekap Pembayaran</span>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      <form method="GET" class="d-flex gap-2 align-items-end flex-wrap">
+        {% if pinjaman %}<input type="hidden" name="pinjaman_id" value="{{ pinjaman.id }}">{% endif %}
+        <input type="date" name="dari"   class="form-control form-control-sm" style="width:130px;" value="{{ tgl_dari_str }}">
+        <input type="date" name="sampai" class="form-control form-control-sm" style="width:130px;" value="{{ tgl_sampai_str }}">
+        <select name="desa" class="form-select form-select-sm" style="width:120px;">
+          <option value="">Semua Desa</option>
+          {% for k,n in desa_list %}<option value="{{ k }}" {% if desa_filter==k %}selected{% endif %}>{{ k }}</option>{% endfor %}
+        </select>
+        <select name="status_acc" class="form-select form-select-sm" style="width:140px;">
+          <option value="">Semua Status</option>
+          <option value="menunggu" {% if status_acc_filter=='menunggu' %}selected{% endif %}>Menunggu ACC</option>
+          <option value="diterima" {% if status_acc_filter=='diterima' %}selected{% endif %}>Diterima</option>
+          <option value="ditolak" {% if status_acc_filter=='ditolak' %}selected{% endif %}>Ditolak</option>
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm" style="margin-top: 0;">Filter</button>
+      </form>
+      <button class="btn btn-sm btn-outline-secondary no-print" onclick="cetakTerpilih()">
+        <i class="bi bi-printer me-1"></i>Cetak Terpilih
+      </button>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.81rem;">
+      <thead>
+        <tr>
+          <th style="width:36px;"><input type="checkbox" class="form-check-input" id="chkAllRekap" onchange="toggleAllRekap(this)"></th>
+          <th>No. Kuitansi</th><th>Tgl</th><th>Nasabah</th><th>Desa</th><th>SPK</th>
+          <th class="text-end">Bayar</th><th class="text-end">Pokok</th><th class="text-end">Jasa</th><th>Status</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pb in pembayaran_list %}
+        <tr>
+          <td><input type="checkbox" class="form-check-input rekap-chk" value="{{ pb.id }}"></td>
+          <td class="money" style="font-size:.79rem;">{{ pb.no_kuitansi }}</td>
+          <td>{{ pb.tanggal_bayar.strftime('%d/%m/%Y') }}</td>
+          <td><strong style="font-size:.82rem;">{{ pb.pinjaman.nasabah.nama }}</strong></td>
+          <td><span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:.69rem;">{{ pb.pinjaman.nasabah.kode_desa }}</span></td>
+          <td class="money" style="font-size:.77rem;">{{ pb.pinjaman.spk }}</td>
+          <td class="text-end money fw-bold">{{ '{:,.0f}'.format(pb.jumlah_bayar) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(pb.bayar_pokok) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(pb.bayar_jasa) }}</td>
+          <td>
+            {% if pb.status_acc == 'menunggu' %}
+              <span class="badge bg-warning text-dark mb-1" style="font-size:.65rem;">Menunggu ACC</span>
+            {% elif pb.status_acc == 'diterima' %}
+              <span class="badge bg-success mb-1" style="font-size:.65rem;">Diterima</span>
+            {% elif pb.status_acc == 'ditolak' %}
+              <span class="badge bg-danger mb-1" style="font-size:.65rem;">Ditolak</span>
+            {% else %}
+              <span class="badge bg-secondary mb-1" style="font-size:.65rem;">Langsung</span>
+            {% endif %}
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('pembayaran.cetak_kuitansi', id=pb.id) }}" target="_blank" class="btn btn-outline-primary" style="font-size:.7rem;padding:2px 5px;"><i class="bi bi-printer"></i></a>
+              {% if pb.status_acc == 'menunggu' and current_user.can_acc_pembayaran() %}
+              <form method="POST" action="{{ url_for('pembayaran.acc', id=pb.id) }}" style="display:inline;">
+                <button class="btn btn-success btn-sm" style="font-size:.65rem;padding:2px 6px;" title="Terima"><i class="bi bi-check-circle"></i></button>
+              </form>
+              <form method="POST" action="{{ url_for('pembayaran.tolak', id=pb.id) }}" style="display:inline;" data-confirm="Tolak pembayaran ini?">
+                <button class="btn btn-danger btn-sm" style="font-size:.65rem;padding:2px 6px;" title="Tolak"><i class="bi bi-x-circle"></i></button>
+              </form>
+              {% endif %}
+              {% if current_user.is_admin() %}
+              <form method="POST" action="{{ url_for('pembayaran.hapus', id=pb.id) }}" data-confirm="Hapus?">
+                <button class="btn btn-outline-danger" style="font-size:.7rem;padding:2px 5px;"><i class="bi bi-trash"></i></button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="11" class="text-center text-muted py-3">Tidak ada data pembayaran pada periode ini</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if pembayaran_list %}
+      <tfoot class="table-light fw-bold">
+        <tr>
+          <td colspan="7">TOTAL ({{ pembayaran_list|length }} transaksi)</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(total_bayar_r) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(total_pokok_r) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(total_jasa_r) }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-buka kuitansi di tab baru setelah simpan
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  const cetakId = params.get('cetak_id');
+  if (cetakId) {
+    window.open('{{ url_for("pembayaran.cetak_kuitansi", id=0) }}'.replace('0', cetakId), '_blank');
+    // Bersihkan URL
+    history.replaceState({}, '', window.location.pathname + (window.location.hash || ''));
+  }
+})();
+const angsuranJasa  = {{ pinjaman.angsuran_jasa  or 0 if pinjaman else 0 }};
+const angsuranPokok = {{ pinjaman.angsuran_pokok or 0 if pinjaman else 0 }};
+const tunggakPokok  = {{ tunggak_pokok if pinjaman else 0 }};
+const tunggakJasa   = {{ tunggak_jasa  if pinjaman else 0 }};
+const saldoPokok    = {{ pinjaman.get_saldo_pokok() if pinjaman else 0 }};
+const saldosTab     = {
+  sukarela: {{ rekening.saldo_sukarela if rekening else 0 }},
+  wajib:    {{ rekening.saldo_wajib    if rekening else 0 }},
+  pokok:    {{ rekening.saldo_pokok    if rekening else 0 }},
+};
+
+function fmt(n){ return 'Rp ' + Math.round(n).toLocaleString('id-ID'); }
+
+function setDefaultAlokasi() {
+  const tp = Math.min(angsuranPokok, saldoPokok);
+  let defaultPokok = tunggakPokok > 0 ? tunggakPokok : tp;
+  let defaultJasa  = tunggakJasa > 0 ? tunggakJasa : angsuranJasa;
+  
+  if (saldoPokok <= 0) defaultPokok = 0;
+  
+  document.getElementById('inputPokok').value = defaultPokok;
+  document.getElementById('inputJasa').value = defaultJasa;
+  syncBalik();
+}
+
+function syncBalik() {
+  const p = parseInt(document.getElementById('inputPokok')?.value.replace(/[^0-9]/g,'') || '0');
+  const j = parseInt(document.getElementById('inputJasa')?.value.replace(/[^0-9]/g,'') || '0');
+  const totalAlokasi = p + j;
+  
+  document.getElementById('displayTotal').textContent = fmt(totalAlokasi);
+  
+  let tab = 0;
+  if (document.getElementById('chkTab')?.checked) {
+    tab = parseInt(document.getElementById('inputTab')?.value.replace(/[^0-9]/g,'') || '0');
+  }
+  
+  let tunai = totalAlokasi - tab;
+  if (tunai < 0) tunai = 0;
+  
+  document.getElementById('inputBayar').value = tunai;
+}
+
+// Inisialisasi default
+if (document.getElementById('inputPokok')) {
+  setDefaultAlokasi();
+}
+
+function toggleTab() {
+  const chk = document.getElementById('chkTab');
+  const panel = document.getElementById('panelTab');
+  if (panel) panel.classList.toggle('d-none', !chk?.checked);
+  if (!chk?.checked && document.getElementById('inputTab')) document.getElementById('inputTab').value = '';
+  syncBalik();
+}
+
+function updateSaldoTab() {
+  const jenis = document.getElementById('selJenis')?.value || 'sukarela';
+  const el = document.getElementById('saldoTabInfo');
+  if (el) el.textContent = 'Maks: ' + fmt(saldosTab[jenis] || 0);
+  syncBalik();
+}
+
+// Rekap checkbox
+function toggleAllRekap(chk) {
+  document.querySelectorAll('.rekap-chk').forEach(el => el.checked = chk.checked);
+}
+
+function cetakTerpilih() {
+  const ids = [...document.querySelectorAll('.rekap-chk:checked')].map(el => el.value);
+  if (!ids.length) { notif('Pilih minimal 1 baris.', 'warning'); return; }
+  window.open(`{{ url_for('pembayaran.cetak_terpilih') }}?ids=${ids.join(',')}`, '_blank');
+}
+
+// ══ AUTOCOMPLETE LOGIC ══
+const searchInput = document.getElementById('searchQuery');
+const resultsBox = document.getElementById('autocomplete-results');
+let debounceTimer;
+
+if (searchInput) {
+  searchInput.addEventListener('input', function() {
+    document.getElementById('searchId').value = '';
+    clearTimeout(debounceTimer);
+    const q = this.value.trim();
+    
+    if (q.length < 2) {
+      resultsBox.style.display = 'none';
+      return;
+    }
+
+    debounceTimer = setTimeout(() => {
+      fetch(`{{ url_for('pembayaran.search_suggestions') }}?q=${encodeURIComponent(q)}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.results && data.results.length > 0) {
+            resultsBox.innerHTML = '';
+            data.results.forEach(item => {
+              const div = document.createElement('a');
+              div.href = '#';
+              div.className = 'dropdown-item py-2 border-bottom';
+              div.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                  <div style="font-size: 0.85rem; font-weight: 600;">${item.nama}</div>
+                  ${item.jenis === 'kelompok' ? '<span class="badge bg-info text-dark" style="font-size:0.6rem;">Kelompok</span>' : ''}
+                </div>
+                <div class="text-muted" style="font-size: 0.72rem;">${item.spk} - ${item.nasabah_id}</div>
+              `;
+              div.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.getElementById('searchId').value = item.id;
+                searchInput.value = item.nama;
+                resultsBox.style.display = 'none';
+                // Langsung submit form
+                document.getElementById('searchForm').submit();
+              });
+              resultsBox.appendChild(div);
+            });
+            resultsBox.style.display = 'block';
+          } else {
+            resultsBox.style.display = 'none';
+          }
+        });
+    }, 300);
+  });
+
+  // Tutup dropdown jika klik di luar
+  document.addEventListener('click', function(e) {
+    if (!searchInput.contains(e.target) && !resultsBox.contains(e.target)) {
+      resultsBox.style.display = 'none';
+    }
+  });
+
+  // Support navigasi keyboard (optional tapi bagus)
+  searchInput.addEventListener('keydown', function(e) {
+    const items = resultsBox.querySelectorAll('.dropdown-item');
+    if (items.length === 0 || resultsBox.style.display === 'none') return;
+
+    // Handle Enter if dropdown is open? Maybe just let it submit search by default
+  });
+}
+</script>
+{% endblock %}

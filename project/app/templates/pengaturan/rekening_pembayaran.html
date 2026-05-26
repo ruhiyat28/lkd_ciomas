@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}Rekening Pembayaran{% endblock %}
+{% block page_title %}Rekening Pembayaran{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Rekening Pembayaran</h1>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('pengaturan.index') }}">Pengaturan</a></li>
+      <li class="breadcrumb-item active">Rekening Pembayaran</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-8">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-header bg-white">
+        <h5 class="mb-0">Daftar Rekening Pembayaran</h5>
+      </div>
+      <div class="card-body">
+        {% if rekening_list %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Bank/E-Wallet</th>
+                <th>Nama Rekening</th>
+                <th>Nomor</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rek in rekening_list %}
+              <tr>
+                <td><strong>{{ rek.nama_bank }}</strong></td>
+                <td>{{ rek.nama_rekening }}</td>
+                <td>{{ rek.nomor_rekening }}</td>
+                <td>
+                  {% if rek.aktif %}
+                  <span class="badge bg-success">Aktif</span>
+                  {% else %}
+                  <span class="badge bg-secondary">Nonaktif</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary" onclick="editRekening({{ rek.id }}, '{{ rek.nama_bank }}', '{{ rek.nama_rekening }}', '{{ rek.nomor_rekening }}', {{ rek.aktif|lower }}, {{ rek.urutan }})">
+                    <i class="bi bi-pencil"></i> Edit
+                  </button>
+                  <form method="POST" action="{{ url_for('pengaturan.hapus_rekening', id=rek.id) }}" class="d-inline" data-confirm="Hapus rekening ini?">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+          <i class="bi bi-credit-card fs-1"></i>
+          <p class="mt-2">Belum ada rekening pembayaran.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-header bg-white">
+        <h5 class="mb-0" id="form-title">Tambah Rekening</h5>
+      </div>
+      <div class="card-body">
+        <form method="POST" id="form-rekening" action="{{ url_for('pengaturan.tambah_rekening') }}">
+          <input type="hidden" name="rekening_id" id="rekening_id" value="">
+          
+          <div class="mb-3">
+            <label class="form-label">Nama Bank/E-Wallet</label>
+            <input type="text" class="form-control" name="nama_bank" id="nama_bank" placeholder="BCA, BRI, DANA, OVO, dll" required>
+            <small class="text-muted">Contoh: BCA, BRI, DANA, OVO, GoPay</small>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Nama Pemilik Rekening</label>
+            <input type="text" class="form-control" name="nama_rekening" id="nama_rekening" placeholder="Nama sesuai rekening" required>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Nomor Rekening</label>
+            <input type="text" class="form-control" name="nomor_rekening" id="nomor_rekening" placeholder="Nomor rekening/telepon" required>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Urutan Tampil</label>
+            <input type="number" class="form-control" name="urutan" id="urutan" value="0" min="0">
+            <small class="text-muted">0 = paling atas</small>
+          </div>
+          
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" name="aktif" id="aktif" checked>
+            <label class="form-check-label" for="aktif">Aktif</label>
+          </div>
+          
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" id="btn-submit">Simpan</button>
+            <button type="button" class="btn btn-outline-secondary" id="btn-cancel" style="display:none;" onclick="resetForm()">Batal</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function editRekening(id, nama_bank, nama_rekening, nomor_rekening, aktif, urutan) {
+  document.getElementById('form-title').textContent = 'Edit Rekening';
+  document.getElementById('rekening_id').value = id;
+  document.getElementById('nama_bank').value = nama_bank;
+  document.getElementById('nama_rekening').value = nama_rekening;
+  document.getElementById('nomor_rekening').value = nomor_rekening;
+  document.getElementById('urutan').value = urutan;
+  document.getElementById('aktif').checked = aktif;
+  document.getElementById('form-rekening').action = "{{ url_for('pengaturan.edit_rekening', id=0) }}".replace('/0', '/' + id);
+  document.getElementById('btn-submit').textContent = 'Update';
+  document.getElementById('btn-cancel').style.display = 'inline-block';
+  
+  // Scroll to form
+  document.getElementById('form-rekening').scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetForm() {
+  document.getElementById('form-title').textContent = 'Tambah Rekening';
+  document.getElementById('rekening_id').value = '';
+  document.getElementById('nama_bank').value = '';
+  document.getElementById('nama_rekening').value = '';
+  document.getElementById('nomor_rekening').value = '';
+  document.getElementById('urutan').value = 0;
+  document.getElementById('aktif').checked = true;
+  document.getElementById('form-rekening').action = "{{ url_for('pengaturan.tambah_rekening') }}";
+  document.getElementById('btn-submit').textContent = 'Simpan';
+  document.getElementById('btn-cancel').style.display = 'none';
+}
+</script>
+{% endblock %}

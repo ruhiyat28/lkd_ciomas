@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Pesanan Masuk{% endblock %}
+{% block page_title %}Pesanan Masuk{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1>Pesanan Masuk</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('umkm.katalog') }}">UMKM</a></li>
+        <li class="breadcrumb-item active">Pesanan Masuk</li>
+      </ol>
+    </nav>
+  </div>
+  <a href="{{ url_for('umkm.penjual_produk') }}" class="btn btn-outline-primary">
+    <i class="bi bi-box-seam me-1"></i>Produk Saya
+  </a>
+</div>
+
+{% if pesanan_list %}
+<div class="row g-3">
+  {% for pesanan in pesanan_list %}
+  <div class="col-md-12">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <strong>{{ pesanan.nomor_pesanan }}</strong>
+          <span class="text-muted ms-2">{{ pesanan.tanggal_pesanan.strftime('%d/%m/%Y %H:%M') }}</span>
+        </div>
+        {% if pesanan.status == 'menunggu' %}
+        <span class="badge bg-warning text-dark">Menunggu</span>
+        {% elif pesanan.status == 'diproses' %}
+        <span class="badge bg-info">Diproses</span>
+        {% elif pesanan.status == 'dikirim' %}
+        <span class="badge bg-primary">Dikirim</span>
+        {% elif pesanan.status == 'selesai' %}
+        <span class="badge bg-success">Selesai</span>
+        {% else %}
+        <span class="badge bg-danger">Dibatalkan</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-8">
+            <h6 class="mb-2">Pembeli: {{ pesanan.pembeli.nama }}</h6>
+            <ul class="list-unstyled mb-0">
+              {% for detail in pesanan.detail_list %}
+              <li class="d-flex justify-content-between mb-1">
+                <span>{{ detail.produk.nama_produk }} ({{ detail.jumlah }} {{ detail.produk.satuan }})</span>
+                <span>Rp {{ detail.subtotal|number_format }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% if pesanan.catatan_pembeli %}
+            <div class="mt-2 alert alert-light py-2 mb-0">
+              <small><strong>Catatan:</strong> {{ pesanan.catatan_pembeli }}</small>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-md-4 text-end">
+            <div class="mb-2">
+              <small class="text-muted">Total</small><br>
+              <span class="fs-5 fw-bold text-primary">Rp {{ pesanan.total_harga|number_format }}</span>
+            </div>
+            {% if pesanan.status == 'menunggu' %}
+            <form method="POST" action="{{ url_for('umkm.penjual_proses_pesanan', id=pesanan.id) }}" class="d-inline">
+              <input type="hidden" name="action" value="proses">
+              <button type="submit" class="btn btn-sm btn-success">Proses</button>
+            </form>
+            {% elif pesanan.status == 'diproses' %}
+            <form method="POST" action="{{ url_for('umkm.penjual_proses_pesanan', id=pesanan.id) }}" class="d-inline">
+              <input type="hidden" name="action" value="kirim">
+              <button type="submit" class="btn btn-sm btn-primary">Kirim</button>
+            </form>
+            {% elif pesanan.status == 'dikirim' %}
+            <form method="POST" action="{{ url_for('umkm.penjual_proses_pesanan', id=pesanan.id) }}" class="d-inline">
+              <input type="hidden" name="action" value="selesai">
+              <button type="submit" class="btn btn-sm btn-success">Selesai</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info text-center">
+  <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+  <p class="mb-0">Belum ada pesanan masuk.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if jaminan else 'Tambah' }} Jaminan SHM{% endblock %}
+{% block page_title %}Jaminan SHM{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{{ 'Edit' if jaminan else 'Tambah' }} Jaminan Sertifikat Hak Milik</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('jaminan.index') }}">Jaminan</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('jaminan.detail', nasabah_id=nasabah.id, tab='shm') }}">{{ nasabah.nasabah_id }}</a></li>
+    <li class="breadcrumb-item active">SHM</li>
+  </ol></nav>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="alert alert-info py-2 mb-3" style="font-size:.83rem;">
+      <i class="bi bi-person-fill me-2"></i>
+      <strong>{{ nasabah.nama }}</strong> — {{ nasabah.nasabah_id }} | {{ nasabah.nama_desa }}
+    </div>
+
+    <form method="POST">
+      <div class="card mb-3">
+        <div class="card-header"><i class="bi bi-house-fill me-2 text-primary"></i>Data Sertifikat Hak Milik</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Nama Pemilik <span class="text-danger">*</span></label>
+              <input type="text" name="nama_pemilik" class="form-control text-uppercase" required
+                value="{{ jaminan.nama_pemilik if jaminan else nasabah.nama }}"
+                placeholder="Nama sesuai sertifikat">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">NIB (Nomor Identifikasi Bidang)</label>
+              <input type="text" name="nib" class="form-control money text-uppercase"
+                value="{{ jaminan.nib if jaminan else '' }}" placeholder="No. NIB">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Alamat Pemilik</label>
+              <input type="text" name="alamat_pemilik" class="form-control"
+                value="{{ jaminan.alamat_pemilik if jaminan else nasabah.alamat or '' }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Lokasi Lahan <span class="text-danger">*</span></label>
+              <textarea name="lokasi_lahan" class="form-control" rows="2" required
+                placeholder="Alamat/lokasi lahan lengkap">{{ jaminan.lokasi_lahan if jaminan else '' }}</textarea>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Luas Lahan</label>
+              <div class="input-group">
+                <input type="text" name="luas_lahan" class="form-control"
+                  value="{{ jaminan.luas_lahan if jaminan else '' }}" placeholder="500">
+                <span class="input-group-text">m²</span>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Tahun Penerbitan</label>
+              <input type="number" name="tahun_penerbitan" class="form-control"
+                min="1945" max="2030" placeholder="2020"
+                value="{{ jaminan.tahun_penerbitan if jaminan else '' }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Pinjaman Terkait</label>
+              <select name="pinjaman_id" class="form-select">
+                <option value="">-- Tidak Ditautkan --</option>
+                {% for p in pinjaman %}
+                <option value="{{ p.id }}" {% if jaminan and jaminan.pinjaman_id==p.id %}selected{% endif %}>
+                  {{ p.spk }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Keterangan</label>
+              <textarea name="keterangan" class="form-control" rows="2"
+                placeholder="Catatan tambahan">{{ jaminan.keterangan if jaminan else '' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-save-fill me-1"></i>Simpan Jaminan SHM</button>
+        <a href="{{ url_for('jaminan.detail', nasabah_id=nasabah.id, tab='shm') }}" class="btn btn-outline-secondary">Batal</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

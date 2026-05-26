@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if pengumuman else 'Buat' }} Pengumuman{% endblock %}
+{% block page_title %}{{ 'Edit' if pengumuman else 'Buat' }} Pengumuman{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('pengaturan.index') }}">Pengaturan</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('pengaturan.pengumuman') }}">Broadcast</a></li>
+    <li class="breadcrumb-item active">{{ 'Edit' if pengumuman else 'Baru' }}</li>
+  </ol>
+</nav>
+
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-body p-4">
+        <form method="POST">
+          <div class="mb-3">
+            <label class="form-label">Judul Pengumuman</label>
+            <input type="text" name="judul" class="form-control" value="{{ pengumuman.judul if pengumuman else '' }}" required placeholder="Contoh: Jadwal Pembayaran Angsuran Bulan Mei">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Isi Pengumuman</label>
+            <textarea name="isi" class="form-control" rows="6" required placeholder="Tulis isi pengumuman di sini...">{{ pengumuman.isi if pengumuman else '' }}</textarea>
+            <div class="form-text">Pengumuman ini akan ditampilkan di dashboard nasabah.</div>
+          </div>
+
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label">Tipe</label>
+              <select name="tipe" class="form-select">
+                <option value="info" {% if pengumuman and pengumuman.tipe == 'info' %}selected{% endif %}>ℹ️ Informasi</option>
+                <option value="penting" {% if pengumuman and pengumuman.tipe == 'penting' %}selected{% endif %}>⚠️ Penting</option>
+                <option value="pengumuman" {% if pengumuman and pengumuman.tipe == 'pengumuman' %}selected{% endif %}>📢 Pengumuman</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Target</label>
+              <select name="target" class="form-select" id="targetSelect" onchange="toggleNasabahSelect()">
+                <option value="semua" {% if not pengumuman or pengumuman.target == 'semua' %}selected{% endif %}>Semua Nasabah</option>
+                <option value="nasabah_spesifik" {% if pengumuman and pengumuman.target == 'nasabah_spesifik' %}selected{% endif %}>Nasabah Spesifik</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="nasabahSelectWrapper" class="mb-4 d-none">
+            <label class="form-label text-primary"><i class="bi bi-search me-1"></i> Cari Nasabah</label>
+            <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
+                <input type="text" id="nasabahSearch" class="form-control" placeholder="Ketik nama atau ID Nasabah..." onkeyup="searchNasabah(this.value)">
+            </div>
+            <input type="hidden" name="nasabah_id_fk" id="nasabah_id_fk" value="{{ pengumuman.nasabah_id_fk if pengumuman else '' }}">
+            <div id="selectedNasabahInfo" class="mt-2 p-2 border rounded bg-light {% if not (pengumuman and pengumuman.nasabah) %}d-none{% endif %}">
+                <span class="fw-bold text-success"><i class="bi bi-check-circle-fill me-1"></i> Terpilih: </span>
+                <span id="nasabahName">{{ pengumuman.nasabah.nama if pengumuman and pengumuman.nasabah else '' }}</span>
+                <button type="button" class="btn btn-sm btn-link text-danger float-end p-0" onclick="clearSelectedNasabah()">Hapus</button>
+            </div>
+            <div id="nasabahResults" class="list-group mt-1 shadow-sm position-absolute w-100 z-3" style="max-height: 200px; overflow-y: auto;"></div>
+          </div>
+
+          <script>
+            function toggleNasabahSelect() {
+                const target = document.getElementById('targetSelect').value;
+                const wrapper = document.getElementById('nasabahSelectWrapper');
+                if (target === 'nasabah_spesifik') {
+                    wrapper.classList.remove('d-none');
+                } else {
+                    wrapper.classList.add('d-none');
+                }
+            }
+
+            let searchTimeout;
+            function searchNasabah(q) {
+                if (q.length < 2) {
+                    document.getElementById('nasabahResults').innerHTML = '';
+                    return;
+                }
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    fetch(`{{ url_for('pengaturan.search_nasabah_active') }}?q=${q}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            let html = '';
+                            data.results.forEach(n => {
+                                html += `<button type="button" class="list-group-item list-group-item-action py-2" onclick="selectNasabah(${n.id}, '${n.nama}')">
+                                            <div class="fw-bold">${n.nama}</div>
+                                            <small class="text-muted">${n.nasabah_id} - ${n.desa}</small>
+                                         </button>`;
+                            });
+                            document.getElementById('nasabahResults').innerHTML = html;
+                        });
+                }, 300);
+            }
+
+            function selectNasabah(id, nama) {
+                document.getElementById('nasabah_id_fk').value = id;
+                document.getElementById('nasabahName').innerText = nama;
+                document.getElementById('selectedNasabahInfo').classList.remove('d-none');
+                document.getElementById('nasabahResults').innerHTML = '';
+                document.getElementById('nasabahSearch').value = '';
+            }
+
+            function clearSelectedNasabah() {
+                document.getElementById('nasabah_id_fk').value = '';
+                document.getElementById('selectedNasabahInfo').classList.add('d-none');
+            }
+
+            // Init on load
+            window.addEventListener('DOMContentLoaded', () => {
+                toggleNasabahSelect();
+            });
+          </script>
+
+          {% if pengumuman %}
+          <div class="form-check form-switch mb-3">
+            <input class="form-check-input" type="checkbox" name="aktif" id="aktifSwitch" {% if pengumuman.aktif %}checked{% endif %}>
+            <label class="form-check-label" for="aktifSwitch">Status Aktif</label>
+          </div>
+          {% endif %}
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="bi bi-check-circle me-1"></i>{{ 'Perbarui' if pengumuman else 'Buat & Kirim' }}
+            </button>
+            <a href="{{ url_for('pengaturan.pengumuman') }}" class="btn btn-outline-secondary">Batal</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

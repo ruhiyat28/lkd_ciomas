@@ -1,0 +1,66 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Daftar Aset{% endblock %}
+{% block content %}
+<div class="kop">
+  <img src="{{ url_for('static', filename='img/logo.png', _external=True) }}" alt="Logo">
+  <div class="kop-text">
+    <div class="nama-lembaga">BUM DESA BERSAMA UPK CIOMAS LKD</div>
+    <div class="alamat">Jl. Raya Ciomas Km.1 Serang 42164 | Telp: (0254)7823984 | WA: 081324771060</div>
+  </div>
+</div>
+<div class="doc-title">DAFTAR ASET TETAP</div>
+<div class="doc-subtitle">Per Tanggal: {{ tanggal_cetak.strftime('%d %B %Y') }}</div>
+
+<table class="bordered" style="font-size:8pt;margin-top:8px;">
+  <thead>
+    <tr style="background:#e0e0e0;font-weight:bold;text-align:center;">
+      <th style="width:28px;">No</th>
+      <th>Kode</th>
+      <th>Nama Aset</th>
+      <th>Kategori</th>
+      <th>Tgl Perolehan</th>
+      <th>Nilai Perolehan (Rp)</th>
+      <th>Akum. Penyusutan (Rp)</th>
+      <th>Nilai Buku (Rp)</th>
+      <th>Lokasi</th>
+      <th>Kondisi</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for a in aset_list %}
+    <tr>
+      <td style="text-align:center;">{{ loop.index }}</td>
+      <td>{{ a.kode_aset or '-' }}</td>
+      <td>{{ a.nama }}</td>
+      <td style="text-align:center;">{{ a.kategori or '-' }}</td>
+      <td style="text-align:center;">{{ a.tanggal_perolehan.strftime('%d/%m/%Y') if a.tanggal_perolehan else '-' }}</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(a.nilai_perolehan) }}</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(a.akumulasi_penyusutan) }}</td>
+      <td class="money" style="text-align:right;font-weight:bold;">{{ '{:,.0f}'.format(a.nilai_buku) }}</td>
+      <td>{{ a.lokasi or '-' }}</td>
+      <td style="text-align:center;">{{ a.kondisi|replace('_',' ')|title }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="10" style="text-align:center;padding:12px;">Belum ada aset terdaftar.</td></tr>
+    {% endfor %}
+    {% if aset_list %}
+    <tr style="font-weight:bold;background:#f5f5f5;">
+      <td colspan="5" style="text-align:right;">TOTAL</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(total_perolehan) }}</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(total_akumulasi) }}</td>
+      <td class="money" style="text-align:right;">{{ '{:,.0f}'.format(total_buku) }}</td>
+      <td colspan="2"></td>
+    </tr>
+    {% endif %}
+  </tbody>
+</table>
+
+<div class="ttd-area" style="margin-top:24px;">
+  {% set qr = get_role_signature_qr('kabag_keuangan') %}
+  <div class="ttd-box"><div class="ttd-jabatan">Dibuat oleh,</div><div class="ttd-jabatan">Bag. Keuangan</div>{% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}<div class="ttd-nama">{{ pengaturan.get('kabag_keuangan', '.........................') }}</div></div>
+  {% set qr = get_role_signature_qr('manajer_lkd') %}
+  <div class="ttd-box"><div class="ttd-jabatan">Mengetahui,</div><div class="ttd-jabatan">Manajer LKD</div>{% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}<div class="ttd-nama">{{ pengaturan.get('manajer_lkd', '.........................') }}</div></div>
+  {% set qr = get_role_signature_qr('direktur') %}
+  <div class="ttd-box"><div class="ttd-jabatan">Disetujui,</div><div class="ttd-jabatan">Direktur</div>{% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}<div class="ttd-nama">{{ pengaturan.get('direktur', '.........................') }}</div></div>
+</div>
+{% endblock %}

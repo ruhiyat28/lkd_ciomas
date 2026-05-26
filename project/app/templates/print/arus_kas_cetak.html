@@ -1,0 +1,49 @@
+{% extends 'print/base_print.html' %}
+{% block print_title %}Laporan Arus Kas {{ tgl_dari.strftime('%d %B %Y') }} s/d {{ tgl_sampai.strftime('%d %B %Y') }}{% endblock %}
+{% block content %}
+
+<div class="doc-title">LAPORAN ARUS KAS</div>
+<div class="doc-subtitle">untuk periode yang berakhir pada {{ tgl_sampai.strftime('%d %B %Y') }}<br>(dalam rupiah)</div>
+
+<table class="bordered" style="font-size:9pt;">
+  <thead><tr style="background:#eee;font-weight:bold;"><th style="width:24px;">No.</th><th>Uraian</th><th style="width:120px;text-align:right;">{{ tgl_sampai.year }}</th></tr></thead>
+  <tbody>
+    <tr style="font-weight:bold;background:#f0f0f0;"><td>1</td><td>ARUS KAS DARI AKTIVITAS OPERASI</td><td></td></tr>
+    <tr><td></td><td style="padding-left:12px;">Arus Kas Masuk</td><td></td></tr>
+    <tr><td></td><td style="padding-left:24px;">Penerimaan kas dari cicilan pinjaman</td><td style="text-align:right;">{{ '{:,.0f}'.format(kas_masuk_ops_pokok) }}</td></tr>
+    <tr><td></td><td style="padding-left:24px;">Penerimaan kas dari jasa pinjaman</td><td style="text-align:right;">{{ '{:,.0f}'.format(kas_masuk_ops_jasa) }}</td></tr>
+    <tr><td></td><td style="padding-left:24px;">Penerimaan kas dari penjualan jasa</td><td style="text-align:right;">{{ '{:,.0f}'.format(kas_masuk_ops_admin) }}</td></tr>
+    <tr><td></td><td style="padding-left:12px;">Arus Kas Keluar</td><td></td></tr>
+    <tr><td></td><td style="padding-left:24px;">Pengeluaran kas untuk pinjaman</td><td style="text-align:right;">({{ '{:,.0f}'.format(kas_keluar_pencairan) }})</td></tr>
+    <tr><td></td><td style="padding-left:24px;">Pengeluaran kas untuk beban-beban</td><td style="text-align:right;">({{ '{:,.0f}'.format(kas_keluar_ops_beban) }})</td></tr>
+    <tr><td></td><td style="padding-left:24px;">Pengeluaran kas untuk gaji/upah</td><td style="text-align:right;">({{ '{:,.0f}'.format(kas_keluar_gaji) }})</td></tr>
+    <tr style="font-weight:bold;"><td></td><td style="text-align:right;">Arus kas bersih dari aktivitas operasi</td><td style="text-align:right;">{{ '{:,.0f}'.format(net_ops) }}</td></tr>
+    <tr><td colspan="3"></td></tr>
+    <tr style="font-weight:bold;background:#f0f0f0;"><td>2</td><td>ARUS KAS DARI AKTIVITAS INVESTASI</td><td></td></tr>
+    <tr><td></td><td style="padding-left:24px;">Penerimaan dari penjualan aset tetap</td><td style="text-align:right;">{{ '{:,.0f}'.format(kas_masuk_inv_aset) }}</td></tr>
+    <tr><td></td><td style="padding-left:24px;">Penerimaan kas dari investasi lain</td><td style="text-align:right;">{{ '{:,.0f}'.format(kas_masuk_inv_lain) }}</td></tr>
+    <tr><td></td><td style="padding-left:24px;">Pengeluaran untuk pembelian aset tetap</td><td style="text-align:right;">({{ '{:,.0f}'.format(kas_keluar_inv_aset) }})</td></tr>
+    <tr><td></td><td style="padding-left:24px;">Pengeluaran untuk investasi lain</td><td style="text-align:right;">({{ '{:,.0f}'.format(kas_keluar_inv_lain) }})</td></tr>
+    <tr style="font-weight:bold;"><td></td><td style="text-align:right;">Arus kas bersih dari aktivitas investasi</td><td style="text-align:right;">{{ '{:,.0f}'.format(net_inv) }}</td></tr>
+    <tr><td colspan="3"></td></tr>
+    <tr style="font-weight:bold;background:#f0f0f0;"><td>3</td><td>ARUS KAS DARI AKTIVITAS PEMBIAYAAN</td><td></td></tr>
+    <tr><td></td><td style="padding-left:24px;">Penerimaan kas dari penyertaan modal</td><td style="text-align:right;">{{ '{:,.0f}'.format(kas_masuk_pend_modal) }}</td></tr>
+    <tr><td></td><td style="padding-left:24px;">Penerimaan kas lain-lain</td><td style="text-align:right;">{{ '{:,.0f}'.format(kas_masuk_pend_lain) }}</td></tr>
+    <tr><td></td><td style="padding-left:24px;">Pembayaran bagi hasil penyertaan modal</td><td style="text-align:right;">({{ '{:,.0f}'.format(kas_keluar_pend_modal) }})</td></tr>
+    <tr style="font-weight:bold;"><td></td><td style="text-align:right;">Arus kas bersih dari aktivitas pembiayaan</td><td style="text-align:right;">{{ '{:,.0f}'.format(net_pend) }}</td></tr>
+    <tr><td colspan="3"></td></tr>
+    <tr style="font-weight:bold;"><td></td><td>Kenaikan (penurunan) Kas</td><td style="text-align:right;">{{ '{:,.0f}'.format(net_total) }}</td></tr>
+    <tr><td></td><td>Saldo kas awal tahun</td><td style="text-align:right;">{{ '{:,.0f}'.format(saldo_awal_kas) }}</td></tr>
+    <tr style="font-weight:bold;background:#ddd;"><td></td><td>Saldo kas akhir tahun</td><td style="text-align:right;">{{ '{:,.0f}'.format(saldo_akhir_kas) }}</td></tr>
+  </tbody>
+</table>
+<div class="ttd-area" style="margin-top:36px;">
+  <div></div>
+  <div class="ttd-box">
+    <div>Serang, {{ tgl_sampai.strftime('%d %B %Y') }}</div><div>Direktur</div>
+    {% set qr = get_role_signature_qr('direktur') %}
+    {% if qr %}<img src="{{ qr }}" class="qr-ttd-img" style="margin:8px auto;">{% else %}<div class="ttd-line"></div>{% endif %}
+    <div class="ttd-nama">{{ lembaga.direktur or '____________________' }}</div>
+  </div>
+</div>
+{% endblock %}

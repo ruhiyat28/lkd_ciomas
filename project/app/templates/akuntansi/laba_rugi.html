@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Laporan Laba Rugi{% endblock %}
+{% block page_title %}Laporan Laba Rugi{% endblock %}
+{% block content %}
+
+<div class="page-header d-flex justify-content-between align-items-start"><h1>Laporan Laba Rugi</h1>
+  <a href="?dari={{ tgl_dari_str }}&sampai={{ tgl_sampai_str }}&cetak=1" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-printer me-1"></i>Cetak</a></div>
+<div class="card mb-3"><div class="card-body py-3">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-2"><label class="form-label">Dari</label><input type="date" name="dari" class="form-control" value="{{ tgl_dari_str }}"></div>
+    <div class="col-md-2"><label class="form-label">Sampai</label><input type="date" name="sampai" class="form-control" value="{{ tgl_sampai_str }}"></div>
+    <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Tampilkan</button></div>
+  </form>
+</div></div>
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header fw-bold text-success border-bottom border-success border-2"><i class="bi bi-arrow-up me-2"></i>PENDAPATAN</div>
+      <div class="table-responsive">
+        <table class="table mb-0" style="font-size:.84rem;">
+          <tbody>
+            {% for r in pend_rows %}
+            <tr><td class="money" style="width:80px;">{{ r.akun.kode }}</td><td>{{ r.akun.nama }}</td><td class="text-end money fw-bold">{{ "{:,.0f}".format(r.saldo) }}</td></tr>
+            {% else %}<tr><td colspan="3" class="text-center text-muted">Belum ada pendapatan</td></tr>{% endfor %}
+          </tbody>
+          <tfoot class="bg-light fw-bold text-success"><tr><td colspan="2" class="text-end">Total Pendapatan</td><td class="text-end money">{{ "{:,.0f}".format(tot_pend) }}</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+    {% if hpp_rows %}
+    <div class="card mt-3">
+      <div class="card-header fw-bold text-secondary border-bottom border-secondary border-2"><i class="bi bi-arrow-down me-2"></i>HARGA POKOK PELAYANAN</div>
+      <div class="table-responsive">
+        <table class="table mb-0" style="font-size:.84rem;">
+          <tbody>
+            {% for r in hpp_rows %}
+            <tr><td class="money" style="width:80px;">{{ r.akun.kode }}</td><td>{{ r.akun.nama }}</td><td class="text-end money fw-bold">{{ "{:,.0f}".format(r.saldo) }}</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="bg-light fw-bold text-secondary"><tr><td colspan="2" class="text-end">Total HPP</td><td class="text-end money">{{ "{:,.0f}".format(tot_hpp) }}</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header fw-bold text-danger border-bottom border-danger border-2"><i class="bi bi-arrow-down me-2"></i>BEBAN OPERASIONAL</div>
+      <div class="table-responsive">
+        <table class="table mb-0" style="font-size:.84rem;">
+          <tbody>
+            {% for r in beban_rows %}
+            <tr><td class="money" style="width:80px;">{{ r.akun.kode }}</td><td>{{ r.akun.nama }}</td><td class="text-end money fw-bold">{{ "{:,.0f}".format(r.saldo) }}</td></tr>
+            {% else %}<tr><td colspan="3" class="text-center text-muted">Belum ada beban</td></tr>{% endfor %}
+          </tbody>
+          <tfoot class="bg-light fw-bold text-danger"><tr><td colspan="2" class="text-end">Total Beban</td><td class="text-end money">{{ "{:,.0f}".format(tot_beban) }}</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+    {% if lain_rows %}
+    <div class="card mt-3">
+      <div class="card-header fw-bold text-info-emphasis border-bottom border-info border-2"><i class="bi bi-plus-slash-minus me-2"></i>PENDAPATAN / BEBAN LAIN</div>
+      <div class="table-responsive">
+        <table class="table mb-0" style="font-size:.84rem;">
+          <tbody>
+            {% for r in lain_rows %}
+            <tr><td class="money" style="width:80px;">{{ r.akun.kode }}</td><td>{{ r.akun.nama }}</td><td class="text-end money fw-bold">{{ "{:,.0f}".format(r.saldo) }}</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="bg-light fw-bold text-info-emphasis"><tr><td colspan="2" class="text-end">Net Lain-lain</td><td class="text-end money">{{ "{:,.0f}".format(tot_lain) }}</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+<div class="row g-3 mt-1">
+  {% if hpp_rows %}
+  <div class="col-md-4">
+    <div class="card"><div class="card-body py-2 d-flex justify-content-between" style="font-size:.85rem;">
+      <span class="fw-bold">Laba Kotor</span>
+      <span class="fw-bold money {{ "text-success" if laba_kotor >= 0 else "text-danger" }}">Rp {{ "{:,.0f}".format(laba_kotor|abs) }}</span>
+    </div></div>
+  </div>
+  {% endif %}
+  <div class="{{ "col-md-4" if hpp_rows else "col-md-6" }}">
+    <div class="card"><div class="card-body py-2 d-flex justify-content-between" style="font-size:.85rem;">
+      <span class="fw-bold">Laba Usaha</span>
+      <span class="fw-bold money {{ "text-success" if laba_usaha >= 0 else "text-danger" }}">Rp {{ "{:,.0f}".format(laba_usaha|abs) }}</span>
+    </div></div>
+  </div>
+  <div class="{{ "col-md-4" if hpp_rows else "col-md-6" }}">
+    <div class="card bg-white shadow-sm border-0"><div class="card-body py-3 text-center">
+      <div class="text-muted" style="font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;">LABA / RUGI BERSIH</div>
+      <div style="font-size:1.8rem;font-weight:800;" class="{{ "text-success" if laba_bersih >= 0 else "text-danger" }}">
+        Rp {{ "{:,.0f}".format(laba_bersih|abs) }}
+      </div>
+      <div class="mt-1 fw-bold small {{ "text-success" if laba_bersih >= 0 else "text-danger" }}">
+        {{ "LABA" if laba_bersih >= 0 else "RUGI" }}
+      </div>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Ajukan Perubahan Dokumen{% endblock %}
+{% block page_title %}Ajukan Perubahan Dokumen{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="card-body">
+    <h5 class="fw-bold mb-3"><i class="bi bi-file-earmark-arrow-up text-primary me-2"></i>Ajukan Perubahan Dokumen</h5>
+    
+    <p class="text-muted mb-4">Pilih dokumen yang ingin Anda ajukan perubahannya. Admin akan memproses permintaan Anda.</p>
+    
+    <form method="POST">
+      <div class="row g-3 mb-4">
+        {% for field, label, icon in [('foto', 'Pas Photo', 'bi-camera'), ('ktp', 'KTP', 'bi-credit-card-2-front'), ('kk', 'Kartu Keluarga', 'bi-card-list'), ('surat_usaha', 'Surat Usaha', 'bi-file-earmark-text'), ('bukti_penghasilan', 'Bukti Penghasilan', 'bi-cash-coin'), ('jaminan', 'Jaminan', 'bi-shield-check')] %}
+        {% set has_doc = nasabah[field] %}
+        {% set is_pending = field in pending_docs %}
+        <div class="col-md-6">
+          <div class="card h-100 {% if is_pending %}border-warning{% elif has_doc %}border-success{% else %}border-danger{% endif %}">
+            <div class="card-body">
+              <div class="d-flex align-items-start">
+                <div class="form-check flex-grow-1">
+                  <input class="form-check-input" type="checkbox" name="{{ field }}" id="check_{{ field }}" value="on" {% if is_pending %}disabled{% endif %}>
+                  <label class="form-check-label" for="check_{{ field }}">
+                    <i class="bi {{ icon }} me-2"></i>
+                    <strong>{{ label }}</strong>
+                    {% if has_doc %}
+                    <span class="badge bg-success ms-2">Ada</span>
+                    {% else %}
+                    <span class="badge bg-danger ms-2">Belum Ada</span>
+                    {% endif %}
+                    {% if is_pending %}
+                    <span class="badge bg-warning text-dark ms-2">Menunggu</span>
+                    {% endif %}
+                  </label>
+                  {% if has_doc %}
+                  <div class="mt-2">
+                    <a href="{{ url_for('static', filename=has_doc) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                      <i class="bi bi-eye"></i> Lihat Dokumen
+                    </a>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="mt-3">
+                <textarea class="form-control form-control-sm" name="alasan_{{ field }}" rows="2" placeholder="Alasan perubahan (opsional)" {% if is_pending %}disabled{% endif %}></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      
+      <div class="d-flex justify-content-end">
+        <a href="{{ url_for('main.profil_nasabah') }}" class="btn btn-outline-secondary me-2">Batal</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-send me-1"></i>Kirim Ajuan
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const checkboxes = document.querySelectorAll('input[type="checkbox"][name]');
+  const submitBtn = document.querySelector('button[type="submit"]');
+  
+  function updateSubmitButton() {
+    const anyChecked = Array.from(checkboxes).some(cb => cb.checked && !cb.disabled);
+    submitBtn.disabled = !anyChecked;
+  }
+  
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', updateSubmitButton);
+  });
+  
+  updateSubmitButton();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if produk else 'Tambah' }} Produk{% endblock %}
+{% block page_title %}{{ 'Edit' if produk else 'Tambah' }} Produk{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{{ 'Edit' if produk else 'Tambah' }} Produk</h1>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('umkm.admin_dashboard') }}">UMKM</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('umkm.admin_produk') }}">Produk</a></li>
+      <li class="breadcrumb-item active">{{ 'Edit' if produk else 'Tambah' }}</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="card-body">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Penjual <span class="text-danger">*</span></label>
+          <select name="penjual_id" class="form-select" required>
+            <option value="">Pilih Penjual</option>
+            {% for penjual in penjual_list %}
+            <option value="{{ penjual.id }}" {% if produk and produk.penjual_id == penjual.id %}selected{% endif %}>
+              {{ penjual.nama }} ({{ penjual.nama_usaha if penjual.nama_usaha else '-' }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="col-md-6">
+          <label class="form-label">Nama Produk <span class="text-danger">*</span></label>
+          <input type="text" name="nama_produk" class="form-control" required value="{{ produk.nama_produk if produk else '' }}">
+        </div>
+        
+        <div class="col-md-6">
+          <label class="form-label">Kategori <span class="text-danger">*</span></label>
+          <select name="kategori" class="form-select" required>
+            <option value="">Pilih Kategori</option>
+            {% for k, l in [('makanan', 'Makanan'), ('minuman', 'Minuman'), ('kerajinan', 'Kerajinan'), 
+                           ('pertanian', 'Pertanian'), ('peternakan', 'Peternakan'), ('fashion', 'Fashion'), ('lainnya', 'Lainnya')] %}
+            <option value="{{ k }}" {% if produk and produk.kategori == k %}selected{% endif %}>{{ l }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="col-md-6">
+          <label class="form-label">Harga (Rp) <span class="text-danger">*</span></label>
+          <input type="number" name="harga" class="form-control" required value="{{ produk.harga if produk else '' }}">
+        </div>
+        
+        <div class="col-md-4">
+          <label class="form-label">Stok <span class="text-danger">*</span></label>
+          <input type="number" name="stok" class="form-control" required value="{{ produk.stok if produk else '0' }}">
+        </div>
+        
+        <div class="col-md-4">
+          <label class="form-label">Satuan</label>
+          <select name="satuan" class="form-select">
+            {% for s in ['pcs', 'kg', 'liter', 'meter', 'pack', 'lusin', 'dus'] %}
+            <option value="{{ s }}" {% if produk and produk.satuan == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="col-md-4">
+          <label class="form-label">Status</label>
+          <div class="form-check form-switch mt-2">
+            <input type="checkbox" name="aktif" class="form-check-input" id="aktifSwitch"
+                   {% if not produk or produk.aktif %}checked{% endif %}>
+            <label class="form-check-label" for="aktifSwitch">Aktif</label>
+          </div>
+        </div>
+        
+        <div class="col-md-12">
+          <label class="form-label">Deskripsi</label>
+          <textarea name="deskripsi" class="form-control" rows="3">{{ produk.deskripsi if produk else '' }}</textarea>
+        </div>
+        
+        <div class="col-md-12">
+          <label class="form-label">Gambar Produk</label>
+          {% if produk and produk.gambar %}
+          <div class="mb-2">
+            <img src="{{ url_for('static', filename=produk.gambar) }}" alt="{{ produk.nama_produk }}" 
+                 class="rounded" style="max-height:150px;">
+          </div>
+          {% endif %}
+          <input type="file" name="gambar" class="form-control" accept="image/*">
+          <small class="text-muted">Format: JPG, PNG, WEBP. Maksimal 5MB.</small>
+        </div>
+      </div>
+      
+      <div class="mt-4 d-flex justify-content-end gap-2">
+        <a href="{{ url_for('umkm.admin_produk') }}" class="btn btn-secondary">Batal</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-save me-1"></i>Simpan
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import pagination %}
+{% block title %}Jaminan{% endblock %}
+{% block page_title %}Manajemen Jaminan{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Manajemen Jaminan</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0"><li class="breadcrumb-item active">Jaminan</li></ol></nav>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-blue">
+      <i class="bi bi-shield-fill stat-icon"></i>
+      <div class="stat-label">Total Jaminan</div>
+      <div class="stat-value">{{ total_jaminan }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-green">
+      <i class="bi bi-car-front-fill stat-icon"></i>
+      <div class="stat-label">BPKB</div>
+      <div class="stat-value">{{ total_bpkb }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-purple">
+      <i class="bi bi-file-earmark-text stat-icon"></i>
+      <div class="stat-label">SHM</div>
+      <div class="stat-value">{{ total_shm }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card stat-teal">
+      <i class="bi bi-files stat-icon"></i>
+      <div class="stat-label">Jaminan Lain</div>
+      <div class="stat-value">{{ total_lain }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label">Cari Nasabah</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" class="form-control" placeholder="Nama, ID Nasabah, NIK..." value="{{ search }}" autofocus>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Filter Desa</label>
+        <select name="desa" class="form-select">
+          <option value="">Semua Desa</option>
+          {% for k,n in desa_list %}<option value="{{ k }}" {% if desa_filter==k %}selected{% endif %}>{{ n }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Cari</button></div>
+      {% if search or desa_filter %}
+      <div class="col-md-2"><a href="{{ url_for('jaminan.index') }}" class="btn btn-outline-secondary w-100">Reset</a></div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-shield-fill-check me-2 text-primary"></i>Nasabah dengan Jaminan Terdaftar</span>
+    <a href="{{ url_for('jaminan.cari') }}" class="btn btn-sm btn-primary">
+      <i class="bi bi-plus-circle-fill me-1"></i>Input Jaminan Baru
+    </a>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>ID</th><th>Nama</th><th>Desa</th><th>Pekerjaan</th>
+        <th class="text-center">BPKB</th><th class="text-center">SHM</th>
+        <th class="text-center">Lainnya</th><th></th></tr></thead>
+      <tbody>
+        {% for n in nasabah_list.items %}
+        <tr>
+          <td class="money" style="font-size:.8rem;">{{ n.nasabah_id }}</td>
+          <td><strong>{{ n.nama }}</strong></td>
+          <td><span class="badge" style="background:#e0f2fe;color:#0369a1;">{{ n.kode_desa }}</span></td>
+          <td style="font-size:.82rem;">{{ n.pekerjaan or '-' }}</td>
+          <td class="text-center">
+            {% if n.jaminan_bpkb %}
+            <span class="badge bg-success">{{ n.jaminan_bpkb|length }}</span>
+            {% else %}<span class="text-muted">-</span>{% endif %}
+          </td>
+          <td class="text-center">
+            {% if n.jaminan_shm %}
+            <span class="badge bg-primary">{{ n.jaminan_shm|length }}</span>
+            {% else %}<span class="text-muted">-</span>{% endif %}
+          </td>
+          <td class="text-center">
+            {% if n.jaminan_lain %}
+            <span class="badge bg-warning text-dark">{{ n.jaminan_lain|length }}</span>
+            {% else %}<span class="text-muted">-</span>{% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('jaminan.detail', nasabah_id=n.id) }}" class="btn btn-sm btn-primary">
+              <i class="bi bi-folder2-open me-1"></i>Kelola Jaminan
+            </a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-4">
+          {% if search %}Nasabah "{{ search }}" tidak ditemukan{% else %}Belum ada nasabah{% endif %}
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pagination(nasabah_list, {'q': search, 'desa': desa_filter}, 'nasabah') }}
+</div>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}Pengajuan Perubahan Dokumen{% endblock %}
+{% block page_title %}Pengajuan Perubahan Dokumen{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1>Pengajuan Perubahan Dokumen</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Pengajuan Dokumen</li>
+      </ol>
+    </nav>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="btn-group">
+        <a href="{{ url_for('main.admin_ajuan_dokumen', status='menunggu') }}" 
+           class="btn btn-sm {% if status_filter == 'menunggu' %}btn-warning{% else %}btn-outline-secondary{% endif %}">
+          <i class="bi bi-clock me-1"></i>Menunggu
+        </a>
+        <a href="{{ url_for('main.admin_ajuan_dokumen', status='disetujui') }}" 
+           class="btn btn-sm {% if status_filter == 'disetujui' %}btn-success{% else %}btn-outline-secondary{% endif %}">
+          <i class="bi bi-check-circle me-1"></i>Disetujui
+        </a>
+        <a href="{{ url_for('main.admin_ajuan_dokumen', status='ditolak') }}" 
+           class="btn btn-sm {% if status_filter == 'ditolak' %}btn-danger{% else %}btn-outline-secondary{% endif %}">
+          <i class="bi bi-x-circle me-1"></i>Ditolak
+        </a>
+        <a href="{{ url_for('main.admin_ajuan_dokumen', status='semua') }}" 
+           class="btn btn-sm {% if status_filter == 'semua' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+          <i class="bi bi-list-ul me-1"></i>Semua
+        </a>
+      </div>
+    </div>
+
+    {% if all_ajuan %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Nasabah</th>
+            <th>Dokumen</th>
+            <th>Alasan</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ajuan in all_ajuan %}
+          <tr>
+            <td>{{ ajuan.tanggal_ajuan.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td>
+              <div class="fw-bold">{{ ajuan.nasabah.nama }}</div>
+              <small class="text-muted">{{ ajuan.nasabah.nasabah_id }}</small>
+            </td>
+            <td>
+              {% set doc_labels = {'foto': 'Foto', 'ktp': 'KTP', 'kk': 'Kartu Keluarga', 'surat_usaha': 'Surat Usaha', 'bukti_penghasilan': 'Bukti Penghasilan', 'jaminan': 'Jaminan'} %}
+              <span class="badge bg-info">{{ doc_labels.get(ajuan.dokumen, ajuan.dokumen) }}</span>
+              {% if ajuan.nasabah[ajuan.dokumen] %}
+              <a href="{{ url_for('static', filename=ajuan.nasabah[ajuan.dokumen]) }}" target="_blank" class="btn btn-sm btn-outline-primary ms-1">
+                <i class="bi bi-eye"></i>
+              </a>
+              {% endif %}
+            </td>
+            <td>
+              <small>{{ ajuan.alasan or '-' }}</small>
+            </td>
+            <td>
+              {% if ajuan.status == 'menunggu' %}
+              <span class="badge bg-warning text-dark">Menunggu</span>
+              {% elif ajuan.status == 'disetujui' %}
+              <span class="badge bg-success">Disetujui</span>
+              {% else %}
+              <span class="badge bg-danger">Ditolak</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if ajuan.status == 'menunggu' %}
+              <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalSetujui{{ ajuan.id }}">
+                  <i class="bi bi-check-circle"></i>
+                </button>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalTolak{{ ajuan.id }}">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              </div>
+              
+              <div class="modal fade" id="modalSetujui{{ ajuan.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <form method="POST" action="{{ url_for('main.admin_proses_ajuan_dokumen', ajuan_id=ajuan.id) }}">
+                      <input type="hidden" name="action" value="setujui">
+                      <input type="hidden" name="status" value="{{ status_filter }}">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Setujui Pengajuan</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                      </div>
+                      <div class="modal-body">
+                        <p>Setujui pengajuan perubahan <strong>{{ doc_labels.get(ajuan.dokumen, ajuan.dokumen) }}</strong> untuk <strong>{{ ajuan.nasabah.nama }}</strong>?</p>
+                        <div class="mb-3">
+                          <label class="form-label">Catatan (opsional)</label>
+                          <textarea name="catatan" class="form-control" rows="3"></textarea>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-success">Setujui</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="modal fade" id="modalTolak{{ ajuan.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <form method="POST" action="{{ url_for('main.admin_proses_ajuan_dokumen', ajuan_id=ajuan.id) }}">
+                      <input type="hidden" name="action" value="tolak">
+                      <input type="hidden" name="status" value="{{ status_filter }}">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Tolak Pengajuan</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                      </div>
+                      <div class="modal-body">
+                        <p>Tolak pengajuan perubahan <strong>{{ doc_labels.get(ajuan.dokumen, ajuan.dokumen) }}</strong> untuk <strong>{{ ajuan.nasabah.nama }}</strong>?</p>
+                        <div class="mb-3">
+                          <label class="form-label">Alasan Penolakan</label>
+                          <textarea name="catatan" class="form-control" rows="3" required></textarea>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-danger">Tolak</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              {% else %}
+              <small class="text-muted">
+                {% if ajuan.catatan_admin %}
+                <i class="bi bi-chat-text"></i> {{ ajuan.catatan_admin }}
+                {% endif %}
+              </small>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle me-2"></i>Tidak ada pengajuan dokumen{% if status_filter != 'semua' %} dengan status ini{% endif %}.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

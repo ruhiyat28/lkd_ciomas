@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% block title %}Bersihkan Data{% endblock %}
+{% block page_title %}Bersihkan Data{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1 class="text-danger"><i class="bi bi-trash3-fill me-2"></i>Bersihkan Data</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('import_export.index') }}">Import/Export</a></li>
+    <li class="breadcrumb-item active text-danger">Bersihkan Data</li>
+  </ol></nav>
+</div>
+
+<div class="alert alert-danger d-flex align-items-start gap-3 mb-4">
+  <i class="bi bi-exclamation-triangle-fill fs-4 mt-1"></i>
+  <div>
+    <strong>PERHATIAN!</strong> Fitur ini akan menghapus data secara permanen dari database.
+    Data yang sudah dihapus <strong>tidak dapat dikembalikan</strong>. Pastikan sudah backup terlebih dahulu.
+    Hanya Admin yang dapat menggunakan fitur ini.
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card border-danger">
+      <div class="card-header bg-danger text-white fw-bold">
+        <i class="bi bi-trash3 me-2"></i>Pilih Modul yang Akan Dibersihkan
+      </div>
+      <div class="card-body">
+        <form method="POST" id="formBersihkan">
+          <p class="text-muted mb-3" style="font-size:.84rem;">Pilih satu atau lebih modul. Perhatikan urutan ketergantungan data — hapus dari bawah ke atas.</p>
+
+          {% set modules = [
+            ('pembayaran', 'bi-wallet2', 'warning', 'Pembayaran / Angsuran', 'Semua data pembayaran dan kuitansi', 'Tidak berdampak ke pinjaman'),
+            ('jurnal', 'bi-journal-text', 'info', 'Jurnal Akuntansi', 'Semua jurnal umum, detail jurnal, dan saldo awal', 'Berdampak ke semua laporan keuangan'),
+            ('pinjaman', 'bi-cash-stack', 'primary', 'Pinjaman', 'Semua data SPK pinjaman dan rincian SPP kelompok', 'Hapus pembayaran dulu sebelum pinjaman'),
+            ('nasabah', 'bi-people-fill', 'success', 'Nasabah & Anggota', 'Semua data nasabah (mandiri + kelompok) dan anggota kelompok', 'Hapus pinjaman dulu sebelum nasabah'),
+            ('aset', 'bi-building', 'secondary', 'Manajemen Aset', 'Semua data aset tetap tercatat', 'Tidak berdampak ke data lain')
+          ] %}
+
+          {% for val, icon, color, label, desc, warning in modules %}
+          <div class="form-check border rounded p-3 mb-3 position-relative" style="padding-left:3rem !important;">
+            <input class="form-check-input" type="checkbox" name="modul[]" value="{{ val }}" id="mod_{{ val }}">
+            <label class="form-check-label w-100" for="mod_{{ val }}">
+              <div class="d-flex align-items-center gap-2 mb-1">
+                <i class="bi {{ icon }} text-{{ color }}"></i>
+                <strong>{{ label }}</strong>
+              </div>
+              <div style="font-size:.78rem;color:#555;">{{ desc }}</div>
+              <div class="badge bg-{{ color }}-subtle text-{{ color }}-emphasis mt-1" style="font-size:.7rem;">⚠ {{ warning }}</div>
+            </label>
+          </div>
+          {% endfor %}
+
+          <hr class="my-4">
+          <div class="mb-3">
+            <label class="form-label fw-bold text-danger">Konfirmasi Password Admin <span class="text-danger">*</span></label>
+            <input type="password" name="password" class="form-control border-danger" placeholder="Masukkan password Anda untuk konfirmasi" required>
+            <div class="form-text">Masukkan password akun admin Anda sebagai konfirmasi penghapusan.</div>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="button" class="btn btn-danger btn-lg" onclick="konfirmasiBersihkan()">
+              <i class="bi bi-trash3-fill me-2"></i>Bersihkan Data Terpilih
+            </button>
+            <a href="{{ url_for('import_export.index') }}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left me-2"></i>Batal, Kembali
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header fw-bold"><i class="bi bi-info-circle me-2 text-info"></i>Panduan Urutan Penghapusan</div>
+      <div class="card-body" style="font-size:.83rem;">
+        <p>Karena data saling terhubung, hapus dalam urutan ini agar tidak terjadi error:</p>
+        <ol class="mb-0">
+          <li class="mb-2"><strong>Pembayaran</strong> — tidak bergantung ke modul lain</li>
+          <li class="mb-2"><strong>Jurnal Akuntansi</strong> — dapat dihapus kapan saja</li>
+          <li class="mb-2"><strong>Pinjaman</strong> — hapus setelah pembayaran bersih</li>
+          <li class="mb-2"><strong>Nasabah</strong> — hapus setelah pinjaman bersih</li>
+          <li><strong>Aset</strong> — independen, dapat dihapus kapan saja</li>
+        </ol>
+      </div>
+    </div>
+    <div class="card border-warning">
+      <div class="card-header bg-warning text-dark fw-bold"><i class="bi bi-shield-check me-2"></i>Sebelum Menghapus</div>
+      <div class="card-body" style="font-size:.83rem;">
+        <ul class="mb-0">
+          <li class="mb-1">Export data penting ke Excel terlebih dahulu</li>
+          <li class="mb-1">Backup file database (<code>lkd.db</code>) secara manual</li>
+          <li class="mb-1">Pastikan tidak ada user lain yang sedang mengakses sistem</li>
+          <li>Tindakan ini tidak dapat dibatalkan (no undo)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function konfirmasiBersihkan() {
+  const checked = document.querySelectorAll('input[name="modul[]"]:checked');
+  if (checked.length === 0) {
+    notif('Pilih minimal satu modul yang akan dibersihkan.', 'warning'); return;
+  }
+  const labels = Array.from(checked).map(c => c.closest('.form-check-label strong')?.textContent || c.value);
+  const pwd = document.querySelector('input[name="password"]').value;
+  if (!pwd) {
+    notif('Masukkan password konfirmasi terlebih dahulu.', 'warning'); return;
+  }
+  Swal.fire({
+    title: 'Konfirmasi Penghapusan Data',
+    html: '<div style="text-align:left;font-size:.85rem;">Modul yang akan dihapus:<br><strong>• ' + labels.join('<br>• ') + '</strong><br><br><span style="color:#dc2626;font-weight:600;">Data yang dihapus TIDAK DAPAT DIKEMBALIKAN!</span></div>',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, hapus',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    reverseButtons: true,
+    position: 'center',
+    customClass: { popup: 'swal-popup-top-right', title: 'swal-title', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' }
+  }).then(function(result) {
+    if (result.isConfirmed) document.getElementById('formBersihkan').submit();
+  });
+}
+</script>
+{% endblock %}

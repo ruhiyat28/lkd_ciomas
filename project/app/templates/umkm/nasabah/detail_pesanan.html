@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block title %}Detail Pesanan{% endblock %}
+{% block page_title %}Detail Pesanan{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Detail Pesanan</h1>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('umkm.katalog') }}">UMKM</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('umkm.pesanan_saya') }}">Pesanan Saya</a></li>
+      <li class="breadcrumb-item active">{{ pesanan.nomor_pesanan }}</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-8">
+    <div class="card shadow-sm border-0 rounded-4 mb-3">
+      <div class="card-header bg-white">
+        <h5 class="mb-0">{{ pesanan.nomor_pesanan }}</h5>
+      </div>
+      <div class="card-body">
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="mb-2"><strong>Tanggal:</strong> {{ pesanan.tanggal_pesanan.strftime('%d/%m/%Y %H:%M') }}</div>
+            <div class="mb-2"><strong>Penjual:</strong> {{ pesanan.penjual.nama }}</div>
+          </div>
+          <div class="col-md-6">
+            {% if pesanan.tanggal_diproses %}
+            <div class="mb-2"><strong>Diproses:</strong> {{ pesanan.tanggal_diproses.strftime('%d/%m/%Y %H:%M') }}</div>
+            {% endif %}
+            {% if pesanan.tanggal_selesai %}
+            <div class="mb-2"><strong>Selesai:</strong> {{ pesanan.tanggal_selesai.strftime('%d/%m/%Y %H:%M') }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- 2 Tombol Status -->
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <div class="dropdown">
+              <button class="btn btn-secondary w-100 dropdown-toggle" data-bs-toggle="dropdown">
+                Status Pesanan
+              </button>
+              <ul class="dropdown-menu w-100">
+                <li><a class="dropdown-item" href="#">Semua</a></li>
+                <li><a class="dropdown-item" href="#">Menunggu</a></li>
+                <li><a class="dropdown-item" href="#">Diproses</a></li>
+                <li><a class="dropdown-item" href="#">Dikirim</a></li>
+                <li><a class="dropdown-item" href="#">Selesai</a></li>
+                <li><a class="dropdown-item" href="#">Dibatalkan</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="dropdown">
+              <button class="btn btn-secondary w-100 dropdown-toggle" data-bs-toggle="dropdown">
+                Status Pembayaran
+              </button>
+              <ul class="dropdown-menu w-100">
+                <li><a class="dropdown-item" href="#">Semua</a></li>
+                <li><a class="dropdown-item" href="#">Belum Bayar</a></li>
+                <li><a class="dropdown-item" href="#">Menunggu Konfirmasi</a></li>
+                <li><a class="dropdown-item" href="#">Lunas</a></li>
+                <li><a class="dropdown-item" href="#">Gagal</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {% if pesanan.status_pembayaran in ['belum_bayar', 'gagal'] %}
+        <a href="{{ url_for('umkm.bayar_pesanan', id=pesanan.nomor_pesanan) }}" class="btn btn-primary w-100 mb-2">
+          <i class="bi bi-credit-card"></i> Bayar Sekarang
+        </a>
+        {% endif %}
+        
+        {% if pesanan.catatan_pembeli %}
+        <div class="alert alert-light">
+          <strong>Catatan Anda:</strong><br>
+          {{ pesanan.catatan_pembeli }}
+        </div>
+        {% endif %}
+        
+        {% if pesanan.catatan_penjual %}
+        <div class="alert alert-info">
+          <strong>Catatan Penjual:</strong><br>
+          {{ pesanan.catatan_penjual }}
+        </div>
+        {% endif %}
+        
+        {% if pesanan.catatan_admin %}
+        <div class="alert alert-secondary">
+          <strong>Catatan Admin:</strong><br>
+          {{ pesanan.catatan_admin }}
+        </div>
+        {% endif %}
+        
+        <h6 class="mt-4 mb-3">Produk yang Dipesan</h6>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Produk</th>
+                <th>Jumlah</th>
+                <th>Harga Satuan</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for detail in pesanan.detail_list %}
+              <tr>
+                <td>{{ detail.produk.nama_produk }}</td>
+                <td>{{ detail.jumlah }} {{ detail.produk.satuan }}</td>
+                <td>Rp {{ detail.harga_satuan|number_format }}</td>
+                <td>Rp {{ detail.subtotal|number_format }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" class="text-end fw-bold">Total:</td>
+                <td class="fw-bold">Rp {{ pesanan.total_harga|number_format }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        {% if pesanan.status_pembayaran == 'menunggu_konfirmasi' and not pesanan.bukti_pembayaran %}
+        <hr class="my-4">
+        <h6 class="mb-3">Upload Bukti Pembayaran</h6>
+        <form method="POST" action="{{ url_for('umkm.konfirmasi_bayar', id=pesanan.nomor_pesanan) }}" enctype="multipart/form-data" class="mb-4">
+          <div class="input-group">
+            <input type="file" class="form-control" name="bukti_pembayaran" accept="image/*" required>
+            <button type="submit" class="btn btn-success">
+              <i class="bi bi-upload"></i> Upload
+            </button>
+          </div>
+          <small class="text-muted">Format: JPG, PNG, GIF. Maksimal 5MB</small>
+        </form>
+        {% endif %}
+        
+        <div class="mt-3">
+          <a href="{{ url_for('umkm.pesanan_saya') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Kembali
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <!-- Info Pengiriman -->
+    {% if pesanan.kurir or pesanan.nomor_resi or pesanan.alamat_pengiriman %}
+    <div class="card shadow-sm border-0 rounded-4 mb-3">
+      <div class="card-header bg-white">
+        <h6 class="mb-0"><i class="bi bi-truck"></i> Informasi Pengiriman</h6>
+      </div>
+      <div class="card-body">
+        {% if pesanan.kurir %}
+        <div class="mb-2"><strong>Kurir:</strong> {{ pesanan.kurir }}</div>
+        {% endif %}
+        {% if pesanan.nomor_resi %}
+        <div class="mb-2"><strong>No. Resi:</strong> {{ pesanan.nomor_resi }}</div>
+        {% endif %}
+        {% if pesanan.alamat_pengiriman %}
+        <div class="mb-2"><strong>Alamat:</strong> {{ pesanan.alamat_pengiriman }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Cara Pembayaran -->
+    {% if pesanan.status_pembayaran in ['belum_bayar', 'gagal'] %}
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-header bg-white">
+        <h6 class="mb-0"><i class="bi bi-info-circle"></i> Cara Pembayaran</h6>
+      </div>
+      <div class="card-body">
+        <ol class="ps-3 mb-0">
+          <li class="mb-2">Klik "Bayar Sekarang"</li>
+          <li class="mb-2">Pilih metode pembayaran (transfer/COD)</li>
+          <li class="mb-2">Transfer sesuai total ke rekening yang muncul</li>
+          <li class="mb-2">Upload bukti pembayaran</li>
+          <li class="mb-0">Tunggu konfirmasi dari admin</li>
+        </ol>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

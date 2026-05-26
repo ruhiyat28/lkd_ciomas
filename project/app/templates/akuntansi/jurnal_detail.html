@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}{{ j.no_jurnal }}{% endblock %}
+{% block page_title %}Detail Jurnal{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between">
+  <div><h1 class="money">{{ j.no_jurnal }}</h1>
+  <nav><ol class="breadcrumb mb-0"><li class="breadcrumb-item"><a href="{{ url_for('akuntansi.jurnal') }}">Jurnal</a></li><li class="breadcrumb-item active">{{ j.no_jurnal }}</li></ol></nav></div>
+  <a href="{{ url_for('akuntansi.jurnal_cetak', id=j.id) }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-printer me-1"></i>Cetak</a>
+</div>
+<div class="row g-3">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-info-circle me-2"></i>Info Jurnal</div>
+      <div class="card-body" style="font-size:.84rem;">
+        <table class="table table-sm table-borderless mb-0">
+          <tr><td class="text-muted">No. Jurnal</td><td class="money fw-bold">{{ j.no_jurnal }}</td></tr>
+          <tr><td class="text-muted">Tanggal</td><td>{{ j.tanggal.strftime('%d %B %Y') }}</td></tr>
+          <tr><td class="text-muted">Keterangan</td><td>{{ j.keterangan }}</td></tr>
+          <tr><td class="text-muted">Referensi</td><td class="money">{{ j.referensi or '-' }}</td></tr>
+          <tr><td class="text-muted">Tipe</td><td><span class="badge bg-secondary">{{ j.tipe|title }}</span></td></tr>
+          <tr><td class="text-muted">Status</td><td><span class="badge bg-success">{{ j.status|title }}</span></td></tr>
+          <tr class="table-light"><td class="fw-bold">Total Debit</td><td class="money fw-bold text-primary">Rp {{ '{:,.0f}'.format(j.total_debit) }}</td></tr>
+          <tr class="table-light"><td class="fw-bold">Total Kredit</td><td class="money fw-bold text-danger">Rp {{ '{:,.0f}'.format(j.total_kredit) }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-table me-2"></i>Baris Jurnal</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0" style="font-size:.83rem;">
+          <thead><tr><th>Kode</th><th>Nama Akun</th><th>Keterangan</th><th class="text-end">Debit</th><th class="text-end">Kredit</th></tr></thead>
+          <tbody>
+            {% for d in j.detail %}
+            <tr>
+              <td class="money">{{ d.akun.kode }}</td>
+              <td>{{ d.akun.nama }}</td>
+              <td style="font-size:.78rem;">{{ d.keterangan or '' }}</td>
+              <td class="text-end money {% if d.debit %}text-primary fw-bold{% else %}text-muted{% endif %}">{{ '{:,.0f}'.format(d.debit) if d.debit else '-' }}</td>
+              <td class="text-end money {% if d.kredit %}text-danger fw-bold{% else %}text-muted{% endif %}">{{ '{:,.0f}'.format(d.kredit) if d.kredit else '-' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="table-light fw-bold">
+            <tr><td colspan="3" class="text-end">TOTAL</td>
+              <td class="text-end money">{{ '{:,.0f}'.format(j.total_debit) }}</td>
+              <td class="text-end money">{{ '{:,.0f}'.format(j.total_kredit) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

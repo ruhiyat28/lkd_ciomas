@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Tutup Buku Tahunan{% endblock %}
+{% block page_title %}Tutup Buku Tahunan{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Tutup Buku Tahunan</h1>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('pengaturan.index') }}">Pengaturan</a></li>
+      <li class="breadcrumb-item active">Tutup Buku</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="alert alert-info">
+  <i class="bi bi-info-circle me-1"></i>
+  Tutup buku akan memindahkan saldo akun Pendapatan dan Beban ke akun <strong>Laba Ditahan</strong>,
+  sehingga laba/rugi tahun berjalan tidak bercampur dengan tahun berikutnya.
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-journal-check me-1"></i> Status Tutup Buku</div>
+  <div class="card-body p-0">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Tahun</th>
+          <th>Status</th>
+          <th>Laba/Rugi</th>
+          <th>Keterangan</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tahun_list %}
+        <tr>
+          <td><strong>{{ t }}</strong></td>
+          <td>
+            {% if ringkasan[t].status == 'ditutup' %}
+            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Ditutup</span>
+            {% else %}
+            <span class="badge bg-warning text-dark"><i class="bi bi-hourglass me-1"></i>Terbuka</span>
+            {% endif %}
+          </td>
+          <td class="money">
+            {% if ringkasan[t].data %}
+            Rp {{ "{:,.0f}".format(ringkasan[t].data.laba_berjalan) }}
+            {% elif ringkasan[t].info %}
+            Rp {{ "{:,.0f}".format(ringkasan[t].info.laba_berjalan) }}
+            {% else %}
+            -
+            {% endif %}
+          </td>
+          <td style="font-size:0.85rem;">
+            {% if ringkasan[t].status == 'ditutup' %}
+            Ditutup {{ ringkasan[t].info.dicatat_oleh }} per {{ ringkasan[t].info.tanggal }}
+            {% else %}
+            Belum ditutup
+            {% endif %}
+          </td>
+          <td class="text-end">
+            {% if ringkasan[t].status == 'terbuka' and t < tahun_sekarang %}
+            <form method="POST" data-confirm="Tutup buku tahun {{ t }}? Semua saldo Pendapatan dan Beban tahun {{ t }} akan dipindahkan ke Laba Ditahan. Lanjutkan?">
+              <input type="hidden" name="tahun" value="{{ t }}">
+              <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-lock me-1"></i>Tutup Buku</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if tahun_list %}
+<div class="card mt-3">
+  <div class="card-header"><i class="bi bi-info-circle me-1"></i> Keterangan</div>
+  <div class="card-body" style="font-size:0.85rem;">
+    <ul class="mb-0">
+      <li>Tutup buku hanya dapat dilakukan untuk tahun yang sudah berakhir (tahun < {{ tahun_sekarang }}).</li>
+      <li>Proses tutup buku bersifat <strong>permanen</strong>. Pastikan data tahun tersebut sudah lengkap dan benar.</li>
+      <li>Setelah tutup buku, saldo akun Pendapatan (gol 4, 7) dan Beban (gol 5, 6) akan dinolkan dan laba/rugi dipindahkan ke Laba Ditahan.</li>
+    </ul>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

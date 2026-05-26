@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Laporan Perubahan Ekuitas{% endblock %}
+{% block page_title %}Laporan Perubahan Ekuitas{% endblock %}
+{% block content %}
+
+<div class="page-header d-flex justify-content-between align-items-start"><h1>Laporan Perubahan Ekuitas</h1>
+  <a href="?{{ request.query_string.decode() }}&cetak=1" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-printer me-1"></i>Cetak</a></div>
+<div class="card mb-3"><div class="card-body py-3">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-2"><label class="form-label">Dari</label><input type="date" name="dari" class="form-control" value="{{ tgl_dari_str }}"></div>
+    <div class="col-md-2"><label class="form-label">Sampai</label><input type="date" name="sampai" class="form-control" value="{{ tgl_sampai_str }}"></div>
+    <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Tampilkan</button></div>
+  </form>
+</div></div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.84rem;">
+      <tbody>
+        <tr class="table-light"><td colspan="2" class="fw-bold">Modal dan Ekuitas</td></tr>
+        <tr><td class="ps-4">Modal Awal Periode</td><td class="text-end money">Rp {{ "{:,.0f}".format(modal_awal) }}</td></tr>
+        <tr><td class="ps-4">Laba Ditahan Awal</td><td class="text-end money">Rp {{ "{:,.0f}".format(laba_awal) }}</td></tr>
+        <tr><td class="ps-4 {{ "text-success" if laba_periode>=0 else "text-danger" }}">Laba/Rugi Periode Berjalan</td>
+            <td class="text-end money {{ "text-success" if laba_periode>=0 else "text-danger" }}">Rp {{ "{:,.0f}".format(laba_periode) }}</td></tr>
+        <tr class="table-primary fw-bold">
+          <td>Total Ekuitas Akhir Periode</td>
+          <td class="text-end money">Rp {{ "{:,.0f}".format(ekuitas_akhir) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

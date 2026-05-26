@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Saldo Awal Jurnal{% endblock %}
+{% block page_title %}Saldo Awal Jurnal{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Input Saldo Awal</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('pengaturan.index') }}">Pengaturan</a></li>
+    <li class="breadcrumb-item active">Saldo Awal Jurnal</li>
+  </ol></nav>
+</div>
+
+{% if existing %}
+<div class="card mb-3">
+  <div class="card-header"><i class="bi bi-database-fill me-2 text-success"></i>Saldo Awal Tersimpan</div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0" style="font-size:.82rem;">
+      <thead><tr><th>Kode</th><th>Nama Akun</th><th class="text-end">Debit</th><th class="text-end">Kredit</th></tr></thead>
+      <tbody>
+        {% for r in existing %}
+        <tr>
+          <td class="money">{{ r.kode }}</td><td>{{ r.nama }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(r.d) if r.d else '-' }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(r.k) if r.k else '-' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-pencil-square me-2 text-primary"></i>Tambah Saldo Awal</div>
+  <div class="card-body">
+    <div class="alert alert-info py-2 mb-3" style="font-size:.82rem;">
+      <i class="bi bi-info-circle me-1"></i>
+      Masukkan saldo awal akun per tanggal awal pencatatan (biasanya 1 Januari tahun berjalan).
+      Hanya akun level 4 yang dapat diisi.
+    </div>
+    <form method="POST">
+      <div class="row g-3 mb-3">
+        <div class="col-md-3">
+          <label class="form-label">Tanggal Saldo Awal</label>
+          <input type="date" name="tanggal" class="form-control" value="{{ today_str }}" required>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm" style="font-size:.82rem;" id="tblSaldo">
+          <thead><tr><th>Pilih Akun (Kode — Nama)</th><th style="width:180px;">Keterangan</th><th style="width:180px;">Debit (Rp)</th><th style="width:180px;">Kredit (Rp)</th><th style="width:40px;"></th></tr></thead>
+          <tbody id="bodySaldo">
+            <tr>
+              <td>
+                <select name="akun_id[]" class="form-select form-select-sm" style="font-family:monospace;">
+                  <option value="">-- Pilih Akun --</option>
+                  {% for a in akun_list %}
+                  <option value="{{ a.id }}" data-nama="{{ a.nama }}" data-saldo="{{ a.saldo_normal }}">
+                    {{ a.kode }} — {{ a.nama }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td><input type="text" name="keterangan[]" class="form-control form-control-sm" placeholder="Saldo Awal"></td>
+              <td><input type="text" name="debit[]" class="form-control form-control-sm money" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></td>
+              <td><input type="text" name="kredit[]" class="form-control form-control-sm money" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="d-flex gap-2 mb-3">
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="tambahBaris()"><i class="bi bi-plus-lg me-1"></i>Tambah Baris</button>
+      </div>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-save-fill me-1"></i>Simpan Saldo Awal</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+
+function tambahBaris() {
+  const tbody = document.getElementById('bodySaldo');
+  const first = tbody.rows[0].cloneNode(true);
+  first.querySelector('select').value = '';
+  first.querySelectorAll('input').forEach(i => i.value = '');
+  const td = first.cells[4];
+  td.innerHTML = '<button type="button" class="btn btn-outline-danger btn-sm" style="padding:2px 6px;" onclick="this.closest(\'tr\').remove()"><i class="bi bi-trash"></i></button>';
+  tbody.appendChild(first);
+}
+</script>
+{% endblock %}

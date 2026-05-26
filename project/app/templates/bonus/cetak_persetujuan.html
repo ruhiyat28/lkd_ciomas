@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Surat Persetujuan Klaim Bonus - {{ petugas.nama_lengkap }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 12pt;
+            line-height: 1.4;
+            color: #000;
+            margin: 0;
+            padding: 0;
+        }
+        .kop-surat {
+            text-align: center;
+            border-bottom: 3px double #000;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+        .kop-surat h1 { margin: 0; font-size: 16pt; text-transform: uppercase; }
+        .kop-surat h2 { margin: 0; font-size: 14pt; text-transform: uppercase; }
+        .kop-surat p { margin: 2px 0; font-size: 10pt; font-style: italic; }
+
+        .judul-surat {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .judul-surat h3 {
+            margin: 0;
+            text-decoration: underline;
+            text-transform: uppercase;
+        }
+        .judul-surat p { margin: 5px 0; font-size: 11pt; }
+
+        .isi-surat { margin-bottom: 20px; text-align: justify; }
+        
+        .identitas-tabel {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .identitas-tabel td { padding: 3px 0; }
+        .identitas-tabel td:first-child { width: 150px; }
+        .identitas-tabel td:nth-child(2) { width: 10px; }
+
+        .data-tabel {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 10pt;
+        }
+        .data-tabel th, .data-tabel td {
+            border: 1px solid #000;
+            padding: 6px;
+        }
+        .data-tabel th { background: #f0f0f0; }
+        .text-end { text-align: right; }
+        .text-center { text-align: center; }
+
+        .total-row {
+            font-weight: bold;
+            background: #f9f9f9;
+        }
+
+        .penutup { margin-bottom: 40px; }
+
+        .ttd-container {
+            width: 100%;
+            margin-top: 30px;
+        }
+        .ttd-block {
+            float: left;
+            width: 33%;
+            text-align: center;
+        }
+        .ttd-space { height: 80px; position: relative; }
+        .ttd-name { font-weight: bold; text-decoration: underline; }
+        
+        .qr-sig {
+            max-height: 70px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.8;
+        }
+
+        @media print {
+            .no-print { display: none; }
+            body { -webkit-print-color-adjust: exact; }
+        }
+
+        .btn-print {
+            background: #0d6efd;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="text-align: center;">
+        <button class="btn-print" onclick="window.print()">Cetak Surat</button>
+    </div>
+
+    <div class="kop-surat">
+        <h1>BUM DESA BERSAMA</h1>
+        <h2>UNIT PENGELOLA KEGIATAN (UPK) CIOMAS LKD</h2>
+        <p>Kecamatan Ciomas, Kabupaten Bogor, Jawa Barat</p>
+    </div>
+
+    <div class="judul-surat">
+        <h3>SURAT PERSETUJUAN KLAIM BONUS PENAGIHAN</h3>
+        <p>Nomor: {{ now.strftime('%Y') }}/SPKB/{{ petugas.id }}/{{ bonus_list[0].tanggal_klaim.strftime('%m') }}</p>
+    </div>
+
+    <div class="isi-surat">
+        Menerangkan bahwa berdasarkan hasil verifikasi terhadap penagihan angsuran pinjaman Dana Bergulir, maka dengan ini disetujui pemberian bonus penagihan kepada:
+    </div>
+
+    <table class="identitas-tabel">
+        <tr>
+            <td>Nama Petugas</td>
+            <td>:</td>
+            <td><strong>{{ petugas.nama_lengkap }}</strong></td>
+        </tr>
+        <tr>
+            <td>Jabatan/Role</td>
+            <td>:</td>
+            <td>{{ petugas.role_label() }}</td>
+        </tr>
+        <tr>
+            <td>Periode Persetujuan</td>
+            <td>:</td>
+            <td>{{ tgl_dari.strftime('%d/%m/%Y') }} s.d {{ tgl_sampai.strftime('%d/%m/%Y') }}</td>
+        </tr>
+    </table>
+
+    <div class="isi-surat">
+        Rincian bonus penagihan yang disetujui adalah sebagai berikut:
+    </div>
+
+    <table class="data-tabel">
+        <thead>
+            <tr>
+                <th width="30">No</th>
+                <th width="100">Tgl Bayar</th>
+                <th width="120">No. Kuitansi</th>
+                <th>Nama Nasabah</th>
+                <th width="80">Thn Tunggakan</th>
+                <th width="100" class="text-end">Jumlah Bayar</th>
+                <th width="100" class="text-end">Jumlah Bonus</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in bonus_list %}
+            <tr>
+                <td class="text-center">{{ loop.index }}</td>
+                <td>{{ b.pembayaran.tanggal_bayar.strftime('%d/%m/%Y') }}</td>
+                <td>{{ b.pembayaran.no_kuitansi }}</td>
+                <td>{{ b.pembayaran.pinjaman.nasabah.nama }}</td>
+                <td class="text-center">{{ b.tahun_tunggakan }}</td>
+                <td class="text-end">{{ b.jumlah_bayar|number_format }}</td>
+                <td class="text-end">{{ b.jumlah_bonus|number_format }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="6" class="text-end">TOTAL BONUS DISERAHKAN:</td>
+                <td class="text-end">Rp {{ total_bonus|number_format }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="penutup">
+        Terbilang: <em># {{ terbilang(total_bonus) }} Rupiah #</em>
+    </div>
+
+    <div class="isi-surat">
+        Demikian surat persetujuan ini diterbitkan untuk dipergunakan sebagaimana mestinya sebagai dasar pencairan dana di bagian keuangan.
+    </div>
+
+    <div class="ttd-container">
+        <div class="ttd-block">
+            <p>Penerima,</p>
+            <div class="ttd-space"></div>
+            <p class="ttd-name">{{ petugas.nama_lengkap }}</p>
+            <p>{{ petugas.role_label() }}</p>
+        </div>
+        
+        <div class="ttd-block" style="float: right;">
+            <p>Ciomas, {{ now.strftime('%d %B %Y') }}</p>
+            <p>Menyetujui,</p>
+            <p><strong>Direktur BUM Desa Bersama</strong></p>
+            <div class="ttd-space">
+                {% set sig = get_role_signature_qr('direktur_nama') %}
+                {% if sig %}<img src="{{ sig }}" class="qr-sig">{% endif %}
+            </div>
+            <p class="ttd-name">{{ pengaturan.get('direktur_nama', '.........................') }}</p>
+        </div>
+
+        <div style="clear: both;"></div>
+        
+        <div class="ttd-block" style="float: none; margin: 0 auto; display: block;">
+            <p>Mengetahui,</p>
+            <p><strong>Manajer LKD</strong></p>
+            <div class="ttd-space">
+                {% set sig_man = get_role_signature_qr('manajer_lkd_nama') %}
+                {% if sig_man %}<img src="{{ sig_man }}" class="qr-sig">{% endif %}
+            </div>
+            <p class="ttd-name">{{ pengaturan.get('manajer_lkd_nama', '.........................') }}</p>
+        </div>
+    </div>
+
+</body>
+</html>

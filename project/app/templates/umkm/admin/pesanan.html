@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+{% block title %}Pesanan & Pembayaran UMKM{% endblock %}
+{% block page_title %}Pesanan & Pembayaran UMKM{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1>Pesanan & Pembayaran UMKM</h1>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('umkm.admin_dashboard') }}">UMKM</a></li>
+        <li class="breadcrumb-item active">Pesanan</li>
+      </ol>
+    </nav>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="card-body">
+    <ul class="nav nav-tabs mb-3" id="pesananTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link {% if tab != 'pembayaran' %}active{% endif %}" id="tab-pesanan" data-bs-toggle="tab" data-bs-target="#panel-pesanan" type="button" role="tab">
+          <i class="bi bi-bag"></i> Status Pesanan
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link {% if tab == 'pembayaran' %}active{% endif %}" id="tab-pembayaran" data-bs-toggle="tab" data-bs-target="#panel-pembayaran" type="button" role="tab">
+          <i class="bi bi-credit-card"></i> Status Pembayaran
+        </button>
+      </li>
+    </ul>
+    
+    <div class="tab-content" id="pesananTabContent">
+      <div class="tab-pane fade {% if tab != 'pembayaran' %}show active{% endif %}" id="panel-pesanan" role="tabpanel">
+        <div class="filter-group mb-3">
+          <span class="filter-label">Filter Status:</span>
+          <div class="filter-options">
+            <a href="{{ url_for('umkm.admin_pesanan', tab='pesanan', status='') }}" 
+               class="filter-btn {% if not status %}active{% endif %}">
+              Semua
+            </a>
+            {% for s, l in [('menunggu', 'Menunggu'), ('diproses', 'Diproses'), ('dikirim', 'Dikirim'), 
+                            ('selesai', 'Selesai'), ('dibatalkan', 'Dibatalkan')] %}
+            <a href="{{ url_for('umkm.admin_pesanan', tab='pesanan', status=s) }}" 
+               class="filter-btn {% if status==s %}active{% endif %}">
+              {{ l }}
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>No. Pesanan</th>
+                <th>Tanggal</th>
+                <th>Pembeli</th>
+                <th>Penjual</th>
+                <th>Total</th>
+                <th>Pembayaran</th>
+                <th>Status Pesanan</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for pesanan in pesanan_list %}
+              <tr class="{% if pesanan.status_pembayaran == 'menunggu_konfirmasi' %}table-info{% endif %}">
+                <td><strong>{{ pesanan.nomor_pesanan }}</strong></td>
+                <td>{{ pesanan.tanggal_pesanan.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ pesanan.pembeli.nama }}</td>
+                <td>{{ pesanan.penjual.nama }}</td>
+                <td>Rp {{ pesanan.total_harga|number_format }}</td>
+                <td>
+                  <span class="badge {% if pesanan.status_pembayaran == 'lunas' %}bg-success{% elif pesanan.status_pembayaran == 'belum_bayar' %}bg-warning text-dark{% elif pesanan.status_pembayaran == 'menunggu_konfirmasi' %}bg-info{% else %}bg-danger{% endif %}">
+                    {{ pesanan.status_pembayaran_label() }}
+                  </span>
+                </td>
+                <td>
+                  {% if pesanan.status == 'menunggu' %}
+                  <span class="badge bg-warning text-dark">Menunggu</span>
+                  {% elif pesanan.status == 'diproses' %}
+                  <span class="badge bg-info">Diproses</span>
+                  {% elif pesanan.status == 'dikirim' %}
+                  <span class="badge bg-primary">Dikirim</span>
+                  {% elif pesanan.status == 'selesai' %}
+                  <span class="badge bg-success">Selesai</span>
+                  {% else %}
+                  <span class="badge bg-danger">Dibatalkan</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="{{ url_for('umkm.admin_detail_pesanan', id=pesanan.nomor_pesanan) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i> Detail
+                  </a>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="8" class="text-center text-muted py-4">Belum ada pesanan.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <div class="tab-pane fade {% if tab == 'pembayaran' %}show active{% endif %}" id="panel-pembayaran" role="tabpanel">
+        <div class="filter-group mb-3">
+          <span class="filter-label">Filter Pembayaran:</span>
+          <div class="filter-options">
+            <a href="{{ url_for('umkm.admin_pesanan', tab='pembayaran', status_pembayaran='') }}" 
+               class="filter-btn {% if not status_pembayaran %}active{% endif %}">
+              Semua
+            </a>
+            {% for sp, lp in [('belum_bayar', 'Belum Bayar'), ('menunggu_konfirmasi', 'Menunggu Konfirmasi'), 
+                              ('lunas', 'Lunas'), ('gagal', 'Gagal')] %}
+            <a href="{{ url_for('umkm.admin_pesanan', tab='pembayaran', status_pembayaran=sp) }}" 
+               class="filter-btn {% if status_pembayaran==sp %}active{% endif %}">
+              {{ lp }}
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>No. Pesanan</th>
+                <th>Tanggal</th>
+                <th>Pembeli</th>
+                <th>Penjual</th>
+                <th>Total</th>
+                <th>Metode</th>
+                <th>Status Pembayaran</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for pesanan in pesanan_list %}
+              <tr class="{% if pesanan.status_pembayaran == 'menunggu_konfirmasi' %}table-info{% endif %}">
+                <td><strong>{{ pesanan.nomor_pesanan }}</strong></td>
+                <td>{{ pesanan.tanggal_pesanan.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ pesanan.pembeli.nama }}</td>
+                <td>{{ pesanan.penjual.nama }}</td>
+                <td>Rp {{ pesanan.total_harga|number_format }}</td>
+                <td>
+                  {% if pesanan.metode_pembayaran %}
+                  <small class="text-muted">{{ pesanan.metode_pembayaran_label() }}</small>
+                  {% else %}
+                  <small class="text-muted">-</small>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge {% if pesanan.status_pembayaran == 'lunas' %}bg-success{% elif pesanan.status_pembayaran == 'belum_bayar' %}bg-warning text-dark{% elif pesanan.status_pembayaran == 'menunggu_konfirmasi' %}bg-info{% else %}bg-danger{% endif %}">
+                    {{ pesanan.status_pembayaran_label() }}
+                  </span>
+                  {% if pesanan.status_pembayaran == 'menunggu_konfirmasi' and pesanan.bukti_pembayaran %}
+                  <br><a href="{{ url_for('static', filename=pesanan.bukti_pembayaran) }}" target="_blank" class="btn btn-sm btn-link p-0" style="font-size: 0.7rem;">
+                    <i class="bi bi-image"></i> Lihat Bukti
+                  </a>
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="{{ url_for('umkm.admin_detail_pesanan', id=pesanan.nomor_pesanan) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i> Detail
+                  </a>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="8" class="text-center text-muted py-4">Belum ada pesanan.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.filter-label {
+  font-weight: 500;
+  color: #94a3b8;
+  font-size: 0.875rem;
+  min-width: 100px;
+}
+.filter-options {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.filter-btn {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  color: #6c757d;
+  background: transparent;
+  border: 1px solid #dee2e6;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.filter-btn:hover {
+  background: #e9ecef;
+  color: #495057;
+  border-color: #adb5bd;
+}
+.filter-btn.active {
+  background: #0d6efd;
+  color: #fff;
+  border-color: #0d6efd;
+}
+.nav-tabs .nav-link {
+  color: #6c757d;
+  font-weight: 500;
+}
+.nav-tabs .nav-link.active {
+  color: #0d6efd;
+  background: #fff;
+  border-bottom: 2px solid #0d6efd;
+}
+@media (max-width: 768px) {
+  .filter-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .filter-label {
+    min-width: auto;
+  }
+}
+</style>
+{% endblock %}

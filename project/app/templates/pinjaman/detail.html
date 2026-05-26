@@ -1,0 +1,671 @@
+{% extends 'base.html' %}
+{% block title %}{{ p.spk }}{% endblock %}
+{% block page_title %}Detail Pinjaman{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div>
+    <h1 class="money">{{ p.spk }}</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('pinjaman.index') }}">Pinjaman</a></li>
+      <li class="breadcrumb-item active">{{ p.spk }}</li>
+    </ol></nav>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    {% if current_user.is_nasabah() %}
+      {% if p.status == 'cair' %}
+      <a href="{{ url_for('pinjaman.cetak_riwayat', id=p.id) }}" target="_blank" class="btn btn-sm btn-primary"><i class="bi bi-printer-fill me-1"></i>Riwayat dan Estimasi</a>
+      <a href="{{ url_for('pinjaman.cetak_kartu_angsuran', id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-info"><i class="bi bi-card-text me-1"></i>Kartu Angsuran</a>
+      {% endif %}
+      {% if p.status in ['acc_direktur', 'cair', 'lunas'] %}
+      <a href="{{ url_for('pinjaman.cetak_spp', id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>SPP</a>
+      {% endif %}
+      {% if p.status in ['cair', 'lunas'] %}
+      <a href="{{ url_for('pinjaman.cetak_spk', id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>SPK</a>
+      {% endif %}
+    {% else %}
+      {% if p.status == 'cair' %}
+      <a href="{{ url_for('pinjaman.cetak_riwayat', id=p.id) }}" target="_blank" class="btn btn-sm btn-primary"><i class="bi bi-printer-fill me-1"></i>Cetak Riwayat & Estimasi</a>
+      <a href="{{ url_for('pinjaman.cetak_kuitansi_cair', id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-receipt me-1"></i>Kuitansi Cair</a>
+      <a href="{{ url_for('pinjaman.cetak_kartu_angsuran', id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-info"><i class="bi bi-card-text me-1"></i>Kartu Angsuran</a>
+      {% endif %}
+      {% if p.status in ['acc_direktur', 'cair', 'lunas'] %}
+      <a href="{{ url_for('pinjaman.cetak_spp', id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>SPP</a>
+      {% endif %}
+      {% if p.status in ['cair', 'lunas'] %}
+      <a href="{{ url_for('pinjaman.cetak_spk', id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>SPK</a>
+      {% endif %}
+      {% if current_user.is_admin() %}
+      <form method="POST" action="{{ url_for('pinjaman.hapus', id=p.id) }}" class="d-inline" data-confirm="Hapus pinjaman ini?">
+        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+      </form>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Kiri: Info & Workflow -->
+  <div class="col-md-5">
+
+    <!-- Info Nasabah -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-person-fill me-2"></i>Nasabah</div>
+      <div class="card-body" style="font-size:.85rem;">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width:48px;height:48px;flex-shrink:0;">{{ p.nasabah.nama[0] }}</div>
+          <div>
+            <div class="fw-bold">{{ p.nasabah.nama }}</div>
+            <div><span class="badge bg-primary">{{ p.nasabah.nasabah_id }}</span> <span class="badge" style="background:#e0f2fe;color:#0369a1;">{{ p.nasabah.nama_desa }}</span></div>
+          </div>
+        </div>
+        <table class="table table-sm table-borderless mb-0" style="font-size:.82rem;">
+          <tr><td class="text-muted ps-0">NIK</td><td class="money">{{ p.nasabah.nik }}</td></tr>
+          <tr><td class="text-muted ps-0">No. HP</td><td>
+            {% if p.nasabah.no_hp %}
+            <a href="https://wa.me/62{{ p.nasabah.no_hp.lstrip('0') }}" target="_blank"><i class="bi bi-whatsapp text-success"></i> {{ p.nasabah.no_hp }}</a>
+            {% else %}-{% endif %}
+          </td></tr>
+          <tr><td class="text-muted ps-0">Pekerjaan</td><td>{{ p.nasabah.pekerjaan or '-' }}</td></tr>
+          <tr><td class="text-muted ps-0">Jaminan</td><td>{{ p.nasabah.keterangan_jaminan or '-' }}</td></tr>
+        </table>
+        {% if not current_user.is_nasabah() %}
+        <a href="{{ url_for('nasabah.detail', id=p.nasabah.id) }}" class="btn btn-sm btn-outline-primary mt-2 w-100">Lihat Profil Nasabah</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Info Pinjaman -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-cash-stack me-2"></i>Rincian Pinjaman</div>
+      <div class="card-body">
+        <table class="table table-sm table-borderless mb-0" style="font-size:.85rem;">
+          <tr><td class="text-muted">Jumlah</td><td class="text-end money fw-bold text-primary fs-5">Rp {{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</td></tr>
+          <tr><td class="text-muted">Jasa/Bulan</td><td class="text-end">{{ p.jasa_persen }}% flat</td></tr>
+          <tr><td class="text-muted">Tenor</td><td class="text-end">{{ p.tenor }} bulan</td></tr>
+          <tr><td class="text-muted">Tgl Pengajuan</td><td class="text-end">{{ p.tanggal_pengajuan.strftime('%d/%m/%Y') if p.tanggal_pengajuan else '-' }}</td></tr>
+          <tr><td class="text-muted">Tujuan</td><td class="text-end">{{ p.tujuan or '-' }}</td></tr>
+          {% if p.jenis_pinjaman == 'spp' %}
+          <tr class="table-success"><td class="text-muted fw-bold">Jenis</td><td class="text-end"><span class="badge bg-success"><i class="bi bi-people-fill me-1"></i>SPP Kelompok</span></td></tr>
+          {% endif %}
+          {% if p.tanggal_cair %}
+          <tr class="table-light"><td class="text-muted">Tgl Cair</td><td class="text-end fw-bold">{{ p.tanggal_cair.strftime('%d/%m/%Y') }}</td></tr>
+          <tr><td class="text-muted">Mulai Angsuran</td><td class="text-end">{{ p.tanggal_mulai_angsuran.strftime('%d/%m/%Y') if p.tanggal_mulai_angsuran else '-' }}</td></tr>
+          <tr><td class="text-muted">Angsuran/Bln</td><td class="text-end money fw-bold text-success">Rp {{ '{:,.0f}'.format(p.angsuran_total or 0) }}</td></tr>
+<tr><td class="text-muted ps-3" style="font-size:.78rem;">└ Pokok</td><td class="text-end money text-muted" style="font-size:.78rem;">Rp {{ '{:,.0f}'.format(p.angsuran_pokok or 0) }}</td></tr>
+          <tr><td class="text-muted ps-3" style="font-size:.78rem;">└ Jasa</td><td class="text-end money text-muted" style="font-size:.78rem;">Rp {{ '{:,.0f}'.format(p.angsuran_jasa or 0) }}</td></tr>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+
+    {% if p.status == 'cair' %}
+    <!-- Status Pembayaran -->
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between">
+        <span><i class="bi bi-graph-up me-2"></i>Status Pembayaran</span>
+        <span class="badge kolek-{{ kolek }} rounded-pill">Kol {{ kolek }}: {{ kolek_label }}</span>
+      </div>
+      <div class="card-body">
+        {% set persen = (total_pokok_bayar / p.jumlah_pinjaman * 100)|round(1) %}
+        <div class="d-flex justify-content-between mb-1" style="font-size:.8rem;">
+          <span class="text-muted">Progress Pelunasan</span><span class="fw-bold">{{ persen }}%</span>
+        </div>
+        <div class="progress mb-3"><div class="progress-bar bg-success" style="width:{{ persen }}%"></div></div>
+        <table class="table table-sm table-borderless mb-0" style="font-size:.82rem;">
+          <tr><td class="text-muted">Saldo Pokok</td><td class="text-end money fw-bold text-danger">Rp {{ '{:,.0f}'.format(p.get_saldo_pokok()) }}</td></tr>
+          <tr><td class="text-muted">Terbayar (Pokok)</td><td class="text-end money text-success">Rp {{ '{:,.0f}'.format(total_pokok_bayar) }}</td></tr>
+          {% if bulan_nunggak > 0 %}
+          <tr class="table-danger"><td class="fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Tunggakan</td><td class="text-end money fw-bold text-danger">Rp {{ '{:,.0f}'.format(tunggak_pokok + tunggak_jasa) }}</td></tr>
+<tr><td class="text-muted ps-3">└ Pokok</td><td class="text-end money">Rp {{ '{:,.0f}'.format(tunggak_pokok) }}</td></tr>
+          <tr><td class="text-muted ps-3">└ Jasa</td><td class="text-end money">Rp {{ '{:,.0f}'.format(tunggak_jasa) }}</td></tr>
+          <tr><td class="text-muted">Lama Tunggak</td><td class="text-end text-danger fw-bold">{{ bulan_nunggak }} bulan</td></tr>
+          {% endif %}
+        </table>
+        {% if not current_user.is_nasabah() %}
+        <a href="{{ url_for('pembayaran.index', pinjaman_id=p.id) }}" class="btn btn-success btn-sm w-100 mt-2">
+          <i class="bi bi-wallet2 me-1"></i>Input Pembayaran
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Kanan: Alur & Jadwal -->
+  <div class="col-md-7">
+    <!-- Alur Proses -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-diagram-3-fill me-2 text-primary"></i>Alur Proses</div>
+      <div class="card-body">
+
+{% if current_user.is_nasabah() %}
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-dot {{ 'done' if p.status != 'pengajuan' else 'active' }}"><i class="bi bi-{% if p.status != 'pengajuan' %}check-lg{% else %}circle{% endif %}"></i></div>
+            <div class="fw-bold" style="font-size:.85rem;">Pengajuan</div>
+            <div class="text-muted" style="font-size:.78rem;">{{ p.tanggal_pengajuan.strftime('%d/%m/%Y') if p.tanggal_pengajuan else '-' }}</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot {{ 'done' if p.status not in ['pengajuan'] else '' }}"><i class="bi bi-{% if p.status not in ['pengajuan'] %}check-lg{% else %}circle{% endif %}"></i></div>
+            <div class="fw-bold" style="font-size:.85rem;">Cek Dokumen</div>
+            <div class="text-muted" style="font-size:.78rem;">{{ 'Selesai' if p.status not in ['pengajuan'] else 'Menunggu' }}</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot {{ 'done' if p.status in ['acc_direktur','cair','lunas'] else ('active' if p.status == 'verifikasi' else '') }}"><i class="bi bi-{% if p.status in ['acc_direktur','cair','lunas'] %}check-lg{% elif p.status == 'verifikasi' %}circle{% else %}circle{% endif %}"></i></div>
+            <div class="fw-bold" style="font-size:.85rem;">Verifikasi Lapangan</div>
+            <div class="text-muted" style="font-size:.78rem;">{{ 'Selesai' if p.status in ['acc_direktur','cair','lunas'] else ('Diproses' if p.status == 'verifikasi' else 'Menunggu') }}</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot {{ 'done' if p.status in ['acc_direktur','cair','lunas'] else ('active' if p.status == 'acc_direktur' else '') }}"><i class="bi bi-{% if p.status in ['acc_direktur','cair','lunas'] %}check-lg{% elif p.status == 'acc_direktur' %}circle{% else %}circle{% endif %}"></i></div>
+            <div class="fw-bold" style="font-size:.85rem;">ACC Direktur</div>
+            <div class="text-muted" style="font-size:.78rem;">{{ 'Disetujui' if p.status in ['acc_direktur','cair','lunas'] else 'Menunggu' }}</div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot {{ 'done' if p.status in ['cair','lunas'] else '' }}"><i class="bi bi-{% if p.status in ['cair','lunas'] %}check-lg{% else %}circle{% endif %}"></i></div>
+            <div class="fw-bold" style="font-size:.85rem;">Pencairan</div>
+            <div class="text-muted" style="font-size:.78rem;">{{ 'Cair' if p.status in ['cair','lunas'] else 'Menunggu' }}</div>
+          </div>
+          {% if p.status == 'ditolak' %}
+          <div class="timeline-item">
+            <div class="timeline-dot rejected"><i class="bi bi-x-lg"></i></div>
+            <div class="fw-bold text-danger" style="font-size:.85rem;">Ditolak</div>
+            {% if p.catatan_direktur %}<div class="text-muted" style="font-size:.78rem;">{{ p.catatan_direktur }}</div>{% endif %}
+          </div>
+          {% endif %}
+          {% if p.status == 'lunas' %}
+          <div class="timeline-item">
+            <div class="timeline-dot done"><i class="bi bi-trophy-fill"></i></div>
+            <div class="fw-bold text-success" style="font-size:.85rem;">LUNAS</div>
+          </div>
+          {% endif %}
+        </div>
+{% else %}
+        <div class="timeline">
+          <!-- Step 1: Pengajuan -->
+          <div class="timeline-item">
+            <div class="timeline-dot done"><i class="bi bi-check-lg"></i></div>
+            <div class="fw-bold" style="font-size:.85rem;">Pengajuan</div>
+            <div class="text-muted" style="font-size:.78rem;">{{ p.tanggal_pengajuan.strftime('%d/%m/%Y') if p.tanggal_pengajuan else '-' }}</div>
+          </div>
+
+          <!-- Step 2: Cek Dokumen -->
+          <div class="timeline-item">
+            <div class="timeline-dot {{ 'done' if p.status not in ['pengajuan'] else 'active' }}">
+              {% if p.status == 'pengajuan' %}<i class="bi bi-circle-fill" style="font-size:.4rem;"></i>{% else %}<i class="bi bi-check-lg"></i>{% endif %}
+            </div>
+            <div class="fw-bold" style="font-size:.85rem;">Cek Dokumen</div>
+            <div class="mt-2">
+              <a href="{{ url_for('nasabah.detail', id=p.nasabah.id, next=url_for('pinjaman.detail', id=p.id)) }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-eye me-1"></i>Lihat Dokumen
+              </a>
+              {% if p.status == 'pengajuan' and current_user.can_write_pinjaman() %}
+                {% if p.pemeriksaan %}
+                <a href="{{ url_for('pemeriksaan.cetak', pinjaman_id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-secondary ms-2">
+                  <i class="bi bi-printer me-1"></i>Cetak Hasil
+                </a>
+                <a href="{{ url_for('pemeriksaan.form', pinjaman_id=p.id) }}" class="btn btn-sm btn-outline-primary ms-1">
+                  <i class="bi bi-pencil me-1"></i>Edit
+                </a>
+                <span class="badge bg-{{ 'success' if p.pemeriksaan.hasil == 'layak' else 'danger' }} ms-2">
+                  <i class="bi bi-{{ 'check-circle' if p.pemeriksaan.hasil == 'layak' else 'x-circle' }}-fill me-1"></i>
+                  {{ 'Layak' if p.pemeriksaan.hasil == 'layak' else 'Tidak Layak' }}
+                </span>
+                {% else %}
+                <a href="{{ url_for('pemeriksaan.form', pinjaman_id=p.id) }}" class="btn btn-sm btn-success ms-2">
+                  <i class="bi bi-clipboard-check me-1"></i>Periksa Dokumen
+                </a>
+                {% endif %}
+              {% endif %}
+              {% if p.status == 'cek_dokumen' %}
+              <span class="badge bg-success ms-2"><i class="bi bi-check-circle-fill me-1"></i>Dokumen Diverifikasi</span>
+              <a href="{{ url_for('pemeriksaan.cetak_spv', pinjaman_id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-success ms-2">
+                <i class="bi bi-file-earmark-text me-1"></i>Cetak Surat Perintah
+              </a>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Step 3: Verifikasi Lapangan -->
+          <div class="timeline-item">
+            <div class="timeline-dot {{ 'done' if p.status in ['acc_direktur','cair','lunas'] else ('active' if p.status == 'cek_dokumen' else '') }}">
+              <i class="bi bi-{% if p.status in ['acc_direktur','cair','lunas'] %}check-lg{% elif p.status == 'cek_dokumen' %}circle{% else %}circle{% endif %}"></i>
+            </div>
+            <div class="fw-bold" style="font-size:.85rem;">Verifikasi Lapangan</div>
+            {% if p.tanggal_kunjungan %}
+            <div class="text-muted" style="font-size:.78rem;">{{ p.tanggal_kunjungan.strftime('%d/%m/%Y') }} - {{ p.petugas_kunjungan }}</div>
+            {% endif %}
+            {% if p.rekomendasi %}
+            <span class="badge {{ 'bg-success' if p.rekomendasi == 'layak' else 'bg-danger' }}">{{ 'Layak' if p.rekomendasi == 'layak' else 'Tidak Layak' }}</span>
+            {% endif %}
+            {% if p.hasil_kunjungan %}
+            <div class="mt-1 p-2 bg-light rounded" style="font-size:.78rem; white-space: pre-wrap;">{{ p.hasil_kunjungan }}</div>
+            {% endif %}
+            {% if p.foto_kunjungan %}
+            <div class="mt-2">
+              <a href="{{ url_for('static', filename=p.foto_kunjungan) }}" target="_blank">
+                <img src="{{ url_for('static', filename=p.foto_kunjungan) }}" class="img-thumbnail" style="max-height: 100px;">
+              </a>
+            </div>
+            {% endif %}
+
+{% if p.tanggal_kunjungan %}
+            <a href="{{ url_for('pinjaman.cetak_ba', id=p.id) }}" class="btn btn-sm btn-outline-secondary mt-2">
+              <i class="bi bi-file-earmark-text me-1"></i>Lihat Berita Acara
+            </a>
+            {% endif %}
+            {% if p.status == 'cek_dokumen' and current_user.can_write_pinjaman() %}
+            <div class="mt-2">
+              <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalVerifikasi">
+                <i class="bi bi-clipboard-check me-1"></i>Input Verifikasi Lapangan
+              </button>
+            </div>
+            {% endif %}
+          </div>
+
+<!-- Step 4: ACC Direktur -->
+          <div class="timeline-item">
+            <div class="timeline-dot {{ 'done' if p.status in ['cair','lunas'] else ('active' if p.status == 'verifikasi' else '') }}">
+              <i class="bi bi-{% if p.status in ['cair','lunas'] %}check-lg{% else %}circle{% endif %}"></i>
+            </div>
+            <div class="fw-bold" style="font-size:.85rem;">ACC Direktur</div>
+            {% if p.tanggal_acc %}
+            <div class="text-muted" style="font-size:.78rem;">{{ p.tanggal_acc.strftime('%d/%m/%Y') }}</div>
+            {% endif %}
+            {% if p.catatan_direktur %}
+            <div class="text-muted" style="font-size:.78rem;">{{ p.catatan_direktur }}</div>
+            {% endif %}
+            {% if p.status in ['verifikasi', 'acc_direktur', 'cair', 'lunas'] and current_user.is_admin() %}
+            <button class="btn btn-sm btn-outline-info mt-2" data-bs-toggle="modal" data-bs-target="#modalReview">
+              <i class="bi bi-search me-1"></i>{{ 'Review' if p.status in ['acc_direktur', 'cair', 'lunas'] else 'Review & ACC' }}
+            </button>
+            {% endif %}
+            {% if p.status == 'acc_direktur' %}
+            <a href="{{ url_for('pinjaman.cetak_spp', id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
+              <i class="bi bi-file-earmark-text me-1"></i>Cetak SPP
+            </a>
+            {% endif %}
+          </div>
+
+          <!-- Step 5: Pencairan -->
+          <div class="timeline-item">
+            <div class="timeline-dot {{ 'done' if p.status in ['cair','lunas'] else ('active' if p.status == 'acc_direktur' else '') }}">
+              <i class="bi bi-{% if p.status in ['cair','lunas'] %}check-lg{% else %}circle{% endif %}"></i>
+            </div>
+            <div class="fw-bold" style="font-size:.85rem;">Pencairan</div>
+          {% if p.tanggal_cair %}
+            <div class="text-muted" style="font-size:.78rem;">{{ p.tanggal_cair.strftime('%d/%m/%Y') }}</div>
+            {% endif %}
+            {% if p.status == 'acc_direktur' and current_user.is_admin() %}
+            <button class="btn btn-sm btn-warning mt-2" data-bs-toggle="modal" data-bs-target="#modalCairkan">
+              <i class="bi bi-cash-coin me-1"></i>Proses Pencairan
+            </button>
+            {% endif %}
+          </div>
+
+          {% if p.status == 'ditolak' %}
+          <div class="timeline-item">
+            <div class="timeline-dot rejected"><i class="bi bi-x-lg"></i></div>
+            <div class="fw-bold text-danger" style="font-size:.85rem;">Ditolak</div>
+            {% if p.catatan_direktur %}<div class="text-muted" style="font-size:.78rem;">{{ p.catatan_direktur }}</div>{% endif %}
+          </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+    <!-- Jadwal Angsuran -->
+    {% if jadwal %}
+    <div class="card">
+      <div class="card-header" data-bs-toggle="collapse" data-bs-target="#jadwalBody" style="cursor:pointer;user-select:none;">
+        <i class="bi bi-calendar3 me-2"></i>Jadwal Angsuran
+        <i class="bi bi-chevron-down float-end" style="transition:transform .2s;"></i>
+      </div>
+      <div class="collapse" id="jadwalBody">
+      <div class="table-responsive">
+        <table class="table table-sm mb-0" style="font-size:.8rem;">
+          <thead class="sticky-top bg-white">
+            <tr><th>#</th><th>Tanggal</th><th class="text-end">Pokok</th><th class="text-end">Jasa</th><th class="text-end">Total</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% set total_pokok_terbayar = namespace(val=0) %}
+            {% for j in jadwal %}
+            {% set total_pokok_terbayar.val = total_pokok_terbayar.val + j.pokok %}
+            {% set sudah_bayar = total_pokok_terbayar.val <= total_pokok_bayar %}
+            <tr class="{{ 'table-success' if sudah_bayar else '' }}">
+              <td>{{ j.ke }}</td>
+              <td>{{ j.tanggal.strftime('%d/%m/%Y') }}</td>
+              <td class="text-end money">{{ '{:,.0f}'.format(j.pokok) }}</td>
+              <td class="text-end money">{{ '{:,.0f}'.format(j.jasa) }}</td>
+              <td class="text-end money fw-bold">{{ '{:,.0f}'.format(j.total) }}</td>
+              <td>
+                {% if sudah_bayar %}<span class="badge bg-success">âœ“</span>
+                {% elif j.ke <= (jadwal|length) %}<span class="badge bg-secondary">-</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="table-light">
+            <tr>
+              <td colspan="2" class="fw-bold">Total</td>
+              <td class="text-end money fw-bold">{{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</td>
+              <td class="text-end money fw-bold">{{ '{:,.0f}'.format(p.angsuran_jasa * p.tenor) }}</td>
+              <td class="text-end money fw-bold">{{ '{:,.0f}'.format(p.jumlah_pinjaman + p.angsuran_jasa * p.tenor) }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+
+    <!-- Riwayat Angsuran -->
+    {% if p.status in ['cair', 'lunas'] %}
+    <div class="card mt-3">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center py-2" data-bs-toggle="collapse" data-bs-target="#riwayatBody" style="cursor:pointer;user-select:none;">
+        <span class="fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Riwayat Pembayaran Angsuran</span>
+        <span class="d-flex align-items-center gap-2">
+          <span class="badge bg-light text-dark border">{{ riwayat|length }} Transaksi</span>
+          <i class="bi bi-chevron-down" style="transition:transform .2s;"></i>
+        </span>
+      </div>
+      <div class="collapse show" id="riwayatBody">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0" style="font-size:.82rem;">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th class="ps-3">#</th>
+              <th>No. Kuitansi</th>
+              <th>Tanggal</th>
+              <th class="text-end">Pokok (Rp)</th>
+              <th class="text-end">Jasa (Rp)</th>
+              <th class="text-end">Total Bayar</th>
+              <th class="text-end text-primary" style="background: #f8fafc;">Sisa Pokok</th>
+              <th class="text-end text-success" style="background: #f8fafc;">Sisa Jasa</th>
+              <th class="text-center">Petugas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Baris Saldo Awal -->
+            <tr class="table-light italic">
+              <td class="ps-3">-</td>
+              <td colspan="2" class="text-muted"><em>SALDO AWAL PINJAMAN</em></td>
+              <td class="text-end text-muted">-</td>
+              <td class="text-end text-muted">-</td>
+              <td class="text-end text-muted">-</td>
+              <td class="text-end fw-bold text-primary" style="background: #f8fafc;">{{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</td>
+              <td class="text-end fw-bold text-success" style="background: #f8fafc;">{{ '{:,.0f}'.format(p.angsuran_jasa * p.tenor) }}</td>
+              <td></td>
+            </tr>
+            
+            {% set run_pokok = namespace(val=0) %}
+            {% set run_jasa = namespace(val=0) %}
+            {% for pb in riwayat %}
+            {% set run_pokok.val = run_pokok.val + pb.bayar_pokok %}
+            {% set run_jasa.val = run_jasa.val + pb.bayar_jasa %}
+            <tr>
+              <td class="ps-3 text-muted">{{ pb.angsuran_ke if pb.angsuran_ke else loop.index }}</td>
+              <td>
+                <a href="{{ url_for('pembayaran.cetak_kuitansi', id=pb.id) }}" target="_blank" class="text-decoration-none fw-bold">
+                  {{ pb.no_kuitansi }}
+                </a>
+              </td>
+              <td>{{ pb.tanggal_bayar.strftime('%d/%m/%Y') }}</td>
+              <td class="text-end money">{{ '{:,.0f}'.format(pb.bayar_pokok) }}</td>
+              <td class="text-end money">{{ '{:,.0f}'.format(pb.bayar_jasa) }}</td>
+              <td class="text-end money fw-bold">{{ '{:,.0f}'.format(pb.jumlah_bayar) }}</td>
+              <td class="text-end money fw-bold text-primary" style="background: #f8fafc;">
+                {{ '{:,.0f}'.format(p.jumlah_pinjaman - run_pokok.val) }}
+              </td>
+              <td class="text-end money fw-bold text-success" style="background: #f8fafc;">
+                {{ '{:,.0f}'.format((p.angsuran_jasa * p.tenor) - run_jasa.val) }}
+              </td>
+              <td class="text-center">
+                <span class="text-muted" style="font-size:.7rem;" title="{{ user_map.get(pb.created_by, '-') }}">
+                  <i class="bi bi-person-circle"></i>
+                </span>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="9" class="text-center py-4 text-muted">Belum ada riwayat pembayaran untuk pinjaman ini.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          {% if riwayat %}
+          <tfoot class="table-light fw-bold">
+            <tr>
+              <td colspan="3" class="text-end ps-3">TOTAL TERBAYAR</td>
+              <td class="text-end text-primary">{{ '{:,.0f}'.format(run_pokok.val) }}</td>
+              <td class="text-end text-success">{{ '{:,.0f}'.format(run_jasa.val) }}</td>
+              <td class="text-end text-dark">{{ '{:,.0f}'.format(run_pokok.val + run_jasa.val) }}</td>
+              <td colspan="3"></td>
+            </tr>
+          </tfoot>
+          {% endif %}
+        </table>
+      </div>
+      </div>
+      <div class="card-footer bg-light py-2" style="font-size: .75rem;">
+        <i class="bi bi-info-circle me-1"></i> Riwayat di atas mencatat setiap transaksi pembayaran masuk yang divalidasi oleh sistem.
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Estimasi Pelunasan -->
+    {% if p.status == 'cair' and angsuran_belum %}
+    <div class="card mt-3">
+      <div class="card-header" data-bs-toggle="collapse" data-bs-target="#estimasiBody" style="cursor:pointer;user-select:none;">
+        <i class="bi bi-calculator me-2"></i>Estimasi Pelunasan
+        <i class="bi bi-chevron-down float-end" style="transition:transform .2s;"></i>
+      </div>
+      <div class="collapse" id="estimasiBody">
+      <div class="card-body p-0">
+        <div class="p-3 pb-0">
+          <table class="table table-sm mb-0" style="font-size:.82rem;">
+            <thead>
+              <tr><th>#</th><th>Angsuran ke</th><th>Tanggal</th><th class="text-end">Pokok</th><th class="text-end">Jasa</th></tr>
+            </thead>
+            <tbody>
+              {% for j in angsuran_belum %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>Ke-{{ j.ke }}</td>
+                <td>{{ j.tanggal.strftime('%d/%m/%Y') }}</td>
+                <td class="text-end money">{{ '{:,.0f}'.format(j.pokok) }}</td>
+                <td class="text-end money">{{ '{:,.0f}'.format(j.jasa) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="p-3 pt-2 bg-light">
+          <table class="table table-sm table-borderless mb-0" style="font-size:.85rem;">
+            <tr><td class="text-muted">Sisa Pokok</td><td class="text-end money fw-bold text-danger">Rp {{ '{:,.0f}'.format(p.get_saldo_pokok()) }}</td></tr>
+            <tr><td class="text-muted">Sisa Jasa ({{ estimasi_sisa_tenor }} bulan)</td><td class="text-end money fw-bold text-warning">Rp {{ '{:,.0f}'.format(estimasi_sisa_jasa) }}</td></tr>
+            <tr class="border-top"><td class="fw-bold">Total Pelunasan</td><td class="text-end money fw-bold fs-5 text-primary">Rp {{ '{:,.0f}'.format(estimasi_total_pelunasan) }}</td></tr>
+          </table>
+          <small class="text-muted fst-italic">Jasa dihitung sesuai perjanjian awal (flat)</small>
+        </div>
+      </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- SPP Rincian per Anggota -->
+    {% if p.jenis_pinjaman == 'spp' and p.detail_spp %}
+    <div class="card mt-3">
+      <div class="card-header"><i class="bi bi-people-fill me-2 text-success"></i>Rincian Pinjaman per Anggota (SPP)</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0" style="font-size:.83rem;">
+          <thead><tr><th>#</th><th>Nama Anggota</th><th>NIK</th><th class="text-end">Jumlah</th><th>Keterangan</th></tr></thead>
+          <tbody>
+            {% for d in p.detail_spp %}
+            <tr>
+              <td>{{ d.urut }}</td>
+              <td><strong>{{ d.nama_anggota }}</strong></td>
+              <td class="money" style="font-size:.78rem;">{{ d.nik_anggota or '-' }}</td>
+              <td class="text-end money">{{ '{:,.0f}'.format(d.jumlah) }}</td>
+              <td style="font-size:.78rem;">{{ d.keterangan or '-' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="table-success">
+            <tr><td colspan="3" class="fw-bold text-end">TOTAL</td>
+              <td class="text-end money fw-bold">{{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</td><td></td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
+</div>
+</div>
+
+<!-- Modal Preview Dokumen -->
+<div class="modal fade" id="modalPreviewDokumen" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Preview Dokumen Nasabah</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="row g-2">
+          {% if p.nasabah.foto %}
+          <div class="col-6 col-md-4"><div class="border rounded p-2 text-center"><img src="{{ url_for('static', filename=p.nasabah.foto) }}" class="img-fluid mb-1" style="max-height:120px;"><div class="small text-muted">Foto</div></div></div>
+          {% endif %}
+          {% if p.nasabah.ktp %}
+          <div class="col-6 col-md-4"><div class="border rounded p-2 text-center"><img src="{{ url_for('static', filename=p.nasabah.ktp) }}" class="img-fluid mb-1" style="max-height:120px;"><div class="small text-muted">KTP</div></div></div>
+          {% endif %}
+          {% if p.nasabah.kk %}
+          <div class="col-6 col-md-4"><div class="border rounded p-2 text-center"><img src="{{ url_for('static', filename=p.nasabah.kk) }}" class="img-fluid mb-1" style="max-height:120px;"><div class="small text-muted">KK</div></div></div>
+          {% endif %}
+          {% if p.nasabah.sku %}
+          <div class="col-6 col-md-4"><div class="border rounded p-2 text-center"><img src="{{ url_for('static', filename=p.nasabah.sku) }}" class="img-fluid mb-1" style="max-height:120px;"><div class="small text-muted">SKU</div></div></div>
+          {% endif %}
+          {% if p.nasabah.penghasilan %}
+          <div class="col-6 col-md-4"><div class="border rounded p-2 text-center"><img src="{{ url_for('static', filename=p.nasabah.penghasilan) }}" class="img-fluid mb-1" style="max-height:120px;"><div class="small text-muted">Bukti Penghasilan</div></div></div>
+          {% endif %}
+          {% for j in p.jaminan_bpkb %}
+          <div class="col-6 col-md-4"><div class="border rounded p-2 text-center"><img src="{{ url_for('static', filename=j.foto_bpkb) }}" class="img-fluid mb-1" style="max-height:120px;"><div class="small text-muted">BPKB</div></div></div>
+          {% endfor %}
+          {% for j in p.jaminan_shm %}
+          <div class="col-6 col-md-4"><div class="border rounded p-2 text-center"><img src="{{ url_for('static', filename=j.foto_shm) }}" class="img-fluid mb-1" style="max-height:120px;"><div class="small text-muted">SHM</div></div></div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Verifikasi Lapangan -->
+<div class="modal fade" id="modalVerifikasi" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Berita Acara Kunjungan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="POST" action="{{ url_for('pinjaman.proses', id=p.id) }}" enctype="multipart/form-data">
+        <input type="hidden" name="aksi" value="verifikasi">
+        <div class="modal-body">
+<div class="mb-3"><label class="form-label">Tanggal Kunjungan</label><input type="date" name="tanggal_kunjungan" class="form-control" value="{{ today.strftime('%Y-%m-%d') if today else '' }}"></div>
+          <div class="mb-3"><label class="form-label">Petugas Verifikasi</label>
+            <div class="form-control-plaintext fw-bold text-primary">{{ current_user.nama_lengkap }}</div>
+            <input type="hidden" name="petugas_kunjungan" value="{{ current_user.nama_lengkap }}">
+          </div>
+          <div class="mb-3"><label class="form-label">Hasil Kunjungan / Berita Acara</label><textarea name="hasil_kunjungan" class="form-control" rows="8" placeholder="Uraikan hasil kunjungan lapangan secara detail..."></textarea></div>
+          <div class="mb-3"><label class="form-label">Foto Kunjungan <span class="text-muted">(opsional)</span></label><input type="file" name="foto_kunjungan" class="form-control form-control-sm" accept="image/*"></div>
+          <div class="mb-3"><label class="form-label">Rekomendasi</label>
+            <div class="d-flex gap-3">
+              <div class="form-check"><input class="form-check-input" type="radio" name="rekomendasi" value="layak" id="r1"><label class="form-check-label text-success fw-semibold" for="r1"><i class="bi bi-check-circle-fill me-1"></i>Layak</label></div>
+              <div class="form-check"><input class="form-check-input" type="radio" name="rekomendasi" value="tidak_layak" id="r2"><label class="form-check-label text-danger fw-semibold" for="r2"><i class="bi bi-x-circle-fill me-1"></i>Tidak Layak</label></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-primary">Simpan Berita Acara</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cairkan -->
+<div class="modal fade" id="modalCairkan" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="bi bi-cash-coin me-2 text-warning"></i>Proses Pencairan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="POST" action="{{ url_for('pinjaman.proses', id=p.id) }}">
+        <input type="hidden" name="aksi" value="cairkan">
+        <div class="modal-body">
+          <div class="alert alert-info py-2"><i class="bi bi-info-circle me-1"></i>Pinjaman: <strong class="money">Rp {{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</strong> - {{ p.tenor }} bulan</div>
+          <div class="mb-3"><label class="form-label">Tanggal Pencairan <span class="text-danger">*</span></label><input type="date" name="tanggal_cair" class="form-control" required value="{{ today.strftime('%Y-%m-%d') if today else '' }}"></div>
+          <div class="mb-3"><label class="form-label">Mulai Angsuran <span class="text-danger">*</span></label><input type="date" name="tanggal_mulai_angsuran" class="form-control" required id="tglMulai"></div>
+        </div>
+        <div class="modal-footer"><button type="submit" class="btn btn-warning fw-bold"><i class="bi bi-cash-coin me-1"></i>Cairkan Sekarang</button><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Review untuk ACC Direktur -->
+<div class="modal fade" id="modalReview" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('pinjaman.proses', id=p.id) }}">
+        <input type="hidden" name="aksi" value="acc">
+        <div class="modal-header"><h5 class="modal-title"><i class="bi bi-clipboard-check me-2"></i>Review Pinjaman</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <table class="table table-sm table-bordered" style="font-size:.85rem;">
+            <tr><td style="width:140px;">Nama</td><td><strong>{{ p.nasabah.nama }}</strong></td></tr>
+            <tr><td>NIK</td><td>{{ p.nasabah.nik }}</td></tr>
+            <tr><td>Alamat</td><td>{{ p.nasabah.alamat }}, Desa {{ p.nasabah.nama_desa }}</td></tr>
+            <tr><td>No. SPK</td><td>{{ p.spk }}</td></tr>
+            <tr><td>Jumlah</td><td class="money fw-bold text-primary">Rp {{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</td></tr>
+            <tr><td>Tenor</td><td>{{ p.tenor }} bulan</td></tr>
+            {% if p.tanggal_kunjungan %}
+            <tr><td>Tgl Kunjungan</td><td>{{ p.tanggal_kunjungan.strftime('%d/%m/%Y') }}</td></tr>
+            <tr><td>Petugas</td><td>{{ p.petugas_kunjungan or '-' }}</td></tr>
+            <tr><td>Hasil</td><td style="white-space:pre-wrap;">{{ p.hasil_kunjungan or '-' }}</td></tr>
+            <tr><td>Rekomendasi</td><td><span class="badge {{ 'bg-success' if p.rekomendasi == 'layak' else 'bg-danger' }}">{{ 'Layak' if p.rekomendasi == 'layak' else 'Tidak Layak' }}</span></td></tr>
+            {% endif %}
+            {% if p.foto_kunjungan %}
+            <tr><td>Foto</td><td><img src="{{ url_for('static', filename=p.foto_kunjungan) }}" style="max-height:150px;border-radius:6px;"></td></tr>
+            {% endif %}
+          </table>
+          {% if p.status == 'verifikasi' %}
+          <div class="mt-3">
+            <label class="form-label">Catatan (opsional)</label>
+            <textarea name="catatan_direktur" class="form-control" rows="2" placeholder="Catatan atau syarat khusus..."></textarea>
+          </div>
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+          {% if p.status == 'verifikasi' %}
+          <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i>ACC & Terbit SPP</button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<style>
+[data-bs-toggle="collapse"] .bi-chevron-down { transition: transform 0.2s; }
+[data-bs-toggle="collapse"].collapsed .bi-chevron-down { transform: rotate(-90deg); }
+</style>
+<script>
+document.querySelector('[name="tanggal_cair"]')?.addEventListener('change', function() {
+  const d = new Date(this.value);
+  d.setMonth(d.getMonth() + 1);
+  document.getElementById('tglMulai').value = d.toISOString().split('T')[0];
+});
+const today = new Date().toISOString().split('T')[0];
+document.querySelectorAll('[name="tanggal_kunjungan"]').forEach(el => { if (!el.value) el.value = today; });
+document.querySelectorAll('[name="tanggal_cair"]').forEach(el => { if (!el.value) el.value = today; });
+const nextMonth = new Date(); nextMonth.setMonth(nextMonth.getMonth()+1);
+const tglM = document.getElementById('tglMulai');
+if (tglM && !tglM.value) tglM.value = nextMonth.toISOString().split('T')[0];
+</script>
+{% endblock %}

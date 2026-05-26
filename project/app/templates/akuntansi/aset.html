@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Manajemen Aset{% endblock %}
+{% block page_title %}Manajemen Aset{% endblock %}
+{% block content %}
+
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div><h1>Manajemen Aset</h1></div>
+  <div class="d-flex gap-2">
+    {% if current_user.role in ["admin","keuangan"] %}
+    <a href="{{ url_for("akuntansi.aset_tambah") }}" class="btn btn-primary btn-sm" data-testid="aset-tambah-btn"><i class="bi bi-plus-circle-fill me-1"></i>Tambah Aset</a>
+    {% endif %}
+    <a href="?cetak=1" target="_blank" class="btn btn-outline-secondary btn-sm" data-testid="aset-cetak-btn"><i class="bi bi-printer me-1"></i>Cetak</a>
+  </div>
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="stat-card stat-blue"><i class="bi bi-building stat-icon"></i>
+    <div class="stat-label">Nilai Perolehan</div><div class="stat-value">Rp {{ "{:,.0f}".format(total_perolehan) }}</div></div></div>
+  <div class="col-md-4"><div class="stat-card stat-orange"><i class="bi bi-graph-down stat-icon"></i>
+    <div class="stat-label">Akumulasi Penyusutan</div><div class="stat-value">Rp {{ "{:,.0f}".format(total_akumulasi) }}</div></div></div>
+  <div class="col-md-4"><div class="stat-card stat-green"><i class="bi bi-calculator stat-icon"></i>
+    <div class="stat-label">Nilai Buku</div><div class="stat-value">Rp {{ "{:,.0f}".format(total_buku) }}</div></div></div>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.83rem;">
+      <thead><tr><th>Kode</th><th>Nama</th><th>Kategori</th><th>Tgl Perolehan</th><th class="text-end">Nilai Perolehan</th><th class="text-end">Akum. Penyusutan</th><th class="text-end">Nilai Buku</th><th>Kondisi</th><th></th></tr></thead>
+      <tbody>
+        {% for a in aset_list %}
+        <tr>
+          <td class="money" style="font-size:.78rem;">{{ a.kode_aset or "-" }}</td>
+          <td><strong>{{ a.nama }}</strong><br><small class="text-muted">{{ a.lokasi or "" }}</small></td>
+          <td><span class="badge bg-secondary">{{ a.kategori or "-" }}</span></td>
+          <td>{{ a.tanggal_perolehan.strftime("%d/%m/%Y") if a.tanggal_perolehan else "-" }}</td>
+          <td class="text-end money">{{ "{:,.0f}".format(a.nilai_perolehan) }}</td>
+          <td class="text-end money text-danger">({{ "{:,.0f}".format(a.akumulasi_penyusutan) }})</td>
+          <td class="text-end money fw-bold text-primary">{{ "{:,.0f}".format(a.nilai_buku) }}</td>
+          <td><span class="badge {{ "bg-success" if a.kondisi=="baik" else "bg-warning text-dark" if a.kondisi=="rusak_ringan" else "bg-danger" }}">{{ a.kondisi|replace("_"," ")|title }}</span></td>
+          <td>{% if current_user.is_admin() %}
+            <a href="{{ url_for("akuntansi.aset_edit", id=a.id) }}" class="btn btn-xs btn-outline-secondary" style="padding:2px 7px;font-size:.72rem;"><i class="bi bi-pencil"></i></a>
+            <form method="POST" action="{{ url_for("akuntansi.aset_hapus", id=a.id) }}" style="display:inline" data-confirm="Hapus aset {{ a.nama }}?">
+              <button type="submit" class="btn btn-xs btn-outline-danger" style="padding:2px 7px;font-size:.72rem;"><i class="bi bi-trash"></i></button>
+            </form>
+            {% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4">Belum ada aset terdaftar</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if aset_list %}
+      <tfoot class="table-light fw-bold">
+        <tr><td colspan="4" class="text-end">TOTAL</td>
+          <td class="text-end money">{{ "{:,.0f}".format(total_perolehan) }}</td>
+          <td class="text-end money text-danger">({{ "{:,.0f}".format(total_akumulasi) }})</td>
+          <td class="text-end money text-primary">{{ "{:,.0f}".format(total_buku) }}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endblock %}

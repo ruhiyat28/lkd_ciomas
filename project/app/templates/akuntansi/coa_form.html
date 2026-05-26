@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if akun else 'Tambah' }} Akun{% endblock %}
+{% block page_title %}{{ 'Edit' if akun else 'Tambah' }} Akun COA{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>{{ 'Edit' if akun else 'Tambah' }} Akun COA</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="{{ url_for('akuntansi.coa') }}">COA</a></li>
+    <li class="breadcrumb-item active">{{ 'Edit' if akun else 'Tambah' }}</li>
+  </ol></nav>
+</div>
+<div class="row justify-content-center"><div class="col-md-7">
+  <div class="card">
+    <div class="card-header"><i class="bi bi-list-nested me-2 text-primary"></i>Data Akun</div>
+    <div class="card-body">
+      <form method="POST">
+        <div class="row g-3">
+          {% if not akun %}
+          <div class="col-md-4">
+            <label class="form-label">Kode Akun <span class="text-danger">*</span></label>
+            <input type="text" name="kode" class="form-control money" placeholder="Contoh: 1.1.10" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Golongan <span class="text-danger">*</span></label>
+            <select name="golongan" class="form-select" required>
+              {% for k,v in GOLONGAN_MAP.items() %}<option value="{{ k }}">{{ k }} — {{ v }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Level</label>
+            <select name="level" class="form-select">
+              <option value="1">1 — Heading</option>
+              <option value="2">2 — Sub-heading</option>
+              <option value="3" selected>3 — Detail</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Parent (Akun Induk)</label>
+            <select name="parent_kode" class="form-select">
+              <option value="">— Tidak Ada Parent —</option>
+              {% for a in akun_list %}<option value="{{ a.kode }}">{{ a.kode }} — {{ a.nama }}</option>{% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          <div class="col-12">
+            <label class="form-label">Nama Akun <span class="text-danger">*</span></label>
+            <input type="text" name="nama" class="form-control" value="{{ akun.nama if akun else '' }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Saldo Normal</label>
+            <select name="saldo_normal" class="form-select">
+              <option value="debit" {% if akun and akun.saldo_normal=='debit' %}selected{% endif %}>Debit</option>
+              <option value="kredit" {% if akun and akun.saldo_normal=='kredit' %}selected{% endif %}>Kredit</option>
+            </select>
+          </div>
+          <div class="col-md-8 d-flex align-items-end gap-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="bisa_jurnal" id="cbJurnal" {% if not akun or akun.bisa_jurnal %}checked{% endif %}>
+              <label class="form-check-label" for="cbJurnal">Bisa diinput di jurnal</label>
+            </div>
+            {% if akun %}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="aktif" id="cbAktif" {% if akun.aktif %}checked{% endif %}>
+              <label class="form-check-label" for="cbAktif">Aktif</label>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-12">
+            <label class="form-label">Keterangan</label>
+            <input type="text" name="keterangan" class="form-control" value="{{ akun.keterangan if akun else '' }}">
+          </div>
+        </div>
+        <div class="d-flex gap-2 mt-3">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save-fill me-1"></i>Simpan</button>
+          <a href="{{ url_for('akuntansi.coa') }}" class="btn btn-outline-secondary">Batal</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div></div>
+{% endblock %}

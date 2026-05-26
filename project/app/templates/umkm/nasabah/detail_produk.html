@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}{{ produk.nama_produk }}{% endblock %}
+{% block page_title %}Detail Produk{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{{ produk.nama_produk }}</h1>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('umkm.katalog') }}">Katalog</a></li>
+      <li class="breadcrumb-item active">{{ produk.nama_produk }}</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card shadow-sm border-0 rounded-4">
+      {% if produk.gambar %}
+      <img src="{{ url_for('static', filename=produk.gambar) }}" class="card-img-top rounded-top-4" 
+           style="max-height:400px;object-fit:contain;" alt="{{ produk.nama_produk }}">
+      {% else %}
+      <div class="card-img-top bg-light rounded-top-4 d-flex align-items-center justify-content-center" style="height:400px;">
+        <i class="bi bi-image text-muted fs-1"></i>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  
+  <div class="col-md-6">
+    <div class="card shadow-sm border-0 rounded-4 h-100">
+      <div class="card-body">
+        <span class="badge bg-info mb-2">{{ produk.kategori_label() }}</span>
+        <h3 class="fw-bold">{{ produk.nama_produk }}</h3>
+        <p class="text-muted">{{ produk.deskripsi or 'Tidak ada deskripsi.' }}</p>
+        
+        <hr>
+        
+        <div class="mb-3">
+          <div class="text-muted small">Penjual</div>
+          <div class="fw-bold">{{ produk.penjual.nama }}</div>
+        </div>
+        
+        <div class="mb-3">
+          <div class="text-muted small">Harga</div>
+          <div class="fs-3 fw-bold text-primary">Rp {{ produk.harga|number_format }}</div>
+        </div>
+        
+        <div class="mb-3">
+          <div class="text-muted small">Stok Tersedia</div>
+          <div class="fw-bold {% if produk.stok <= 0 %}text-danger{% elif produk.stok < 10 %}text-warning{% else %}text-success{% endif %}">
+            {{ produk.stok }} {{ produk.satuan }}
+          </div>
+        </div>
+        
+        {% if produk.stok > 0 %}
+        <form method="POST" action="{{ url_for('umkm.pesan') }}">
+          <input type="hidden" name="produk_id" value="{{ produk.id }}">
+          
+          <div class="mb-3">
+            <label class="form-label">Jumlah</label>
+            <div class="input-group">
+              <button type="button" class="btn btn-outline-secondary" onclick="updateJumlah(-1, {{ produk.stok }})">-</button>
+              <input type="number" name="jumlah" id="jumlahInput" class="form-control text-center" value="1" min="1" max="{{ produk.stok }}">
+              <button type="button" class="btn btn-outline-secondary" onclick="updateJumlah(1, {{ produk.stok }})">+</button>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Catatan (opsional)</label>
+            <textarea name="catatan" class="form-control" rows="2" placeholder="Catatan untuk penjual..."></textarea>
+          </div>
+          
+          <div class="mb-3 p-2 bg-light rounded">
+            <strong>Total: </strong><span id="totalHarga" class="text-primary fw-bold">Rp {{ produk.harga|number_format }}</span>
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-lg w-100">
+            <i class="bi bi-cart-plus me-1"></i>Pesan Sekarang
+          </button>
+        </form>
+        {% else %}
+        <div class="alert alert-danger">Stok produk sedang habis.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function updateJumlah(delta, maxStok) {
+  const input = document.getElementById('jumlahInput');
+  let val = parseInt(input.value) + delta;
+  if (val < 1) val = 1;
+  if (val > maxStok) val = maxStok;
+  input.value = val;
+  updateTotal();
+}
+
+document.getElementById('jumlahInput')?.addEventListener('input', updateTotal);
+
+function updateTotal() {
+  const jumlah = parseInt(document.getElementById('jumlahInput').value) || 1;
+  const harga = {{ produk.harga }};
+  const total = jumlah * harga;
+  document.getElementById('totalHarga').textContent = 'Rp ' + total.toLocaleString('id-ID');
+}
+</script>
+{% endblock %}

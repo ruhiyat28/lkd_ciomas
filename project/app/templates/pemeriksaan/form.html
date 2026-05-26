@@ -1,0 +1,399 @@
+{% extends 'base.html' %}
+{% block title %}Pemeriksaan Dokumen{% endblock %}
+{% block page_title %}Pemeriksaan Dokumen Pengajuan{% endblock %}
+
+{% block content %}
+{% set n = p.nasabah %}
+
+<div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+  <div>
+    <h1>Pemeriksaan Dokumen</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('pemeriksaan.index') }}">Pemeriksaan</a></li>
+      <li class="breadcrumb-item active">Pengajuan #{{ p.id }}</li>
+    </ol></nav>
+  </div>
+  <div>
+    <a href="{{ url_for('pemeriksaan.cetak', pinjaman_id=p.id) }}" target="_blank" class="btn btn-outline-primary">
+      <i class="bi bi-printer-fill me-1"></i>Cetak Hasil
+    </a>
+    <a href="{{ url_for('pinjaman.detail', id=p.id) }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Kembali
+    </a>
+  </div>
+</div>
+
+{% if n.status == 'calon' %}
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i>Nasabah ini berstatus <strong>CALON</strong>. Pastikan data sudah lengkap sebelum memeriksa dokumen.
+</div>
+{% endif %}
+
+<form method="POST" id="formPemeriksaan">
+<div class="row g-3">
+
+  <!-- Kolom Kiri: Data Pemohon & Pengajuan -->
+  <div class="col-md-5">
+    <!-- Data Pemohon -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-person-fill me-2"></i>Data Pemohon</div>
+      <div class="card-body" style="font-size:.85rem;">
+        <table class="table table-sm table-borderless mb-0">
+          <tr><td class="text-muted" style="width:120px;">Nama</td><td><strong>{{ n.nama }}</strong></td></tr>
+          <tr><td class="text-muted">NIK</td><td class="money">{{ n.nik or '-' }}</td></tr>
+          <tr><td class="text-muted">Tempat/Tgl Lahir</td><td>{{ n.tempat_lahir or '-' }}{{ ', ' + n.tanggal_lahir.strftime('%d/%m/%Y') if n.tanggal_lahir else '' }}</td></tr>
+          <tr><td class="text-muted">Jenis Kelamin</td><td>{{ 'Laki-laki' if n.jenis_kelamin == 'L' else 'Perempuan' if n.jenis_kelamin == 'P' else '-' }}</td></tr>
+          <tr><td class="text-muted">Alamat</td><td>{{ n.alamat or '-' }}</td></tr>
+          <tr><td class="text-muted">Desa</td><td>{{ n.nama_desa or '-' }}</td></tr>
+          <tr><td class="text-muted">Pekerjaan</td><td>{{ n.pekerjaan or '-' }}</td></tr>
+          <tr><td class="text-muted">No. HP</td><td>{{ n.no_hp or '-' }}</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Data Pengajuan -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-cash-stack me-2"></i>Data Pengajuan</div>
+      <div class="card-body">
+        <table class="table table-sm table-borderless mb-0" style="font-size:.85rem;">
+          <tr><td class="text-muted">Jumlah Pinjaman</td><td class="text-end money fw-bold text-primary">Rp {{ '{:,.0f}'.format(p.jumlah_pinjaman) }}</td></tr>
+          <tr><td class="text-muted">Jasa/Bulan</td><td class="text-end">{{ p.jasa_persen }}% flat</td></tr>
+          <tr><td class="text-muted">Tenor</td><td class="text-end">{{ p.tenor }} bulan</td></tr>
+          <tr><td class="text-muted">Tujuan</td><td class="text-end">{{ p.tujuan or '-' }}</td></tr>
+          <tr><td class="text-muted">Tgl Pengajuan</td><td class="text-end">{{ p.tanggal_pengajuan.strftime('%d/%m/%Y') if p.tanggal_pengajuan else '-' }}</td></tr>
+          <tr><td class="text-muted">Jenis</td><td class="text-end">{{ 'SPP Kelompok' if p.jenis_pinjaman == 'spp' else 'Reguler' }}</td></tr>
+        </table>
+
+        {% if p.jenis_pinjaman == 'spp' and p.detail_spp %}
+        <div class="mt-3">
+          <div class="fw-bold mb-1" style="font-size:.82rem;">Rincian Anggota Kelompok:</div>
+          <table class="table table-sm table-bordered mb-0" style="font-size:.78rem;">
+            <thead><tr><th>#</th><th>Nama</th><th>NIK</th><th class="text-end">Jumlah</th></tr></thead>
+            <tbody>
+              {% for d in p.detail_spp %}
+              <tr><td>{{ d.urut }}</td><td>{{ d.nama_anggota }}</td><td>{{ d.nik_anggota or '-' }}</td><td class="text-end money">Rp {{ '{:,.0f}'.format(d.jumlah) }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Catatan Pemeriksa -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-pencil-square me-2"></i>Catatan Pemeriksa</div>
+      <div class="card-body">
+        <textarea name="catatan_pemeriksa" class="form-control" rows="4" placeholder="Catatan hasil pemeriksaan dokumen...">{{ existing.catatan_pemeriksa if existing else '' }}</textarea>
+      </div>
+    </div>
+
+    <!-- Nama Verifikator -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-person-check me-2"></i>Verifikator</div>
+      <div class="card-body">
+        <div class="mb-0">
+          <label class="form-label">Nama Verifikator <small class="text-muted">(diisi oleh Direktur)</small></label>
+          <input type="text" name="nama_verifikator" class="form-control"
+                 value="{{ existing.nama_verifikator if existing else '' }}"
+                 placeholder="Nama lengkap pemeriksa dokumen">
+        </div>
+      </div>
+    </div>
+
+    <!-- Rekomendasi -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-check2-square me-2"></i>Kesimpulan & Rekomendasi</div>
+      <div class="card-body">
+        <div class="d-flex gap-4">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="hasil" value="layak" id="hasilLayak"
+              {% if not existing or existing.hasil == 'layak' %}checked{% endif %}>
+            <label class="form-check-label fw-bold text-success" for="hasilLayak">
+              <i class="bi bi-check-circle-fill me-1"></i>Layak — Lanjut ke Verifikasi Lapangan
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="hasil" value="tidak_layak" id="hasilTidak"
+              {% if existing and existing.hasil == 'tidak_layak' %}checked{% endif %}>
+            <label class="form-check-label fw-bold text-danger" for="hasilTidak">
+              <i class="bi bi-x-circle-fill me-1"></i>Tidak Layak / Ditolak
+            </label>
+          </div>
+        </div>
+        <div class="mt-3 d-flex gap-2">
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check2-circle me-1"></i>{{ 'Simpan Perubahan' if existing else 'Simpan & Lanjutkan' }}
+          </button>
+          <a href="{{ url_for('pinjaman.detail', id=p.id) }}" class="btn btn-outline-secondary">Batal</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kolom Kanan: Preview Dokumen + Checklist -->
+  <div class="col-md-7">
+    {% if p.jenis_pinjaman == 'spp' %}
+    <!-- ====== KELOMPOK / SPP ====== -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-people-fill me-2"></i>Dokumen Anggota Kelompok</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0" style="font-size:.83rem;">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>Nama Anggota</th>
+                <th>NIK</th>
+                <th style="width:100px;">KTP</th>
+                <th style="width:100px;">KK</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in n.anggota %}
+              <tr>
+                <td class="text-center">{{ a.urut }}</td>
+                <td>{{ a.nama }}</td>
+                <td>{{ a.nik or '-' }}</td>
+                <td class="text-center">
+                  {% if a.ktp %}
+                  <a href="{{ url_for('static', filename=a.ktp) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  {% else %}
+                  <span class="badge bg-danger">Belum</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  {% if a.kk %}
+                  <a href="{{ url_for('static', filename=a.kk) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  {% else %}
+                  <span class="badge bg-danger">Belum</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-file-earmark-text me-2"></i>Dokumen Bersama Kelompok</div>
+      <div class="card-body">
+        <div class="row g-2">
+          {% set docs_spp = [
+            ('surat_tanggung_renteng', 'Surat Pernyataan Tanggung Renteng', p.surat_tanggung_renteng),
+            ('surat_ijin_keluarga', 'Surat Keterangan Ijin Keluarga Dekat', p.surat_ijin_keluarga),
+          ] %}
+          {% for field, label, file_path in docs_spp %}
+          <div class="col-6">
+            <div class="border rounded p-2 text-center {{ 'bg-light' if not file_path else 'bg-light-success' }}" style="min-height:110px;">
+              {% if file_path %}
+              <a href="{{ url_for('static', filename=file_path) }}" target="_blank">
+                {% if file_path.lower().endswith(('.jpg','.jpeg','.png','.webp')) %}
+                <img src="{{ url_for('static', filename=file_path) }}" class="img-fluid mb-1" style="max-height:90px;object-fit:contain;">
+                {% else %}
+                <div class="py-3"><i class="bi bi-file-earmark-text fs-1 text-muted"></i></div>
+                {% endif %}
+              </a>
+              <div class="small text-muted">{{ label }}</div>
+              {% else %}
+              <div class="py-3"><i class="bi bi-file-earmark-x fs-2 text-muted"></i></div>
+              <div class="small text-muted">{{ label }} <span class="text-danger">(Belum)</span></div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="bi bi-list-check me-2"></i>Checklist Pemeriksaan Dokumen Kelompok</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0" style="font-size:.85rem;">
+          <thead class="table-light">
+            <tr>
+              <th style="width:40px;">No</th>
+              <th>Jenis Dokumen</th>
+              <th style="width:100px;">Status Upload</th>
+              <th style="width:160px;">Valid?</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% set docs_spp_check = [
+              ('surat_tanggung_renteng', 'Surat Pernyataan Tanggung Renteng', p.surat_tanggung_renteng),
+              ('surat_ijin_keluarga', 'Surat Keterangan Ijin Keluarga Dekat', p.surat_ijin_keluarga),
+            ] %}
+            {% for field, label, file_path in docs_spp_check %}
+            {% set checked = existing and existing[field + '_valid'] %}
+            <tr>
+              <td class="text-center">{{ loop.index }}</td>
+              <td><strong>{{ label }}</strong></td>
+              <td>
+                {% if file_path %}
+                <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Ada</span>
+                {% else %}
+                <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Belum</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if file_path %}
+                <div class="d-flex gap-3">
+                  <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="radio" name="{{ field }}_valid" value="1" id="{{ field }}_ya"
+                      {% if checked %}checked{% endif %} required>
+                    <label class="form-check-label small" for="{{ field }}_ya">Ya</label>
+                  </div>
+                  <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="radio" name="{{ field }}_valid" value="0" id="{{ field }}_tidak"
+                      {% if existing and not checked %}checked{% endif %}>
+                    <label class="form-check-label small text-danger" for="{{ field }}_tidak">Tidak</label>
+                  </div>
+                </div>
+                {% else %}
+                <span class="text-muted small">-</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <!-- ====== PERORANGAN ====== -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-images me-2"></i>Preview Dokumen</div>
+      <div class="card-body">
+        <div class="row g-2">
+          {% set docs = [
+            ('foto', 'Pas Foto', n.foto),
+            ('ktp', 'KTP', n.ktp),
+            ('kk', 'Kartu Keluarga', n.kk),
+            ('surat_usaha', 'SK Usaha/Kerja', n.surat_usaha),
+            ('bukti_penghasilan', 'Bukti Penghasilan', n.bukti_penghasilan),
+            ('jaminan', 'Jaminan', n.jaminan),
+          ] %}
+          {% for field, label, file_path in docs %}
+          <div class="col-4 col-md-4">
+            <div class="border rounded p-2 text-center {{ 'bg-light' if not file_path else 'bg-light-success' }}" style="min-height:110px;">
+              {% if file_path %}
+              <a href="{{ url_for('static', filename=file_path) }}" target="_blank">
+                {% if file_path.lower().endswith(('.jpg','.jpeg','.png','.webp')) %}
+                <img src="{{ url_for('static', filename=file_path) }}" class="img-fluid mb-1" style="max-height:90px;object-fit:contain;">
+                {% else %}
+                <div class="py-3"><i class="bi bi-file-earmark-text fs-1 text-muted"></i></div>
+                {% endif %}
+              </a>
+              <div class="small text-muted">{{ label }}</div>
+              {% else %}
+              <div class="py-3"><i class="bi bi-file-earmark-x fs-2 text-muted"></i></div>
+              <div class="small text-muted">{{ label }} <span class="text-danger">(Belum)</span></div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><i class="bi bi-list-check me-2"></i>Checklist Pemeriksaan Dokumen</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0" style="font-size:.85rem;">
+          <thead class="table-light">
+            <tr>
+              <th style="width:40px;">No</th>
+              <th>Jenis Dokumen</th>
+              <th style="width:100px;">Status Upload</th>
+              <th style="width:160px;">Valid?</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% set docs_check = [
+              ('foto', 'Pas Foto', n.foto),
+              ('ktp', 'KTP', n.ktp),
+              ('kk', 'Kartu Keluarga', n.kk),
+              ('surat_usaha', 'SK Usaha/Kerja', n.surat_usaha),
+              ('bukti_penghasilan', 'Bukti Penghasilan', n.bukti_penghasilan),
+              ('jaminan', 'Jaminan', n.jaminan),
+            ] %}
+            {% for field, label, file_path in docs_check %}
+            {% set checked = existing and existing[field + '_valid'] %}
+            <tr>
+              <td class="text-center">{{ loop.index }}</td>
+              <td><strong>{{ label }}</strong></td>
+              <td>
+                {% if file_path %}
+                <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Ada</span>
+                {% else %}
+                <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Belum</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if file_path %}
+                <div class="d-flex gap-3">
+                  <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="radio" name="{{ field }}_valid" value="1" id="{{ field }}_ya"
+                      {% if checked %}checked{% endif %} required>
+                    <label class="form-check-label small" for="{{ field }}_ya">Ya</label>
+                  </div>
+                  <div class="form-check form-check-inline mb-0">
+                    <input class="form-check-input" type="radio" name="{{ field }}_valid" value="0" id="{{ field }}_tidak"
+                      {% if existing and not checked %}checked{% endif %}>
+                    <label class="form-check-label small text-danger" for="{{ field }}_tidak">Tidak</label>
+                  </div>
+                </div>
+                {% else %}
+                <span class="text-muted small">-</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('formPemeriksaan')?.addEventListener('submit', function(e) {
+  const hasilLayak = document.getElementById('hasilLayak').checked;
+  const hasilTidak = document.getElementById('hasilTidak').checked;
+  if (!hasilLayak && !hasilTidak) {
+    e.preventDefault();
+    notif('Silakan pilih kesimpulan: Layak atau Tidak Layak.', 'warning');
+    return;
+  }
+  if (hasilTidak) {
+    e.preventDefault();
+    Swal.fire({
+      title: 'Konfirmasi',
+      text: 'Anda akan MENOLAK pengajuan ini. Lanjutkan?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, tolak',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      reverseButtons: true,
+      position: 'center',
+      customClass: { popup: 'swal-popup-top-right', title: 'swal-title', confirmButton: 'swal-confirm-btn', cancelButton: 'swal-cancel-btn' }
+    }).then(function(result) {
+      if (result.isConfirmed) document.getElementById('formPemeriksaan').submit();
+    });
+  }
+});
+</script>
+{% endblock %}

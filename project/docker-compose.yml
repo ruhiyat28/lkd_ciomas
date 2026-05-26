@@ -1,0 +1,62 @@
+services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: lkd_ciomas_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-lkd_ciomas}
+      - POSTGRES_USER=${POSTGRES_USER:-lkdciomas}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-lkdciomas}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - lkd_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lkdciomas} -d ${POSTGRES_DB:-lkd_ciomas}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    image: lkd_ciomas:latest
+    container_name: lkd_ciomas_app
+    restart: unless-stopped
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-lkd-ciomas-secret-2024-ganti-ini}
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-lkdciomas}:${POSTGRES_PASSWORD:-lkdciomas}@db:5432/${POSTGRES_DB:-lkd_ciomas}
+    volumes:
+      - ./data/uploads:/app/app/static/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - lkd_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/login || exit 1"]
+      interval: 30s
+      timeout: 15s
+      start_period: 90s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    container_name: lkd_ciomas_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./data/uploads:/app/static/uploads:ro
+      - ./app/static:/app/static_src:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - lkd_net
+
+networks:
+  lkd_net:
+    driver: bridge

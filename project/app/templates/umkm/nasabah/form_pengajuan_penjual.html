@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Ajukan Sebagai Penjual{% endblock %}
+{% block page_title %}Ajukan Sebagai Penjual{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Ajukan Sebagai Penjual</h1>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('umkm.katalog') }}">UMKM</a></li>
+      <li class="breadcrumb-item active">Ajukan Penjual</li>
+    </ol>
+  </nav>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="card-body">
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle me-2"></i>
+      Dengan mengajukan diri sebagai penjual, Anda akan bisa menambahkan dan menjual produk di platform UMKM kami.
+      Pengajuan Anda akan diperiksa oleh admin.
+    </div>
+    
+    <form method="POST">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Nama Usaha <span class="text-danger">*</span></label>
+          <input type="text" name="nama_usaha" class="form-control" required placeholder="Contoh: Toko Berkah">
+        </div>
+        
+        <div class="col-md-6">
+          <label class="form-label">Jenis Usaha</label>
+          <select name="jenis_usaha" class="form-select">
+            <option value="">Pilih Jenis Usaha</option>
+            {% for k, l in [('makanan', 'Makanan'), ('minuman', 'Minuman'), ('kerajinan', 'Kerajinan'), 
+                           ('pertanian', 'Pertanian'), ('peternakan', 'Peternakan'), ('fashion', 'Fashion'), ('lainnya', 'Lainnya')] %}
+            <option value="{{ k }}">{{ l }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="col-md-6">
+          <label class="form-label">No. HP Usaha</label>
+          <input type="text" name="no_hp_usaha" class="form-control" placeholder="08xxxxxxxxxx">
+        </div>
+        
+        <div class="col-md-6">
+          <label class="form-label">Alamat Usaha</label>
+          <input type="text" name="alamat_usaha" class="form-control" placeholder="Alamat lengkap usaha">
+        </div>
+        
+        <div class="col-md-12">
+          <label class="form-label">Deskripsi Usaha</label>
+          <textarea name="deskripsi" class="form-control" rows="3" placeholder="Jelaskan singkat tentang usaha Anda..."></textarea>
+        </div>
+      </div>
+      
+      <div class="mt-4 d-flex justify-content-end gap-2">
+        <a href="{{ url_for('umkm.katalog') }}" class="btn btn-secondary">Batal</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-send me-1"></i>Kirim Pengajuan
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

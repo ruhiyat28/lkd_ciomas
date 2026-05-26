@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Buku Besar{% endblock %}
+{% block page_title %}Buku Besar{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start"><h1>Buku Besar</h1>
+  {% if akun_sel and mutasi %}
+  <a href="?akun_id={{ akun_id }}&dari={{ tgl_dari }}&sampai={{ tgl_sampai }}&cetak=1" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="bi bi-printer me-1"></i>Cetak</a>
+  {% endif %}</div>
+<div class="card mb-3"><div class="card-body py-3">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-3"><label class="form-label">Akun</label>
+      <select name="akun_id" class="form-select">
+        <option value="">-- Pilih Akun --</option>
+        {% for a in akun_list %}<option value="{{ a.id }}" {% if akun_id==a.id|string %}selected{% endif %}>{{ a.kode }} — {{ a.nama }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><label class="form-label">Dari</label><input type="date" name="dari" class="form-control" value="{{ tgl_dari }}"></div>
+    <div class="col-md-2"><label class="form-label">Sampai</label><input type="date" name="sampai" class="form-control" value="{{ tgl_sampai }}"></div>
+    <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Tampilkan</button></div>
+  </form>
+</div></div>
+
+{% if akun_sel %}
+<div class="card mb-2"><div class="card-body py-2 d-flex gap-4" style="font-size:.83rem;">
+  <span><i class="bi bi-tag me-1 text-primary"></i><strong>{{ akun_sel.kode }}</strong> — {{ akun_sel.nama }}</span>
+  <span class="text-muted">Golongan: {{ akun_sel.golongan_nama }}</span>
+  <span class="text-muted">Saldo Normal: <strong>{{ akun_sel.saldo_normal|title }}</strong></span>
+  <span class="text-muted">Saldo Awal: <strong class="money">Rp {{ '{:,.0f}'.format(saldo_awal) }}</strong></span>
+</div></div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0" style="font-size:.84rem;">
+      <thead><tr><th>Tanggal</th><th>No. Jurnal</th><th>Keterangan</th><th class="text-end">Debit</th><th class="text-end">Kredit</th><th class="text-end">Saldo</th></tr></thead>
+      <tbody>
+        <tr class="table-light"><td colspan="5" class="text-end fw-bold">Saldo Awal</td><td class="text-end money fw-bold">{{ '{:,.0f}'.format(saldo_awal) }}</td></tr>
+        {% for m in mutasi %}
+        <tr>
+          <td>{{ m.jur.tanggal.strftime('%d/%m/%Y') }}</td>
+          <td class="money" style="font-size:.78rem;">{{ m.jur.no_jurnal }}</td>
+          <td>{{ m.jur.keterangan[:50] }}{% if m.jur.keterangan|length>50 %}...{% endif %}</td>
+          <td class="text-end money {% if m.det.debit %}fw-bold{% else %}text-muted{% endif %}">{{ '{:,.0f}'.format(m.det.debit) if m.det.debit else '-' }}</td>
+          <td class="text-end money {% if m.det.kredit %}fw-bold{% else %}text-muted{% endif %}">{{ '{:,.0f}'.format(m.det.kredit) if m.det.kredit else '-' }}</td>
+          <td class="text-end money fw-bold {{ 'text-success' if m.saldo>=0 else 'text-danger' }}">{{ '{:,.0f}'.format(m.saldo) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-3">Tidak ada mutasi pada periode ini</td></tr>
+        {% endfor %}
+        {% if mutasi %}
+        <tr class="table-light fw-bold">
+          <td colspan="5" class="text-end">Saldo Akhir</td>
+          <td class="text-end money {{ 'text-success' if mutasi[-1].saldo>=0 else 'text-danger' }}">{{ '{:,.0f}'.format(mutasi[-1].saldo) }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

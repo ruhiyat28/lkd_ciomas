@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Perkembangan Pinjaman{% endblock %}
+{% block page_title %}Laporan Perkembangan{% endblock %}
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+  <div><h1>Perkembangan Pinjaman</h1>
+  <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0"><li class="breadcrumb-item active">Rekap Per Desa</li></ol></nav></div>
+  <a href="?cetak=1" target="_blank" class="btn btn-sm btn-outline-secondary no-print"><i class="bi bi-printer me-1"></i>Cetak</a>
+</div>
+
+<!-- Summary row -->
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="stat-card stat-blue"><i class="bi bi-people-fill stat-icon"></i><div class="stat-label">Total Nasabah</div><div class="stat-value">{{ total_jml }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card stat-green money-val"><i class="bi bi-cash-stack stat-icon"></i><div class="stat-label">Total Alokasi</div><div class="stat-value">{{ '{:,.0f}'.format(total_alokasi) }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card stat-teal money-val"><i class="bi bi-check-circle stat-icon"></i><div class="stat-label">Realisasi</div><div class="stat-value">{{ '{:,.0f}'.format(total_realisasi) }}</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card stat-red money-val"><i class="bi bi-bank stat-icon"></i><div class="stat-label">Saldo</div><div class="stat-value">{{ '{:,.0f}'.format(total_saldo) }}</div></div></div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-table me-2"></i>Rekap Per Desa — klik nama desa untuk detail nasabah</span>
+    <span class="text-muted" style="font-size:.78rem;">{{ tanggal_cetak.strftime('%d %B %Y') }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Desa</th><th class="text-center">Nasabah</th>
+          <th class="text-end">Alokasi (Rp)</th>
+          <th class="text-end">Target (Rp)</th>
+          <th class="text-end">Realisasi (Rp)</th>
+          <th class="text-end">Saldo (Rp)</th>
+          <th class="text-center">Tk. Pengembalian</th>
+          <th class="text-end">Tunggakan (Rp)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rekap %}
+        <tr>
+          <td>
+            <a href="{{ url_for('laporan.perkembangan', desa=r.kode) }}" class="fw-bold text-decoration-none">
+              <i class="bi bi-chevron-right me-1 text-primary" style="font-size:.75rem;"></i>{{ r.nama }}
+            </a>
+          </td>
+          <td class="text-center"><span class="badge bg-secondary">{{ r.jml }}</span></td>
+          <td class="text-end money">{{ '{:,.0f}'.format(r.alokasi) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(r.target) }}</td>
+          <td class="text-end money text-success fw-bold">{{ '{:,.0f}'.format(r.realisasi) }}</td>
+          <td class="text-end money text-danger fw-bold">{{ '{:,.0f}'.format(r.saldo) }}</td>
+          <td class="text-center">
+            <div class="d-flex align-items-center gap-1 justify-content-center">
+              <div class="progress flex-grow-1" style="height:5px;max-width:60px;">
+                <div class="progress-bar {{ 'bg-success' if r.tk_persen >= 100 else 'bg-warning' }}" style="width:{{ [r.tk_persen,100]|min }}%"></div>
+              </div>
+              <small class="text-muted">{{ '{:.0f}'.format(r.tk_persen) }}%</small>
+            </div>
+          </td>
+          <td class="text-end money {{ 'text-danger' if r.tunggak > 0 else 'text-muted' }}">
+            {{ '{:,.0f}'.format(r.tunggak) if r.tunggak > 0 else '-' }}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-center text-muted py-4">Tidak ada pinjaman aktif</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-light fw-bold">
+        <tr>
+          <td>TOTAL</td>
+          <td class="text-center">{{ total_jml }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(total_alokasi) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(total_target) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(total_realisasi) }}</td>
+          <td class="text-end money">{{ '{:,.0f}'.format(total_saldo) }}</td>
+          <td class="text-center">
+            {% if total_target > 0 %}{{ '{:.0f}'.format(total_realisasi/total_target*100) }}%{% else %}-{% endif %}
+          </td>
+          <td class="text-end money text-danger">{{ '{:,.0f}'.format(total_tunggak) }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}

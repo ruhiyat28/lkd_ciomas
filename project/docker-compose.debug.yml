@@ -1,0 +1,27 @@
+# File ini OPSIONAL — rename menjadi docker-compose.override.yml
+# untuk mode debug (menampilkan lebih banyak log, port langsung tanpa Nginx)
+#
+# Cara pakai:
+#   copy docker-compose.debug.yml docker-compose.override.yml
+#   docker compose up -d
+#
+# Akses langsung ke Flask (bypass Nginx): http://localhost:5000
+
+version: '3.9'
+
+services:
+  app:
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    ports:
+      - "5000:5000"   # expose langsung untuk debug
+    # Matikan healthcheck saat debug agar tidak blocking
+    healthcheck:
+      disable: true
+
+  nginx:
+    # Di mode debug, Nginx tetap jalan di port 80
+    # Akses via port 80 (Nginx) atau 5000 (langsung Flask)
+    depends_on:
+      - app
